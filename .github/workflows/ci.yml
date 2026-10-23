@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Download CC0 test assets
+        run: |
+          curl -fsSL https://github.com/wenshuai95/cineweave/releases/download/v1.21.0/assets-cc0.zip -o /tmp/assets-cc0.zip
+          mkdir -p public/assets
+          unzip -q /tmp/assets-cc0.zip -d public/assets
+      - run: npm test
+      - run: npm run build

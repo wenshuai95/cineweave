@@ -1,3 +1,4 @@
+import './i18n/index.mjs';
 import {inlineNodeText,writeInlineNodeText} from './inline-node-text.mjs';
 import {canvasRelations,wireRelationState,fitRelationView,snapshotCanvasView,relationTargets} from './canvas-focus.mjs';
 import {collectTaskRecords,taskCenterCounts,filterTaskRecords,mergeImageTaskObservation,markTaskQueryError,queryTaskRecord} from './task-center.mjs';
