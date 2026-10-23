@@ -2,6 +2,7 @@ import {createOiioiiVideoService} from './oiioii-video-service.mjs';
 import {FFPROBE} from './workstation-server.mjs';
 import {generateWriting} from './text-writing.mjs';
 import {createLocalModelStore} from './model3d-service.mjs';
+import {createProviderService} from './provider-service.mjs';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {randomUUID} from 'node:crypto';
@@ -12,6 +13,7 @@ import {homedir} from 'node:os';
 import {validatePlan} from './src/ai-plans.mjs';
 const exec=promisify(execFile),token=randomUUID(),quotes=new Map(),jobs=new Map();
 const folder=process.env.JINGCHANG_DATA_DIR?pathToFileURL(resolve(process.env.JINGCHANG_DATA_DIR)+sep):new URL('./.local/',import.meta.url),cli=process.env.OIIOII_CLI||(process.platform==='win32'?join(homedir(),'.local','bin','oiioii.exe'):join(homedir(),'.local/bin/oiioii')),cliIsScript=/\.(cjs|mjs|js)$/i.test(cli);
+const providerService=createProviderService({folder:fileURLToPath(folder)});
 const json=(res,data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data))};
 async function run(args,timeout=90000){try{const {stdout}=await exec(...(cliIsScript?[process.execPath,[cli,...args]]:[cli,args]),{env:{...process.env,OIIOII_LOG_DISABLED:'1',OIIOII_TELEMETRY_DISABLED:'1'},timeout,maxBuffer:12*1024*1024,shell:false,windowsHide:true});const data=JSON.parse(stdout);if(!data.ok)throw Error(data.error?.message||'oiioii 请求失败');return data.data;}catch(e){if(e.code==='ENOENT')throw Error('未找到 oiioii CLI，请安装官方 CLI 或设置 OIIOII_CLI');let message;try{message=JSON.parse(e.stdout).error?.message}catch{}throw Error(message||'oiioii 请求失败，请检查本机 CLI 授权或网络');}}
 async function body(req,limit=15*1024*1024){const chunks=[];let bytes=0;for await(const part of req){const chunk=Buffer.isBuffer(part)?part:Buffer.from(part);bytes+=chunk.length;if(bytes>limit)throw Error('请求过大');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');}
@@ -29,7 +31,7 @@ async function restore(){if(!restoreJobsPromise)restoreJobsPromise=(async()=>{tr
 async function saveJobs(){const data=JSON.stringify([...jobs.values()]);jobsSaving=jobsSaving.catch(()=>{}).then(async()=>{await mkdir(folder,{recursive:true,mode:0o700});const temp=new URL('jobs.'+randomUUID()+'.tmp',folder);await writeFile(temp,data,{mode:0o600});await rename(temp,new URL('jobs.json',folder));});await jobsSaving;}
 const cleanJob=j=>({id:j.id,status:j.status,message:j.message,imageUrl:j.imagePath?'/api/oiioii/image/'+j.id:undefined});
 export async function handleAI(req,res,url){
- if(!url.pathname.startsWith('/api/ai/')&&!url.pathname.startsWith('/api/oiioii/')&&!url.pathname.startsWith('/api/model3d/'))return false;
+ if(!url.pathname.startsWith('/api/ai/')&&!url.pathname.startsWith('/api/oiioii/')&&!url.pathname.startsWith('/api/model3d/')&&url.pathname!=='/api/providers'&&!url.pathname.startsWith('/api/providers/'))return false;
  try{
   await configReady;await restore();const expected='http://'+req.headers.host;
   if(req.headers.origin&&req.headers.origin!==expected){json(res,{error:'仅允许本机软件同源访问'},403);return true;}
@@ -54,6 +56,19 @@ export async function handleAI(req,res,url){
    await storeConfig(next,keep);remembered=keep;
    config=next;configRevision++;connection={state:'untested'};
    json(res,{config:publicConfig()});return true;
+  }
+  if(req.method==='GET'&&url.pathname==='/api/providers'){await providerService.ready();json(res,{providers:[providerService.descriptor()],config:providerService.status(),tasks:providerService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/providers/config'){await providerService.ready();json(res,{config:providerService.status()});return true;}
+  if(req.method==='POST'&&url.pathname==='/api/providers/config'){const b=await body(req);json(res,{config:await providerService.configure(b)});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/providers/seedream/models'){json(res,{models:await providerService.listModels()});return true;}
+  if(req.method==='POST'&&url.pathname==='/api/providers/seedream/quote'){json(res,await providerService.quote(await body(req)));return true;}
+  if(req.method==='POST'&&url.pathname==='/api/providers/seedream/generate'){const b=await body(req);const result=await providerService.submit(b);json(res,result);return true;}
+  if(req.method==='GET'&&url.pathname==='/api/providers/tasks'){json(res,{tasks:providerService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
+  if(req.method==='GET'&&url.pathname.startsWith('/api/providers/task/')&&!url.pathname.includes('/file/')){
+   const id=url.pathname.split('/').at(-1);json(res,await providerService.poll(id));return true;
+  }
+  if(req.method==='GET'&&url.pathname.startsWith('/api/providers/task/')){
+   const parts=url.pathname.split('/'),index=Number(parts.at(-1)),id=parts.at(-3);const file=await providerService.download(id,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
   }
   if(req.method==='GET'&&url.pathname==='/api/oiioii/video/models'){json(res,{models:await videoService.models()});return true;}
   if(req.method==='POST'&&url.pathname==='/api/oiioii/video/quote'){json(res,await videoService.quote(await body(req,120*1024*1024)));return true;}
@@ -94,5 +109,5 @@ export async function handleAI(req,res,url){
    if(!response.ok)throw Error('DeepSeek 返回 '+response.status+'，请核对 API 配额、模型和服务地址');const result=await response.json(),plan=validatePlan(JSON.parse(result.choices[0].message.content),b.kind,b.duration,assets);json(res,{plan});return true;
   }
   json(res,{error:'接口不存在'},404);return true;
- }catch(e){json(res,{error:e.message},400);return true;}
+ }catch(e){json(res,{error:e.message,...(e.code?{code:e.code}:{})},e.code==='UNAUTHORIZED'?401:400);return true;}
 }

@@ -1,28 +1,60 @@
 {
-  "app": {"name": "CineWeave"},
-  "nav": {"canvas": "Canvas", "director": "3D Director", "edit": "Edit", "settings": "Settings"},
+  "app": {
+    "name": "CineWeave"
+  },
+  "nav": {
+    "canvas": "Canvas",
+    "director": "3D Director",
+    "edit": "Edit",
+    "settings": "Settings"
+  },
   "common": {
-    "save": "Save", "cancel": "Cancel", "close": "Close", "retry": "Retry",
-    "delete": "Delete", "edit": "Edit", "back": "Back", "next": "Next",
-    "loading": "Loading…", "none": "None"
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "retry": "Retry",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading…",
+    "none": "None"
   },
   "settings": {
-    "title": "Settings", "language": "Language",
+    "title": "Settings",
+    "language": "Language",
     "languageHint": "English is the default. Switch to Chinese at any time.",
-    "providers": "Providers", "storage": "Storage", "general": "General"
+    "providers": "Providers",
+    "storage": "Storage",
+    "general": "General"
   },
-  "language": {"en": "English", "zh": "中文"},
+  "language": {
+    "en": "English",
+    "zh": "中文"
+  },
   "provider": {
-    "title": "Provider", "select": "Provider", "selectModel": "Model",
-    "prompt": "Prompt", "negative": "Negative prompt", "generate": "Generate",
-    "quote": "Get price", "testConnection": "Test connection",
-    "notConfigured": "Not configured", "disabled": "Disabled",
-    "local": "Local", "cloud": "Cloud"
+    "title": "Provider",
+    "select": "Provider",
+    "selectModel": "Model",
+    "prompt": "Prompt",
+    "negative": "Negative prompt",
+    "generate": "Generate",
+    "quote": "Get price",
+    "testConnection": "Test connection",
+    "notConfigured": "Not configured",
+    "disabled": "Disabled",
+    "local": "Local",
+    "cloud": "Cloud"
   },
   "task": {
-    "title": "Tasks", "queued": "Queued", "running": "Running",
-    "succeeded": "Succeeded", "failed": "Failed", "cancelled": "Cancelled",
-    "cancel": "Cancel task", "retry": "Retry task"
+    "title": "Tasks",
+    "queued": "Queued",
+    "running": "Running",
+    "succeeded": "Succeeded",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "cancel": "Cancel task",
+    "retry": "Retry task"
   },
   "error": {
     "network": "Network error. Check your connection and try again.",
@@ -30,6 +62,7 @@
     "rateLimited": "Rate limit or quota reached. Try again later.",
     "modelNotOpen": "This model is not enabled for your account.",
     "invalidInput": "Please check the input and try again.",
-    "notImplemented": "This feature is not available yet."
+    "notImplemented": "This feature is not available yet.",
+    "paymentRequired": "Payment is required. Please top up your Volcengine account and try again."
   }
 }

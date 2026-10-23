@@ -45,12 +45,15 @@
 - `download` 返回本地占位 SVG/MP4 字节
 - 不访问网络
 
-## Seedream（Sprint 1 范围）
+## Seedream（Sprint 2）
 
 - 基础地址：`https://ark.cn-beijing.volces.com/api/v3`
-- 已实现：能力声明、`listModels()`（动态过滤 Seedream 模型）、`health()`
-- 未实现：`quote/submit/poll/cancel/download`，调用会抛出 `NOT_IMPLEMENTED`
-- 生成链路在 Sprint 2 接入；真实测试预算 ¥50，只测 flash
+- 已实现：模型列表、报价、同步生成、任务查询、下载、健康检查
+- 接口：`/api/providers/seedream/models`、`/quote`、`/generate`、`/api/providers/task/:id/file/:index`
+- 配置：`POST /api/providers/config`，密钥存本机 `providers.json`（0600），页面不回传明文
+- 错误码：`UNAUTHORIZED / MODEL_NOT_OPEN / RATE_LIMITED / PAYMENT_REQUIRED / NETWORK / UPSTREAM`
+- 账户欠费会返回 `PAYMENT_REQUIRED`，需要先充值
+- 真实测试预算 ¥50，只测 flash；本地 ComfyUI 用于免费回归
 
 ## 新增一个厂商
 

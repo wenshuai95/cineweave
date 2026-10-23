@@ -1088,7 +1088,7 @@ function renderProperties(){
  }else if(n){$('#properties').innerHTML=`<div class="inspector-section"><span class="badge">${n.type==='model'?'3D 模型 · 参考图片':labels[n.type]}</span><label class="field">资产名称<input id="nodeTitle" value="${esc(n.title)}" maxlength="100"></label><label class="field">内容<textarea id="nodeText" rows="5">${esc(n.text)}</textarea></label>${n.objectId?'<button id="goObject" class="key-button">定位关联的 3D 对象 ↗</button>':''}${n.type==='director'?'<button id="goDirector" class="key-button">进入 3D 导演台 ↗</button>':''}<div class="row" style="margin-top:15px"><button id="duplicateNode" class="grow">复制节点</button><button id="deleteNode" class="danger grow">删除节点</button></div>${n.src?'<button id="downloadMedia" style="width:100%;margin-top:8px">下载素材</button>':''}<button id="clearEdges" style="width:100%;margin-top:8px">移除此节点的连线</button></div>`;
  if(['text','image','video','audio','actor','scene'].includes(n.type)){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><h3>视频创作</h3><button id="generateVideo" class="key-button primary">生成视频</button><p class="help-text">选取图片或白模作参考，完成后回到画布并保留连线。</p></div>');$('#generateVideo').onclick=()=>videoGenerationModal(n);}
  if(['video','audio'].includes(n.type)&&n.src)$('#properties').insertAdjacentHTML('beforeend',`<div class="inspector-section"><h3>剪辑时间线</h3><button id="sendToEdit" class="key-button primary">送入剪辑（${n.type==='video'?'V1':'A1'}）↗</button><p class="help-text">内容存入本机媒体库并追加到剪辑页轨道末尾；导出的白模预演视频也走这条路。</p></div>`);
-  $('#nodeTitle').onchange=e=>{const context=getCanvasStoryContext(p,n.id);if(context?.kind==='shot')return;checkpoint();if(context&&['script','asset'].includes(context.kind))editStoryNode(p,n.id,{title:e.target.value.trim()||'未命名资产'});else n.title=e.target.value.trim()||'未命名资产';const o=p.objects.find(o=>o.id===n.objectId);if(o)o.name=n.title;commit();renderProperties()};$('#nodeText').onchange=e=>{const context=getCanvasStoryContext(p,n.id);if(context?.kind==='shot')return;checkpoint();if(context&&['script','asset'].includes(context.kind))editStoryNode(p,n.id,{text:e.target.value});else n.text=e.target.value;commit()};$('#duplicateNode').onclick=()=>duplicateCanvasNode(n);$('#deleteNode').onclick=()=>deleteSelected();$('#clearEdges').onclick=()=>{checkpoint();p.edges=p.edges.filter(e=>e.from!==n.id&&e.to!==n.id);commit()};if($('#sendToEdit'))$('#sendToEdit').onclick=()=>wsShell?.sendCanvasNodeToEdit(n.id);if($('#goObject'))$('#goObject').onclick=()=>{const id=n.objectId;setMode('stage');select(id);stage.frameSelection()};if($('#goDirector'))$('#goDirector').onclick=()=>setMode('stage');if(['image','video','audio'].includes(n.type)){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><button id="replaceMedia" class="key-button">导入 / 替换素材</button></div>');$('#replaceMedia').onclick=()=>{mediaTarget=n.id;$('#mediaFile').accept=n.type+'/*';$('#mediaFile').click()};}if(['text','image','scene','actor'].includes(n.type)){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><button id="generateImage" class="key-button">oiioii 生成图片</button><button id="generateScene" class="key-button">现有资产布局 → 导演台</button></div>');$('#generateImage').onclick=()=>imageGenerationModal(n);$('#generateScene').onclick=()=>textPlanModal('scene',n.id);}if(n.type==='model'){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><h3>本地 3D 模型</h3><button id="modelToStage" class="key-button primary">加入导演台 / 查看模型</button><button id="downloadModel" class="key-button">下载模型 GLB</button></div>');$('#modelToStage').onclick=()=>enterGeneratedModel(n);$('#downloadModel').onclick=()=>download(n.modelSrc,n.title+'.glb');}if($('#downloadMedia'))$('#downloadMedia').onclick=()=>download(n.src,mediaFileName(n));
+  $('#nodeTitle').onchange=e=>{const context=getCanvasStoryContext(p,n.id);if(context?.kind==='shot')return;checkpoint();if(context&&['script','asset'].includes(context.kind))editStoryNode(p,n.id,{title:e.target.value.trim()||'未命名资产'});else n.title=e.target.value.trim()||'未命名资产';const o=p.objects.find(o=>o.id===n.objectId);if(o)o.name=n.title;commit();renderProperties()};$('#nodeText').onchange=e=>{const context=getCanvasStoryContext(p,n.id);if(context?.kind==='shot')return;checkpoint();if(context&&['script','asset'].includes(context.kind))editStoryNode(p,n.id,{text:e.target.value});else n.text=e.target.value;commit()};$('#duplicateNode').onclick=()=>duplicateCanvasNode(n);$('#deleteNode').onclick=()=>deleteSelected();$('#clearEdges').onclick=()=>{checkpoint();p.edges=p.edges.filter(e=>e.from!==n.id&&e.to!==n.id);commit()};if($('#sendToEdit'))$('#sendToEdit').onclick=()=>wsShell?.sendCanvasNodeToEdit(n.id);if($('#goObject'))$('#goObject').onclick=()=>{const id=n.objectId;setMode('stage');select(id);stage.frameSelection()};if($('#goDirector'))$('#goDirector').onclick=()=>setMode('stage');if(['image','video','audio'].includes(n.type)){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><button id="replaceMedia" class="key-button">导入 / 替换素材</button></div>');$('#replaceMedia').onclick=()=>{mediaTarget=n.id;$('#mediaFile').accept=n.type+'/*';$('#mediaFile').click()};}if(['text','image','scene','actor'].includes(n.type)){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><button id="generateSeedream" class="key-button primary">Seedream 生图</button><button id="generateImage" class="key-button">oiioii 生成图片</button><button id="generateScene" class="key-button">现有资产布局 → 导演台</button></div>');$('#generateSeedream').onclick=()=>seedreamImageModal(n);$('#generateImage').onclick=()=>imageGenerationModal(n);$('#generateScene').onclick=()=>textPlanModal('scene',n.id);}if(n.type==='model'){$('#properties').insertAdjacentHTML('beforeend','<div class="inspector-section"><h3>本地 3D 模型</h3><button id="modelToStage" class="key-button primary">加入导演台 / 查看模型</button><button id="downloadModel" class="key-button">下载模型 GLB</button></div>');$('#modelToStage').onclick=()=>enterGeneratedModel(n);$('#downloadModel').onclick=()=>download(n.modelSrc,n.title+'.glb');}if($('#downloadMedia'))$('#downloadMedia').onclick=()=>download(n.src,mediaFileName(n));
  }else{$('#properties').innerHTML=`<div class="inspector-section"><span class="badge">项目设置</span><h2 style="font-size:21px;margin-top:15px">${esc(p.name)}</h2><label class="field">预演时长 / 秒<input id="durationInput" type="number" min="1" max="3600" step="0.1" value="${p.duration}"></label><label class="field">导出帧率<select id="fpsInput">${[24,25,30].map(f=>`<option ${p.fps===f?'selected':''}>${f}</option>`).join('')}</select></label>${mode==='board'?'<div class="row" style="margin-top:15px"><button class="grow" id="overviewAdd">＋ 添加资产</button></div>':''}</div>`;
  $('#durationInput').onchange=e=>{const value=+e.target.value;if(!Number.isFinite(value)||value<1||value>3600){e.target.value=p.duration;return toast('时长须为 1–3600 秒');}if(contentEnd(p)>value){e.target.value=p.duration;durationModal(value);}else applyDuration(value,false)};$('#fpsInput').onchange=e=>{checkpoint();p.fps=+e.target.value;commit()};if($('#overviewAdd'))$('#overviewAdd').onclick=addAssetModal;}
  if(!o&&!n&&mode==='stage'){
@@ -1117,7 +1117,7 @@ function organizeNodeProperties(n){
  const group=(key,title,ids,open=false)=>{const buttons=ids.map(id=>controls.get(id)).filter(Boolean);if(!buttons.length)return;const holder=document.createElement('div');holder.innerHTML=propertyGroup('node-'+n.type,key,title,'',open);const detail=holder.firstElementChild;detail.querySelector('.property-group-body').append(...buttons);next.append(detail);};
  group('source','内容与下一步',['editStorySource','designStoryShots','extractStoryAssets','manageStoryAsset','useAsScript'],true);
  group('video','视频创作',['generateVideo'],true);
- group('create','创作',n.type==='image'?['imageToScene','imageToActor','goObject']:n.type==='model'?['modelToStage']:n.type==='director'?['goDirector']:['generateImage','goObject'],true);
+ group('create','创作',n.type==='image'?['imageToScene','imageToActor','goObject','generateSeedream']:n.type==='model'?['modelToStage']:n.type==='director'?['goDirector']:['generateSeedream','generateImage','goObject'],true);
  group('more','更多创作',[...(n.type==='image'?['generateImage']:[]),'generateScene']);
  group('files','素材与连线',['replaceMedia','downloadMedia','downloadModel','sendToEdit','clearEdges']);
  const footer=document.createElement('div');footer.className='property-footer';footer.append(controls.get('duplicateNode'),controls.get('deleteNode'));next.append(footer);
@@ -1468,8 +1468,14 @@ function referencePackModal(){
 function aiTaskModal(){modal('AI 参考任务包','导出提示词、镜头和素材关系，用于外部创作或交接；不会自动提交生成。',`<span class="badge">离线参考清单</span><label class="field">目标模型名称（选填）<input id="aiModel" placeholder="例如：计划使用的视频模型" value="${esc(p.ai.model)}"></label><label class="field">生成意图与参考规则<textarea rows="6" id="aiPrompt">${esc(p.ai.prompt)}</textarea></label><p class="help-text">任务包包含工程、镜头时间表及画布引用关系。三维工程与渲染视频不同；需要控制运动时，请将预演视频作为生成参考。API 密钥请仅保存在本机模型设置中，不要写进工程内容。</p>`,`<button id="exportReferencePack">按镜头参考包</button><button id="exportTask">导出 AI 任务包</button><button class="primary" id="saveAI">保存设定</button>`);$('#exportReferencePack').onclick=()=>{closeModal();referencePackModal()};const save=()=>{checkpoint();p.ai.model=$('#aiModel').value;p.ai.prompt=$('#aiPrompt').value;persist()};$('#saveAI').onclick=()=>{save();closeModal();toast('生成设定已保存')};$('#exportTask').onclick=()=>{save();const task={schema:'jingchang-ai-task/1',kind:'reference-to-video',provider:null,model:p.ai.model||null,prompt:p.ai.prompt,video:{duration:p.duration,fps:p.fps,width:1280,height:720,referenceFile:p.name+'.webm'},shots:p.shots.map(s=>({...s,camera:p.objects.find(o=>o.id===s.cameraId)})),assets:p.nodes,connections:p.edges,project:p};download(new Blob([JSON.stringify(task,null,2)],{type:'application/json'}),p.name+'.ai-task.json');toast('任务包已导出，尚未调用 AI')};}
 
 function aiModal(){
- settingsPage('api','管理文字模型和媒体生成服务。',`<p id="aiStatus" class="preset-help">正在读取配置…</p><section class="settings-section"><h3>文字模型</h3><p class="help-text">DeepSeek / 兼容接口用于创作助手、白模导演和场景规划。</p><button id="aiTextSettings" class="primary">文字模型设置</button></section><section class="settings-section"><h3>媒体生成 · OiiOii</h3><p class="help-text">使用本机 CLI 的授权；生成前显示报价并由你确认。</p><p class="help-text">图片与视频从对应节点的工具栏开始；任务可在顶部「任务」中找回。</p></section>`);
+ settingsPage('api','管理文字模型和媒体生成服务。',`<p id="aiStatus" class="preset-help">正在读取配置…</p><section class="settings-section"><h3>文字模型</h3><p class="help-text">DeepSeek / 兼容接口用于创作助手、白模导演和场景规划。</p><button id="aiTextSettings" class="primary">文字模型设置</button></section><section class="settings-section"><h3>媒体生成 · OiiOii</h3><p class="help-text">使用本机 CLI 的授权；生成前显示报价并由你确认。</p><p class="help-text">图片与视频从对应节点的工具栏开始；任务可在顶部「任务」中找回。</p></section><section class="settings-section"><h3>Seedream 图片（即梦 / 方舟）</h3><p class="help-text">用于画布节点的「Seedream 生图」。密钥只保存在本机，不进入工程或仓库。</p><p class="help-text" id="seedreamStatus">正在读取配置…</p><label class="field">API Key<input id="seedreamKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field">默认模型<input id="seedreamModel" autocomplete="off" placeholder="doubao-seedream-5-0-flash-260915"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="seedreamSave">保存</button><button id="seedreamTest">测试模型列表</button><button id="seedreamClear">清除密钥</button></div><p class="help-text" id="seedreamMessage"></p></section>`);
  $('#aiTextSettings').onclick=()=>{closeModal();showTextSettings({toast});};
+ const sdStatus=$('#seedreamStatus'),sdMsg=$('#seedreamMessage'),sdKey=$('#seedreamKey'),sdModel=$('#seedreamModel');
+ const readSeedream=async()=>{try{const info=await api('/api/providers/config');const cfg=info.config?.seedream||{};if(!sdStatus.isConnected)return;sdStatus.textContent=cfg.configured?`已配置 · 默认模型 ${cfg.model}`:'未配置';sdKey.value='';sdModel.value=cfg.model||'';}catch(e){if(sdStatus.isConnected)sdStatus.textContent=e.message;}};
+ readSeedream();
+ $('#seedreamSave').onclick=async()=>{sdMsg.textContent='正在保存…';try{const info=await api('/api/providers/config',{apiKey:sdKey.value.trim(),model:sdModel.value.trim()});sdKey.value='';sdMsg.textContent='已保存';sdStatus.textContent=info.config?.seedream?.configured?'已配置':'未配置';}catch(e){sdMsg.textContent=e.message;}};
+ $('#seedreamTest').onclick=async()=>{sdMsg.textContent='正在读取模型…';try{const data=await api('/api/providers/seedream/models');sdMsg.textContent=`可用模型 ${data.models?.length||0} 个`;}catch(e){sdMsg.textContent=e.message;}};
+ $('#seedreamClear').onclick=async()=>{sdMsg.textContent='正在清除…';try{await api('/api/providers/config',{clear:true});sdKey.value='';sdModel.value='';sdMsg.textContent='密钥已清除';await readSeedream();}catch(e){sdMsg.textContent=e.message;}};
 
  const statusEl=$('#aiStatus');api('/api/ai/status').then(s=>{if(!statusEl.isConnected)return;aiToken=s.token;statusEl.textContent=`文字模型：${s.config.configured?'已配置':'未配置'} · OiiOii：${s.oiioii?'已授权':'未授权'}`;}).catch(e=>{if(statusEl.isConnected)statusEl.textContent=e.message;});
 }
@@ -1513,6 +1519,67 @@ function loadImageTaskStore(){
 }
 function saveImageTaskStore(tasks){try{localStorage.setItem(IMAGE_TASK_KEY,JSON.stringify({version:3,tasks}));}catch{}renderTaskCenter();}
 function rememberImageTask(id,projectId,sourceId,prompt,receipt={}){const tasks=loadImageTaskStore();tasks[id]={id,projectId,sourceId:sourceId||null,prompt:prompt||'',createdAt:Date.now(),...receipt};saveImageTaskStore(tasks);}
+
+async function seedreamImageModal(source){
+ const project=p,projectId=p.id,sourceId=source?.id;
+ nodeToolModal(source?.id,'Seedream 生图','即梦 / 火山方舟图片模型；提交后按方舟实际计费。',`<div class="image-composer"><p class="help-text">仅按提示词生成新图；原图保留。生成完成后自动加入画布。</p><div class="composer-scroll"><label class="field">画面描述<textarea id="seedreamPrompt" rows="4" maxlength="6000">${esc(typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-settings image-settings"><label class="field grow">模型<select id="seedreamModel"></select></label><label class="field">尺寸<select id="seedreamSize"><option>1024x1024</option><option>1536x1024</option><option>1024x1536</option></select></label></div><p id="seedreamStatus" class="help-text" role="status">正在读取 Seedream 配置…</p></div>`,`<span id="seedreamPrice" class="composer-price" role="status"></span><button id="seedreamCancel">取消</button><button id="seedreamGenerate" class="primary" disabled>查询并生成</button>`);
+ const panel=document.querySelector('#seedreamPrompt')?.closest('.modal'); if(!panel)return;
+ const q=s=>panel.querySelector(s); let quote=null,models=[];
+ const status=text=>{if(q('#seedreamStatus'))q('#seedreamStatus').textContent=text;};
+ const live=()=>panel.isConnected&&p===project;
+ try{
+  const config=await api('/api/providers/config');
+  if(!live())return;
+  if(!config.config?.seedream?.configured){
+   status('尚未配置 Seedream API Key。请先到「设置 → API 服务」填写。');
+   q('#seedreamGenerate').textContent='去设置';
+   q('#seedreamGenerate').disabled=false;
+   q('#seedreamGenerate').onclick=()=>{closeModal();aiModal();};
+   return;
+  }
+  q('#seedreamModel').innerHTML='<option>正在读取模型…</option>';
+  models=await api('/api/providers/seedream/models');
+  if(!live())return;
+  if(!models.models?.length)throw Error('账号没有可用的 Seedream 模型，请先在火山方舟开通');
+  q('#seedreamModel').innerHTML=models.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
+  const defaultModel=models.models.find(m=>m.default)?.id||models.models[0].id;
+  q('#seedreamModel').value=defaultModel;
+  status('已配置。首次点「查询并生成」会获取报价，再次点击确认提交。');
+  q('#seedreamGenerate').disabled=false;
+  q('#seedreamGenerate').textContent='查询并生成';
+ }catch(e){status(e.message);q('#seedreamGenerate').disabled=true;return;}
+ q('#seedreamCancel').onclick=()=>closeModal();
+ q('#seedreamPrompt').oninput=()=>{quote=null;if(q('#seedreamGenerate')){q('#seedreamGenerate').textContent='查询并生成';q('#seedreamPrice').textContent='';}};
+ q('#seedreamModel').onchange=()=>{quote=null;q('#seedreamGenerate').textContent='查询并生成';q('#seedreamPrice').textContent='';};
+ q('#seedreamSize').onchange=()=>{quote=null;q('#seedreamGenerate').textContent='查询并生成';q('#seedreamPrice').textContent='';};
+ q('#seedreamGenerate').onclick=async()=>{
+  if(!live())return;
+  const button=q('#seedreamGenerate'),prompt=q('#seedreamPrompt').value.trim(),modelId=q('#seedreamModel').value,size=q('#seedreamSize').value;
+  if(!prompt){status('请先填写画面描述');return;}
+  if(!quote){
+   button.disabled=true;status('正在获取报价…');
+   try{quote=await api('/api/providers/seedream/quote',{modelId,prompt,size,projectId});if(!live())return;q('#seedreamPrice').textContent=quote.note||'按方舟实际计费';button.textContent='确认并生成（按实际计费）';status('确认后将提交 Seedream 生成，不可撤销。');}
+   catch(e){status(e.message);quote=null;}
+   finally{if(live())button.disabled=false;}
+   return;
+  }
+  button.disabled=true;q('#seedreamCancel').disabled=true;status('Seedream 正在生成，通常需要几十秒…');
+  try{
+   const result=await api('/api/providers/seedream/generate',{quoteId:quote.quoteId,projectId,sourceId});
+   const task=result.task||result;if(!task?.id)throw Error('任务没有返回 ID');
+   const response=await fetch('/api/providers/task/'+encodeURIComponent(task.id)+'/file/0');
+   if(!response.ok)throw Error('生成图片读取失败');
+   const src=await readDataURL(await response.blob());
+   if(!live())return;
+   const context=imageAssetContext(project,sourceId);
+   const plan=planCanvasImageResult(project,{sourceId,taskId:task.id,src,prompt,context,createNode:extra=>asset('image',{title:'Seedream · '+prompt.slice(0,25),...extra})});
+   if(plan.already){status('该图片已在画布中');return;}
+   checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);setMode('board');filter='all';commit();select(node.id);fitBoard();closeModal();toast('Seedream 图片已加入画布');
+  }catch(e){status(e.message+'；请核对任务记录，勿重复提交');}
+  finally{if(live()){button.disabled=false;q('#seedreamCancel').disabled=false;}}
+ };
+}
+
 async function imageGenerationModal(source,{promptOverride}={}){
  nodeToolModal(source?.id,'按描述生成新图','',`<div class="image-composer"><p class="help-text image-generation-scope">仅按文字描述生成新图；相连文本可带入提示词，已有图片不会上传或参与生成。原图保留。</p><div class="composer-scroll"><label class="field">描述你想生成的画面<textarea id="imagePrompt" rows="4" maxlength="6000" placeholder="描述场景、人物、构图与光线…">${esc(typeof promptOverride==='string'?promptOverride:typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-bottom-tools">${promptAssistantMarkup()}<details class="composer-parameters"><summary id="imageParameterSummary">模型与参数 · 正在读取…</summary><div class="composer-settings image-settings"><label class="field grow">模型<select id="imageModel" aria-label="图片生成模型"></select></label><label class="field">尺寸<select id="imageSize" aria-label="图片尺寸"></select></label><label class="field">画幅<select id="imageAspect" aria-label="图片画幅"></select></label></div></details></div><p id="imageStatus" class="help-text" role="status">正在读取模型目录…</p><details class="composer-details"><summary>恢复图片任务</summary><button id="resumeImage">恢复上次图片任务</button></details></div>`,`<span id="imageQuote" class="composer-price" role="status"></span><button id="quoteImage" class="primary" disabled>查看本次费用</button><button id="submitImage" class="primary" hidden disabled>确认并生成</button>`);
  const imagePanel=document.querySelector('#imagePrompt').closest('.modal'),$=s=>imagePanel.querySelector(s);imagePanel.classList.add('image-composer-panel');imagePanel.dataset.overlayKind='composer';refreshNodeOverlays();
