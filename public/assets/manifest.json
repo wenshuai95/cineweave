@@ -1,0 +1,5704 @@
+{
+  "version": 1,
+  "title": "超级无敌导演画布 · 离线模型与动作",
+  "checkedAt": "2026-10-11",
+  "license": "CC0-1.0",
+  "units": "defaultHeight 为推荐高度（米）；原资产坐标未改写。使用时按包围盒等比缩放并将最低点放到地面。",
+  "notes": [
+    "所有模型均为本地完整 GLB，贴图已嵌入，不依赖外网。",
+    "defaultHeight 是预演用的建议比例，并非模型真实测量尺寸。",
+    "动画实际读取自 GLB；存在作者命名重复或带骨架前缀的片段。",
+    "成人男女旧白模已从资产库移除；retiredAssets 与对应文件仅供旧工程兼容。",
+    "libraryGroup 区分人物/动物风格；写实比例示范人偶不是照片级写实人物。"
+  ],
+  "assets": [
+    {
+      "id": "character-male-a",
+      "name": "男演员 · 休闲A",
+      "category": "character",
+      "file": "models/character-male-a.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.9998,
+      "bytes": 255212,
+      "sha256": "b859c65ffc0fdffab17bbca51130ea8161ef5273ad321f84fde95159e4e5438e",
+      "triangles": 723,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.17236122438813933
+        ],
+        "max": [
+          0.3835841231341538,
+          0.6713249917030335,
+          0.16763863017652741
+        ]
+      },
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-male-a.png"
+    },
+    {
+      "id": "character-male-c",
+      "name": "男演员 · 休闲B",
+      "category": "character",
+      "file": "models/character-male-c.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.75,
+      "bytes": 271400,
+      "sha256": "ae60fa001e222c0d2b4f7e44c27e19e53b2eab811ba3597d569d793337b84e1e",
+      "triangles": 793,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.18801885793115386
+        ],
+        "max": [
+          0.3835841231341538,
+          0.7927912707328797,
+          0.2726385747442078
+        ]
+      },
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-male-c.png"
+    },
+    {
+      "id": "character-female-a",
+      "name": "女演员 · 休闲A",
+      "category": "character",
+      "file": "models/character-female-a.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 2.4794,
+      "bytes": 281740,
+      "sha256": "e9d659be4c98894c87952a0d158b2af8311d7012e25c36013b5f51da727e6929",
+      "triangles": 876,
+      "originalBounds": {
+        "min": [
+          -0.5493935160632338,
+          1.0848045348121893e-07,
+          -0.29189149985219726
+        ],
+        "max": [
+          0.549393516063231,
+          0.7755283946990967,
+          0.20763880064581147
+        ]
+      },
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-female-a.png"
+    },
+    {
+      "id": "character-female-c",
+      "name": "女演员 · 休闲B",
+      "category": "character",
+      "file": "models/character-female-c.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.75,
+      "bytes": 260340,
+      "sha256": "c151fe33bb9d208fa42e4310cd5a06f95a2be97f3c8235962d04c9ea74bb89b0",
+      "triangles": 732,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          4.1723251242853365e-09,
+          -0.29189149985219726
+        ],
+        "max": [
+          0.3835841231341538,
+          0.7755283946990967,
+          0.20763880064581147
+        ]
+      },
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-female-c.png"
+    },
+    {
+      "id": "horse",
+      "name": "马",
+      "category": "animal",
+      "file": "models/horse.glb",
+      "source": "https://poly.pizza/m/qvTrSG9pZF",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/CC0-1.0.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "Attack_Headbutt",
+          "duration": 1
+        },
+        {
+          "name": "Attack_Kick",
+          "duration": 1
+        },
+        {
+          "name": "Death",
+          "duration": 1
+        },
+        {
+          "name": "Eating",
+          "duration": 6
+        },
+        {
+          "name": "Gallop_Jump",
+          "duration": 1.4583333730697632
+        },
+        {
+          "name": "Gallop",
+          "duration": 0.5833333134651184
+        },
+        {
+          "name": "Idle_HitReact_Left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Idle_HitReact_Right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Jump_toIdle",
+          "duration": 1.7083333730697632
+        },
+        {
+          "name": "Walk",
+          "duration": 1.1666666269302368
+        },
+        {
+          "name": "Idle_Headlow",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Idle_2",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Idle",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Attack_Headbutt",
+          "duration": 1
+        },
+        {
+          "name": "AnimalArmature|Attack_Kick",
+          "duration": 1
+        },
+        {
+          "name": "AnimalArmature|Death",
+          "duration": 1
+        },
+        {
+          "name": "AnimalArmature|Eating",
+          "duration": 6
+        },
+        {
+          "name": "AnimalArmature|Gallop",
+          "duration": 0.5833333134651184
+        },
+        {
+          "name": "AnimalArmature|Gallop_Jump",
+          "duration": 1.4583333730697632
+        },
+        {
+          "name": "AnimalArmature|Idle",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_2",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_Headlow",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_HitReact_Left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "AnimalArmature|Idle_HitReact_Right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "AnimalArmature|Jump_toIdle",
+          "duration": 1.7083333730697632
+        },
+        {
+          "name": "AnimalArmature|Walk",
+          "duration": 1.1666666269302368
+        }
+      ],
+      "defaultHeight": 1.8,
+      "modelSize": 2.1193,
+      "bytes": 1108124,
+      "sha256": "fae7a7ec91e0d6a33554efb896fac9c4e8c632644183bcb8cc962f673d3ce609",
+      "triangles": 2182,
+      "originalBounds": {
+        "min": [
+          -0.7056951868380824,
+          -0.01121950798351537,
+          -2.223445969220726
+        ],
+        "max": [
+          0.705695231543975,
+          4.822447957526961,
+          3.4676982880356673
+        ]
+      },
+      "download": "https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb",
+      "libraryGroup": "animal-cartoon",
+      "thumbnail": "thumbnails/horse.png"
+    },
+    {
+      "id": "shiba",
+      "name": "柴犬",
+      "category": "animal",
+      "file": "models/shiba.glb",
+      "source": "https://poly.pizza/m/y4wdQpg767",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/CC0-1.0.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "Attack",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Death",
+          "duration": 1.0416666269302368
+        },
+        {
+          "name": "Eating",
+          "duration": 2.5
+        },
+        {
+          "name": "Gallop",
+          "duration": 0.5416666865348816
+        },
+        {
+          "name": "Gallop_Jump",
+          "duration": 0.9166666865348816
+        },
+        {
+          "name": "Idle_HitReact_Left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Idle_HitReact_Right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Jump_ToIdle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Walk",
+          "duration": 1.0416666269302368
+        },
+        {
+          "name": "Idle_2_HeadLow",
+          "duration": 4
+        },
+        {
+          "name": "Idle_2",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Idle",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Attack",
+          "duration": 1.1666666269302368
+        },
+        {
+          "name": "AnimalArmature|Death",
+          "duration": 1.0416666269302368
+        },
+        {
+          "name": "AnimalArmature|Eating",
+          "duration": 2.6666667461395264
+        },
+        {
+          "name": "AnimalArmature|Gallop",
+          "duration": 0.5416666865348816
+        },
+        {
+          "name": "AnimalArmature|Gallop_Jump",
+          "duration": 0.9166666865348816
+        },
+        {
+          "name": "AnimalArmature|Idle",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_2",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_2_HeadLow",
+          "duration": 4
+        },
+        {
+          "name": "AnimalArmature|Idle_HitReact_Left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "AnimalArmature|Idle_HitReact_Right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "AnimalArmature|Jump_ToIdle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "AnimalArmature|Walk",
+          "duration": 1.0416666269302368
+        }
+      ],
+      "defaultHeight": 0.65,
+      "modelSize": 0.8764,
+      "bytes": 851196,
+      "sha256": "9cbd4f1e12f85024126eab6a2c5706c099196df1a10db74e6c8b67bac3fff54a",
+      "triangles": 1950,
+      "originalBounds": {
+        "min": [
+          -0.5355093933277079,
+          0.004425241913406504,
+          -1.668525941663603
+        ],
+        "max": [
+          0.5355093791845201,
+          3.093365637403334,
+          2.496236336503834
+        ]
+      },
+      "download": "https://static.poly.pizza/ba6d0ee3-bcc0-4ef0-9d3c-a3e245b41c77.glb",
+      "libraryGroup": "animal-cartoon",
+      "thumbnail": "thumbnails/shiba.png"
+    },
+    {
+      "id": "husky",
+      "name": "哈士奇",
+      "category": "animal",
+      "file": "models/husky.glb",
+      "source": "https://poly.pizza/m/wcWiuEqwzq",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/CC0-1.0.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "Attack",
+          "duration": 1.1666666269302368
+        },
+        {
+          "name": "Death",
+          "duration": 1.0416666269302368
+        },
+        {
+          "name": "Eating",
+          "duration": 2.6666667461395264
+        },
+        {
+          "name": "Gallop",
+          "duration": 0.5416666865348816
+        },
+        {
+          "name": "Gallop_Jump",
+          "duration": 0.9166666865348816
+        },
+        {
+          "name": "Idle_HitReact_Left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Idle_HitReact_Right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Jump_ToIdle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Walk",
+          "duration": 1.0416666269302368
+        },
+        {
+          "name": "Idle_2",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Idle_2_HeadLow",
+          "duration": 4
+        },
+        {
+          "name": "Idle",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Attack",
+          "duration": 1.1666666269302368
+        },
+        {
+          "name": "AnimalArmature|Death",
+          "duration": 1.0416666269302368
+        },
+        {
+          "name": "AnimalArmature|Eating",
+          "duration": 2.6666667461395264
+        },
+        {
+          "name": "AnimalArmature|Gallop",
+          "duration": 0.5416666865348816
+        },
+        {
+          "name": "AnimalArmature|Gallop_Jump",
+          "duration": 0.9166666865348816
+        },
+        {
+          "name": "AnimalArmature|Idle",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_2",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "AnimalArmature|Idle_2_HeadLow",
+          "duration": 4
+        },
+        {
+          "name": "AnimalArmature|Idle_HitReact_Left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "AnimalArmature|Idle_HitReact_Right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "AnimalArmature|Jump_ToIdle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "AnimalArmature|Walk",
+          "duration": 1.0416666269302368
+        }
+      ],
+      "defaultHeight": 0.8,
+      "modelSize": 0.9762,
+      "bytes": 927536,
+      "sha256": "a1e107ec4c2c62ce8cad86f750a7f6f9f2065c691dc6f88fce39667d3f4877eb",
+      "triangles": 1920,
+      "originalBounds": {
+        "min": [
+          -0.4949823339519269,
+          0.003039041730020065,
+          -1.4779469489149206
+        ],
+        "max": [
+          0.4949823339519269,
+          3.189960761834059,
+          2.4110726508904574
+        ]
+      },
+      "download": "https://static.poly.pizza/611d25c7-430f-4bb5-ab2c-d8f5f3cb9712.glb",
+      "libraryGroup": "animal-cartoon",
+      "thumbnail": "thumbnails/husky.png"
+    },
+    {
+      "id": "cow",
+      "name": "奶牛",
+      "category": "animal",
+      "file": "models/cow.glb",
+      "source": "https://poly.pizza/m/5XSc2Fka3F",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/CC0-1.0.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "Armature|Death",
+          "duration": 1.25
+        },
+        {
+          "name": "Armature|Idle",
+          "duration": 6.25
+        },
+        {
+          "name": "Armature|Jump",
+          "duration": 1.7083333730697632
+        },
+        {
+          "name": "Armature|Run",
+          "duration": 1.4166666269302368
+        },
+        {
+          "name": "Armature|Walk",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Armature|WalkSlow",
+          "duration": 2.0833332538604736
+        }
+      ],
+      "defaultHeight": 1.5,
+      "modelSize": 2.6728,
+      "bytes": 331280,
+      "sha256": "5bdb18da23e114c717a8739e7defc75b6bf3d1dd54e928c141a0286bf14aa4a8",
+      "triangles": 796,
+      "originalBounds": {
+        "min": [
+          -1.1178933093966683,
+          -0.06814504622265524,
+          -3.776618478314319
+        ],
+        "max": [
+          1.149120752935441,
+          5.079701486293976,
+          5.39620956444396
+        ]
+      },
+      "download": "https://static.poly.pizza/48c5f4af-07d6-4493-a261-0919967afe85.glb",
+      "libraryGroup": "animal-cartoon",
+      "thumbnail": "thumbnails/cow.png"
+    },
+    {
+      "id": "sedan",
+      "name": "轿车",
+      "category": "vehicle",
+      "file": "models/sedan.glb",
+      "source": "https://kenney.nl/assets/car-kit",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-car-kit.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 1.5,
+      "modelSize": 2.9423,
+      "bytes": 184600,
+      "sha256": "df2ffacd38e02e3053d1ccafc4dc48d044de3ae762920a3815edbfe7ed455be5",
+      "triangles": 2032,
+      "originalBounds": {
+        "min": [
+          -0.75,
+          -1.1920928966180355e-08,
+          -1.299999976158142
+        ],
+        "max": [
+          0.75,
+          1.299999976158142,
+          1.2499999761581422
+        ]
+      },
+      "libraryGroup": "vehicle",
+      "thumbnail": "thumbnails/sedan.png"
+    },
+    {
+      "id": "suv",
+      "name": "SUV",
+      "category": "vehicle",
+      "file": "models/suv.glb",
+      "source": "https://kenney.nl/assets/car-kit",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-car-kit.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 1.8,
+      "modelSize": 3.7385,
+      "bytes": 219948,
+      "sha256": "c6446aad5173f89aa1b8a61fd72fb203879cc7bba0faf659814c9a4c3c691428",
+      "triangles": 2474,
+      "originalBounds": {
+        "min": [
+          -0.75,
+          -1.1920928966180355e-08,
+          -1.3499999305371886
+        ],
+        "max": [
+          0.75,
+          1.3000000238418579,
+          1.350000023841855
+        ]
+      },
+      "libraryGroup": "vehicle",
+      "thumbnail": "thumbnails/suv.png"
+    },
+    {
+      "id": "van",
+      "name": "面包车",
+      "category": "vehicle",
+      "file": "models/van.glb",
+      "source": "https://kenney.nl/assets/car-kit",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-car-kit.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 2,
+      "modelSize": 4.0741,
+      "bytes": 188048,
+      "sha256": "b59efddda6c689408fb9b27c5d621d0458e0a24b03706049bd398b8de0527343",
+      "triangles": 2082,
+      "originalBounds": {
+        "min": [
+          -0.75,
+          -1.1920928966180355e-08,
+          -1.4000001192092895
+        ],
+        "max": [
+          0.75,
+          1.349999976158142,
+          1.3500001192092896
+        ]
+      },
+      "libraryGroup": "vehicle",
+      "thumbnail": "thumbnails/van.png"
+    },
+    {
+      "id": "truck",
+      "name": "货车",
+      "category": "vehicle",
+      "file": "models/truck.glb",
+      "source": "https://kenney.nl/assets/car-kit",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-car-kit.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 2.8,
+      "modelSize": 6.3538,
+      "bytes": 188744,
+      "sha256": "ab3a14621adaeac01e8d78877b241fb0a6c6a1a4d333c9cf311a33cff71366bc",
+      "triangles": 2082,
+      "originalBounds": {
+        "min": [
+          -0.75,
+          -1.1920928966180355e-08,
+          -1.4999997854232787
+        ],
+        "max": [
+          0.75,
+          1.299999976158142,
+          1.449999785423279
+        ]
+      },
+      "libraryGroup": "vehicle",
+      "thumbnail": "thumbnails/truck.png"
+    },
+    {
+      "id": "building-type-a",
+      "name": "独栋房屋 A",
+      "category": "building",
+      "file": "models/building-type-a.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 3.2,
+      "modelSize": 4.9908,
+      "bytes": 110440,
+      "sha256": "c9a2751a753d178577580f5ccc62944ad8f9252564e758e31e3fb9e5ed15c72b",
+      "triangles": 1174,
+      "originalBounds": {
+        "min": [
+          -0.6499999761581421,
+          0,
+          -0.5140689015388489
+        ],
+        "max": [
+          0.6499999761581421,
+          0.8335409760475159,
+          0.5140689015388489
+        ]
+      },
+      "libraryGroup": "building",
+      "thumbnail": "thumbnails/building-type-a.png"
+    },
+    {
+      "id": "building-type-d",
+      "name": "独栋房屋 B",
+      "category": "building",
+      "file": "models/building-type-d.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 4.5,
+      "modelSize": 6.3868,
+      "bytes": 159204,
+      "sha256": "5177ec032795b47bef9c506284265941a55a13906cfd14e681c63e2f2afbee00",
+      "triangles": 1757,
+      "originalBounds": {
+        "min": [
+          -0.8781901597976685,
+          0,
+          -0.5139999985694885
+        ],
+        "max": [
+          0.8781901597976685,
+          1.2375000715255737,
+          0.5139999985694885
+        ]
+      },
+      "libraryGroup": "building",
+      "thumbnail": "thumbnails/building-type-d.png"
+    },
+    {
+      "id": "building-type-h",
+      "name": "平层房屋",
+      "category": "building",
+      "file": "models/building-type-h.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 3,
+      "modelSize": 5.2881,
+      "bytes": 77200,
+      "sha256": "1b2573dd4164efeaa1225fe6b0d563e726e8a2d0b65bc718321602324bfd246e",
+      "triangles": 770,
+      "originalBounds": {
+        "min": [
+          -0.6499999761581421,
+          0,
+          -0.4580000042915344
+        ],
+        "max": [
+          0.6499999761581421,
+          0.7374999523162842,
+          0.4580000042915344
+        ]
+      },
+      "libraryGroup": "building",
+      "thumbnail": "thumbnails/building-type-h.png"
+    },
+    {
+      "id": "tree-large",
+      "name": "大树",
+      "category": "environment",
+      "file": "models/tree-large.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 4,
+      "modelSize": 4.0,
+      "bytes": 17644,
+      "sha256": "79a3571badd86d9fdc60d77e1be5162c9b6aea285217851e16d7048d0a62f082",
+      "triangles": 42,
+      "originalBounds": {
+        "min": [
+          -0.10522209107875824,
+          0,
+          -0.12149999290704727
+        ],
+        "max": [
+          0.10522209107875824,
+          0.7669999599456787,
+          0.12149999290704727
+        ]
+      },
+      "libraryGroup": "environment",
+      "thumbnail": "thumbnails/tree-large.png"
+    },
+    {
+      "id": "tree-small",
+      "name": "小树",
+      "category": "environment",
+      "file": "models/tree-small.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 2.5,
+      "modelSize": 2.5,
+      "bytes": 17644,
+      "sha256": "7693c25b69980f9ecaa959bddd57e12aea85e7b705bdad29d18fc969b4a2f969",
+      "triangles": 42,
+      "originalBounds": {
+        "min": [
+          -0.10522209107875824,
+          0,
+          -0.12149999290704727
+        ],
+        "max": [
+          0.10522209107875824,
+          0.5670000314712524,
+          0.12149999290704727
+        ]
+      },
+      "libraryGroup": "environment",
+      "thumbnail": "thumbnails/tree-small.png"
+    },
+    {
+      "id": "fence",
+      "name": "栅栏",
+      "category": "environment",
+      "file": "models/fence.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 1.2,
+      "modelSize": 2.1111,
+      "bytes": 21512,
+      "sha256": "80ad048268c3fb16de80b9adf756e91f937731d0a0e848c3e436d56b64befeb7",
+      "triangles": 88,
+      "originalBounds": {
+        "min": [
+          -0.23750001192092896,
+          0,
+          -0.03750000149011612
+        ],
+        "max": [
+          0.23750001192092896,
+          0.26999998092651367,
+          0.03750000149011612
+        ]
+      },
+      "libraryGroup": "environment",
+      "thumbnail": "thumbnails/fence.png"
+    },
+    {
+      "id": "path-long",
+      "name": "人行步道",
+      "category": "environment",
+      "file": "models/path-long.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 0.05,
+      "modelSize": 2.0,
+      "bytes": 14780,
+      "sha256": "13cd2509e8ae1db1d0c408abcd107709f3256a52673aa538bffa49d961e65490",
+      "triangles": 12,
+      "originalBounds": {
+        "min": [
+          -0.10000000149011612,
+          0,
+          -0.20000000298023224
+        ],
+        "max": [
+          0.10000000149011612,
+          0.009999999776482582,
+          0.20000000298023224
+        ]
+      },
+      "libraryGroup": "environment",
+      "thumbnail": "thumbnails/path-long.png"
+    },
+    {
+      "id": "planter",
+      "name": "花坛",
+      "category": "environment",
+      "file": "models/planter.glb",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-city-kit-suburban.txt",
+      "animated": false,
+      "animations": [],
+      "defaultHeight": 0.5,
+      "modelSize": 1.1292,
+      "bytes": 32200,
+      "sha256": "eab85fd04e2b8ed0b6fca072dfa621fc337a80ea5397ebd3a39afa660b71ba1d",
+      "triangles": 204,
+      "originalBounds": {
+        "min": [
+          -0.20000000298023224,
+          0,
+          -0.15057337284088135
+        ],
+        "max": [
+          0.20000000298023224,
+          0.17710953950881958,
+          0.1494266241788864
+        ]
+      },
+      "libraryGroup": "environment",
+      "thumbnail": "thumbnails/planter.png"
+    },
+    {
+      "id": "character-male-b",
+      "name": "男演员 · 多动作 B",
+      "category": "character",
+      "file": "models/character-male-b.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 2.0301,
+      "bytes": 255628,
+      "sha256": "d32681509ad00c22338172ead73febc0fbbf1a56be5e7e0cfed0c62f08d17050",
+      "triangles": 690,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.16286130011081695
+        ],
+        "max": [
+          0.3835841231341538,
+          0.6613250012397767,
+          0.22661081006620637
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-male-b.png"
+    },
+    {
+      "id": "character-male-d",
+      "name": "男演员 · 多动作 D",
+      "category": "character",
+      "file": "models/character-male-d.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.8601,
+      "bytes": 253484,
+      "sha256": "8488eeb59ca9233fc738699a6ffa02cc7f792032fb6678fbf2798e6e7eff4b50",
+      "triangles": 711,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.17236122438813933
+        ],
+        "max": [
+          0.3835841231341538,
+          0.7217615480422974,
+          0.16763879408930055
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-male-d.png"
+    },
+    {
+      "id": "character-male-e",
+      "name": "男演员 · 多动作 E",
+      "category": "character",
+      "file": "models/character-male-e.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.9861,
+      "bytes": 251000,
+      "sha256": "ea696cc80aefd8b4d38c374be1f44eaa1afa91b7b8b6d69a5a9984a445622213",
+      "triangles": 710,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.17236122438813933
+        ],
+        "max": [
+          0.3835841231341538,
+          0.6759665842056275,
+          0.16960524072740785
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-male-e.png"
+    },
+    {
+      "id": "character-male-f",
+      "name": "男演员 · 多动作 F",
+      "category": "character",
+      "file": "models/character-male-f.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.9998,
+      "bytes": 257680,
+      "sha256": "76888216868dc44315305332abcfe0ec1addf39ba66a800989ebb0923b082af0",
+      "triangles": 701,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.17236122438813933
+        ],
+        "max": [
+          0.3835841231341538,
+          0.6713249917030335,
+          0.16763863017652741
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-male-f.png"
+    },
+    {
+      "id": "character-female-b",
+      "name": "女演员 · 多动作 B",
+      "category": "character",
+      "file": "models/character-female-b.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.856,
+      "bytes": 260436,
+      "sha256": "7441782e15e10d69b08a06ac538202582d79e8235091fadd9f626554312c05d1",
+      "triangles": 742,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.2108834231844116
+        ],
+        "max": [
+          0.3835841231341538,
+          0.7233532900810242,
+          0.20763883044813386
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-female-b.png"
+    },
+    {
+      "id": "character-female-d",
+      "name": "女演员 · 多动作 D",
+      "category": "character",
+      "file": "models/character-female-d.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.75,
+      "bytes": 267056,
+      "sha256": "bac262aeaae0e11c4b16cf2f65c70781774d96833f55a27f6db13e0800d80f92",
+      "triangles": 797,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.29189149985219726
+        ],
+        "max": [
+          0.3835841231341538,
+          0.7755283946990967,
+          0.20763883044813386
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-female-d.png"
+    },
+    {
+      "id": "character-female-e",
+      "name": "女演员 · 多动作 E",
+      "category": "character",
+      "file": "models/character-female-e.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.8738,
+      "bytes": 256312,
+      "sha256": "ded17a6862c1a47bfe5a69324e195f94bf30e589c7238393b257c3546f457239",
+      "triangles": 756,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.3194228256693054
+        ],
+        "max": [
+          0.3835841231341538,
+          0.7164753909111023,
+          0.20763877084348908
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-female-e.png"
+    },
+    {
+      "id": "character-female-f",
+      "name": "女演员 · 多动作 F",
+      "category": "character",
+      "file": "models/character-female-f.glb",
+      "source": "https://kenney.nl/assets/mini-characters",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-mini-characters.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "static",
+          "duration": 0.10000000149011612
+        },
+        {
+          "name": "idle",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "walk",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "sprint",
+          "duration": 0.5
+        },
+        {
+          "name": "jump",
+          "duration": 0.5
+        },
+        {
+          "name": "fall",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "crouch",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "drive",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "die",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "pick-up",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "emote-yes",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "emote-no",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "holding-right",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-left",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-both",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "holding-right-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-left-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "holding-both-shoot",
+          "duration": 0.20000000298023224
+        },
+        {
+          "name": "attack-melee-right",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-melee-left",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "attack-kick-right",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "attack-kick-left",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "interact-right",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "interact-left",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "wheelchair-sit",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "wheelchair-look-left",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-look-right",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "wheelchair-move-forward",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-back",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-left",
+          "duration": 0.5
+        },
+        {
+          "name": "wheelchair-move-right",
+          "duration": 0.5
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.9998,
+      "bytes": 267784,
+      "sha256": "b2bcf0fd64c79358908a269104735119491c7bea58ee0bfd53ffada7981390c0",
+      "triangles": 788,
+      "originalBounds": {
+        "min": [
+          -0.3835841231341567,
+          1.0848045348121893e-07,
+          -0.23347335815429687
+        ],
+        "max": [
+          0.3835841231341538,
+          0.671325110912323,
+          0.20763877084348908
+        ]
+      },
+      "proportions": "stylized",
+      "proportionsNote": "卡通比例角色，非写实人体",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "libraryGroup": "character-cartoon",
+      "thumbnail": "thumbnails/character-female-f.png"
+    },
+    {
+      "id": "quaternius-performer",
+      "name": "成人动作示范人偶 · 46 片段",
+      "category": "character",
+      "file": "models/quaternius-performer.glb",
+      "source": "https://quaternius.com/packs/universalanimationlibrary.html",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-animation-library.txt",
+      "animated": true,
+      "rigged": true,
+      "animations": [
+        {
+          "name": "A_TPose",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Crouch_Fwd_Loop",
+          "duration": 2
+        },
+        {
+          "name": "Crouch_Idle_Loop",
+          "duration": 2.9166667461395264
+        },
+        {
+          "name": "Dance_Loop",
+          "duration": 1
+        },
+        {
+          "name": "Death01",
+          "duration": 2.375
+        },
+        {
+          "name": "Driving_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Fixing_Kneeling",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "Hit_Chest",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "Hit_Head",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "Idle_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Talking_Loop",
+          "duration": 2.9166667461395264
+        },
+        {
+          "name": "Idle_Torch_Loop",
+          "duration": 1.25
+        },
+        {
+          "name": "Interact",
+          "duration": 2
+        },
+        {
+          "name": "Jog_Fwd_Loop",
+          "duration": 0.9166666865348816
+        },
+        {
+          "name": "Jump_Land",
+          "duration": 1.25
+        },
+        {
+          "name": "Jump_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Jump_Start",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "PickUp_Table",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Pistol_Aim_Down",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Aim_Neutral",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Aim_Up",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Idle_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Pistol_Reload",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Pistol_Shoot",
+          "duration": 0.625
+        },
+        {
+          "name": "Punch_Cross",
+          "duration": 1
+        },
+        {
+          "name": "Punch_Enter",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Punch_Jab",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Push_Loop",
+          "duration": 2.6666667461395264
+        },
+        {
+          "name": "Roll",
+          "duration": 1.4583333730697632
+        },
+        {
+          "name": "Roll_RM",
+          "duration": 1.4583333730697632
+        },
+        {
+          "name": "Sitting_Enter",
+          "duration": 1.2916666269302368
+        },
+        {
+          "name": "Sitting_Exit",
+          "duration": 1
+        },
+        {
+          "name": "Sitting_Idle_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Sitting_Talking_Loop",
+          "duration": 2.9166667461395264
+        },
+        {
+          "name": "Spell_Simple_Enter",
+          "duration": 0.5
+        },
+        {
+          "name": "Spell_Simple_Exit",
+          "duration": 0.4166666567325592
+        },
+        {
+          "name": "Spell_Simple_Idle_Loop",
+          "duration": 2.0833332538604736
+        },
+        {
+          "name": "Spell_Simple_Shoot",
+          "duration": 0.5
+        },
+        {
+          "name": "Sprint_Loop",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Swim_Fwd_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Swim_Idle_Loop",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Sword_Attack",
+          "duration": 1.5
+        },
+        {
+          "name": "Sword_Attack_RM",
+          "duration": 1.5
+        },
+        {
+          "name": "Sword_Idle",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Walk_Formal_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Walk_Loop",
+          "duration": 1.3333333730697632
+        }
+      ],
+      "defaultHeight": 1.75,
+      "modelSize": 1.8608,
+      "bytes": 3232568,
+      "sha256": "6419fabae030357ef6d7e6953430d94b8e95e91b4640a74363de40f4d9678db7",
+      "triangles": 13743,
+      "originalBounds": {
+        "min": [
+          -0.9722271264854645,
+          0.0004613972351418963,
+          -0.1641539862977494
+        ],
+        "max": [
+          0.9722273576400408,
+          1.8291787138010085,
+          0.2054443471602482
+        ]
+      },
+      "proportions": "realistic",
+      "proportionsNote": "成人比例示范人偶，非照片级写实",
+      "modifications": "保留原生网格、骨架和全部动画，仅合并为离线自包含 GLB",
+      "limitations": "动作包含动态片段与静态姿态；只能在本骨架播放。含 RM 的片段有根运动，其余走位建议配合位置关键帧。",
+      "downloadMirror": "https://github.com/J-Ponzo/gltf-universal-animation-library/tree/e24c23cf2a1323488a3faa226ea7ea21f644b73e",
+      "mirrorCommit": "e24c23cf2a1323488a3faa226ea7ea21f644b73e",
+      "defaultClip": "Idle_Loop",
+      "libraryGroup": "character-realistic",
+      "thumbnail": "thumbnails/quaternius-performer.png"
+    },
+    {
+      "id": "adult-female-casual",
+      "name": "女演员 · 休闲装",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "female",
+      "file": "models/adult-female-casual.glb",
+      "modelSize": 1.7,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.75
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.5833333333333333
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.2916666666666667
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 2.0833333333333335
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-female-casual.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularwomen.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Women - April 2022/Individual Characters/glTF/Casual.gltf",
+      "sourceGitSha": "0678c376512c8d0ca1e93a4a050172cae20126ff",
+      "sha256": "2c1d4770eaec33ac4471784f4457d420cebd8fe58baded96e7f849acb7fc968d",
+      "bytes": 1668760,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-female-formal",
+      "name": "女演员 · 连衣裙",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "female",
+      "file": "models/adult-female-formal.glb",
+      "modelSize": 1.7,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.75
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.5833333333333333
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.2916666666666667
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 2.0833333333333335
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-female-formal.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularwomen.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Women - April 2022/Individual Characters/glTF/Formal.gltf",
+      "sourceGitSha": "990016e9a8de964712a4f5f28ff417b0538a248c",
+      "sha256": "55854a93ec523ddb5c7d3d588d89ee915044d202a4718c22947415d8a3f9b169",
+      "bytes": 1631728,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-female-suit",
+      "name": "女演员 · 西装",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "female",
+      "file": "models/adult-female-suit.glb",
+      "modelSize": 1.7,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.75
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.5833333333333333
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.2916666666666667
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 2.0833333333333335
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-female-suit.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularwomen.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Women - April 2022/Individual Characters/glTF/Suit.gltf",
+      "sourceGitSha": "90774ed30e0bd4713a0b1c9c49c6653f3c8f312c",
+      "sha256": "e38ab3e8772e6ebd7512b506999b7969dd4f23b6a13bec884f6e130733a304b5",
+      "bytes": 1675972,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-female-worker",
+      "name": "女演员 · 工装",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "female",
+      "file": "models/adult-female-worker.glb",
+      "modelSize": 1.7,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.75
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.5833333333333333
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.2916666666666667
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 2.0833333333333335
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-female-worker.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularwomen.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Women - April 2022/Individual Characters/glTF/Worker.gltf",
+      "sourceGitSha": "a876c4a0fe68c2ffc706e2cde48b68dc500427ba",
+      "sha256": "a07def9d0f156543e3af898c646e0f76f862a6340b64f31215fec45673bc6829",
+      "bytes": 1638772,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-female-adventurer",
+      "name": "女演员 · 冒险装",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "female",
+      "file": "models/adult-female-adventurer.glb",
+      "modelSize": 1.7,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.75
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.7083333333333334
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 2.0833333333333335
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.5833333333333333
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 1.1666666666666667
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 1
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 1.0416666666666667
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.2916666666666667
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 2.0833333333333335
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-female-adventurer.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularwomen.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Women - April 2022/Individual Characters/glTF/Adventurer.gltf",
+      "sourceGitSha": "360f7653a875945f97818aa60416f0ddb7ec2c42",
+      "sha256": "ad17f9c95a211dbf8431684a39a77cce313e0ed2159d541e597e1e746a7b4d24",
+      "bytes": 1718640,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-male-casual-hoodie",
+      "name": "男演员 · 连帽衫",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "male",
+      "file": "models/adult-male-casual-hoodie.glb",
+      "modelSize": 1.8,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.0666666666666667
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.6
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.5666666666666667
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.5666666666666667
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.6666666666666666
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.2666666666666666
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 0.9333333333333333
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 0.9333333333333333
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.0333333333333334
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 1.6666666666666667
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-male-casual-hoodie.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Men- Feb 2022/Individual Characters/glTF/Casual_Hoodie.gltf",
+      "sourceGitSha": "70878aec4464137c6c92ec99a74ef79578d29480",
+      "sha256": "0daedafd0cfdad45d6507fac205bec9058001c9d723a10bf780c86e734199695",
+      "bytes": 1647148,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-male-suit",
+      "name": "男演员 · 西装",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "male",
+      "file": "models/adult-male-suit.glb",
+      "modelSize": 1.8,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.0666666666666667
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.6
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.5666666666666667
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.5666666666666667
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.6666666666666666
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.2666666666666666
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 0.9333333333333333
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 0.9333333333333333
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.0333333333333334
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 1.6666666666666667
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-male-suit.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Men- Feb 2022/Individual Characters/glTF/Suit.gltf",
+      "sourceGitSha": "87188c67defa72f5d4fd6b16ecf23caca268d24a",
+      "sha256": "9d1ba0891d12e181331eb5e9be54c772c982f912fec8997e1ee8fc6ecc91c977",
+      "bytes": 1803568,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "adult-male-worker",
+      "name": "男演员 · 工装",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "visualStyle": "low-poly",
+      "gender": "male",
+      "file": "models/adult-male-worker.glb",
+      "modelSize": 1.8,
+      "rigged": true,
+      "boneCount": 62,
+      "animated": true,
+      "animations": [
+        {
+          "name": "Adult_Death",
+          "duration": 1.0666666666666667
+        },
+        {
+          "name": "Adult_Gun_Shoot",
+          "duration": 0.6
+        },
+        {
+          "name": "Adult_HitRecieve",
+          "duration": 0.5666666666666667
+        },
+        {
+          "name": "Adult_HitRecieve_2",
+          "duration": 0.5666666666666667
+        },
+        {
+          "name": "Adult_Idle",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun_Pointing",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Gun_Shoot",
+          "duration": 0.6666666666666666
+        },
+        {
+          "name": "Adult_Idle_Neutral",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Idle_Sword",
+          "duration": 1.6666666666666667
+        },
+        {
+          "name": "Adult_Interact",
+          "duration": 1.2666666666666666
+        },
+        {
+          "name": "Adult_Kick_Left",
+          "duration": 0.9333333333333333
+        },
+        {
+          "name": "Adult_Kick_Right",
+          "duration": 0.9333333333333333
+        },
+        {
+          "name": "Adult_Punch_Left",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Punch_Right",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Roll",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Run",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Back",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Run_Left",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Right",
+          "duration": 0.8
+        },
+        {
+          "name": "Adult_Run_Shoot",
+          "duration": 0.8333333333333334
+        },
+        {
+          "name": "Adult_Sword_Slash",
+          "duration": 1.0333333333333334
+        },
+        {
+          "name": "Adult_Walk",
+          "duration": 1.3333333333333333
+        },
+        {
+          "name": "Adult_Wave",
+          "duration": 1.6666666666666667
+        }
+      ],
+      "defaultClip": "Adult_Idle_Neutral",
+      "thumbnail": "thumbnails/adult-male-worker.png",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-modular-adults.txt",
+      "source": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+      "downloadMirror": "https://github.com/agentkaerf/FreeModels/tree/db3df04d1e4714298a09510b26fb6de6645138a2",
+      "sourcePath": "Ultimate Modular Men- Feb 2022/Individual Characters/glTF/Worker.gltf",
+      "sourceGitSha": "9f91bffab489f315dccc9f5a26f0b270f9c65027",
+      "sha256": "6c1f2b18d3d03441e4fddf18ee200337ab02fb35cac191e1674449ada738465f",
+      "bytes": 1541764,
+      "description": "成人比例、低多边形风格；非照片级写实。保留原生骨架和 24 个动作，各角色主要共用同一套表演。"
+    },
+    {
+      "id": "female-joint-mannequin",
+      "name": "成年女性 · 关节人偶",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "gender": "female",
+      "adultBase": true,
+      "file": "models/female-joint-mannequin.glb",
+      "thumbnail": "thumbnails/female-joint-mannequin.png",
+      "modelSize": 1.72,
+      "rigged": true,
+      "boneCount": 65,
+      "animated": true,
+      "animations": [
+        {
+          "name": "A_TPose",
+          "duration": 2.5
+        },
+        {
+          "name": "Crouch_Fwd_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "Crouch_Idle_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "Dance_Loop",
+          "duration": 1.0
+        },
+        {
+          "name": "Death01",
+          "duration": 2.4000000953674316
+        },
+        {
+          "name": "Driving_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Fixing_Kneeling",
+          "duration": 5.199999809265137
+        },
+        {
+          "name": "Hit_Chest",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "Hit_Head",
+          "duration": 0.4333333373069763
+        },
+        {
+          "name": "Idle_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Talking_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "Idle_Torch_Loop",
+          "duration": 1.2666666507720947
+        },
+        {
+          "name": "Interact",
+          "duration": 2.0
+        },
+        {
+          "name": "Jog_Fwd_Loop",
+          "duration": 0.9333333373069763
+        },
+        {
+          "name": "Jump_Land",
+          "duration": 1.2666666507720947
+        },
+        {
+          "name": "Jump_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Jump_Start",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "PickUp_Table",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Pistol_Aim_Down",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Aim_Neutral",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Aim_Up",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Idle_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Pistol_Reload",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Pistol_Shoot",
+          "duration": 0.6333333253860474
+        },
+        {
+          "name": "Punch_Cross",
+          "duration": 1.0
+        },
+        {
+          "name": "Punch_Jab",
+          "duration": 0.8666666746139526
+        },
+        {
+          "name": "Push_Loop",
+          "duration": 2.6666667461395264
+        },
+        {
+          "name": "Roll",
+          "duration": 1.4666666984558105
+        },
+        {
+          "name": "Sitting_Enter",
+          "duration": 1.2999999523162842
+        },
+        {
+          "name": "Sitting_Exit",
+          "duration": 1.0333333015441895
+        },
+        {
+          "name": "Sitting_Idle_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Sitting_Talking_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "Spell_Simple_Enter",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "Spell_Simple_Exit",
+          "duration": 0.4333333373069763
+        },
+        {
+          "name": "Spell_Simple_Idle_Loop",
+          "duration": 2.0999999046325684
+        },
+        {
+          "name": "Spell_Simple_Shoot",
+          "duration": 0.5
+        },
+        {
+          "name": "Sprint_Loop",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Swim_Fwd_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Swim_Idle_Loop",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Sword_Attack",
+          "duration": 1.5333333015441895
+        },
+        {
+          "name": "Sword_Idle",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Walk_Formal_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Walk_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Chest_Open",
+          "duration": 1.3666666746139526
+        },
+        {
+          "name": "ClimbUp_1m_RM",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Consume",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Farm_Harvest",
+          "duration": 2.5
+        },
+        {
+          "name": "Farm_PlantSeed",
+          "duration": 2.7666666507720947
+        },
+        {
+          "name": "Farm_Watering",
+          "duration": 3.799999952316284
+        },
+        {
+          "name": "Hit_Knockback",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Hit_Knockback_RM",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Idle_FoldArms_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Lantern_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_No_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Rail_Call",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Rail_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Shield_Break",
+          "duration": 1.0666667222976685
+        },
+        {
+          "name": "Idle_Shield_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_TalkingPhone_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "LayToIdle",
+          "duration": 1.5333333015441895
+        },
+        {
+          "name": "Melee_Hook",
+          "duration": 0.46666666865348816
+        },
+        {
+          "name": "Melee_Hook_Rec",
+          "duration": 0.6000000238418579
+        },
+        {
+          "name": "NinjaJump_Idle_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "NinjaJump_Land",
+          "duration": 1.2666666507720947
+        },
+        {
+          "name": "NinjaJump_Start",
+          "duration": 0.9666666388511658
+        },
+        {
+          "name": "OverhandThrow",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Shield_Dash_RM",
+          "duration": 1.100000023841858
+        },
+        {
+          "name": "Shield_OneShot",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Slide_Exit",
+          "duration": 0.5
+        },
+        {
+          "name": "Slide_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "Slide_Start",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Sword_Block",
+          "duration": 1.2333333492279053
+        },
+        {
+          "name": "Sword_Dash_RM",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "Sword_Regular_A",
+          "duration": 0.4333333373069763
+        },
+        {
+          "name": "Sword_Regular_A_Rec",
+          "duration": 0.9666666388511658
+        },
+        {
+          "name": "Sword_Regular_B",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "Sword_Regular_B_Rec",
+          "duration": 1.0333333015441895
+        },
+        {
+          "name": "Sword_Regular_C",
+          "duration": 2.0
+        },
+        {
+          "name": "Sword_Regular_Combo",
+          "duration": 3.0
+        },
+        {
+          "name": "TreeChopping_Loop",
+          "duration": 0.9666666388511658
+        },
+        {
+          "name": "Walk_Carry_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "Yes",
+          "duration": 2.5
+        },
+        {
+          "name": "Zombie_Idle_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Zombie_Scratch",
+          "duration": 1.7999999523162842
+        },
+        {
+          "name": "Zombie_Walk_Fwd_Loop",
+          "duration": 1.3333333730697632
+        }
+      ],
+      "defaultClip": "Idle_Loop",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-female-motion.txt",
+      "source": "https://quaternius.com/packs/universalanimationlibrary2.html",
+      "sha256": "1408281b568ccb9bfc1fa4c666f2a3c1443736b5403b2266f1114be63a26b4ed",
+      "description": "成年女性，无服装中性白模，已适配 85 个动作/姿态。含根位移片段以 RM 标注；不是独立的 85 套动作来源。"
+    },
+    {
+      "id": "female-anatomy-mannequin",
+      "name": "成年女性 · 基础人体",
+      "category": "character",
+      "libraryGroup": "character-realistic",
+      "proportions": "realistic",
+      "gender": "female",
+      "adultBase": true,
+      "file": "models/female-anatomy-mannequin.glb",
+      "thumbnail": "thumbnails/female-anatomy-mannequin.png",
+      "modelSize": 1.72,
+      "rigged": true,
+      "boneCount": 65,
+      "animated": true,
+      "animations": [
+        {
+          "name": "A_TPose",
+          "duration": 2.5
+        },
+        {
+          "name": "Crouch_Fwd_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "Crouch_Idle_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "Dance_Loop",
+          "duration": 1.0
+        },
+        {
+          "name": "Death01",
+          "duration": 2.4000000953674316
+        },
+        {
+          "name": "Driving_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Fixing_Kneeling",
+          "duration": 5.199999809265137
+        },
+        {
+          "name": "Hit_Chest",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "Hit_Head",
+          "duration": 0.4333333373069763
+        },
+        {
+          "name": "Idle_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Talking_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "Idle_Torch_Loop",
+          "duration": 1.2666666507720947
+        },
+        {
+          "name": "Interact",
+          "duration": 2.0
+        },
+        {
+          "name": "Jog_Fwd_Loop",
+          "duration": 0.9333333373069763
+        },
+        {
+          "name": "Jump_Land",
+          "duration": 1.2666666507720947
+        },
+        {
+          "name": "Jump_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Jump_Start",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "PickUp_Table",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Pistol_Aim_Down",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Aim_Neutral",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Aim_Up",
+          "duration": 0.1666666716337204
+        },
+        {
+          "name": "Pistol_Idle_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Pistol_Reload",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Pistol_Shoot",
+          "duration": 0.6333333253860474
+        },
+        {
+          "name": "Punch_Cross",
+          "duration": 1.0
+        },
+        {
+          "name": "Punch_Jab",
+          "duration": 0.8666666746139526
+        },
+        {
+          "name": "Push_Loop",
+          "duration": 2.6666667461395264
+        },
+        {
+          "name": "Roll",
+          "duration": 1.4666666984558105
+        },
+        {
+          "name": "Sitting_Enter",
+          "duration": 1.2999999523162842
+        },
+        {
+          "name": "Sitting_Exit",
+          "duration": 1.0333333015441895
+        },
+        {
+          "name": "Sitting_Idle_Loop",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Sitting_Talking_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "Spell_Simple_Enter",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "Spell_Simple_Exit",
+          "duration": 0.4333333373069763
+        },
+        {
+          "name": "Spell_Simple_Idle_Loop",
+          "duration": 2.0999999046325684
+        },
+        {
+          "name": "Spell_Simple_Shoot",
+          "duration": 0.5
+        },
+        {
+          "name": "Sprint_Loop",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Swim_Fwd_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Swim_Idle_Loop",
+          "duration": 3.3333332538604736
+        },
+        {
+          "name": "Sword_Attack",
+          "duration": 1.5333333015441895
+        },
+        {
+          "name": "Sword_Idle",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Walk_Formal_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Walk_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Chest_Open",
+          "duration": 1.3666666746139526
+        },
+        {
+          "name": "ClimbUp_1m_RM",
+          "duration": 0.6666666865348816
+        },
+        {
+          "name": "Consume",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Farm_Harvest",
+          "duration": 2.5
+        },
+        {
+          "name": "Farm_PlantSeed",
+          "duration": 2.7666666507720947
+        },
+        {
+          "name": "Farm_Watering",
+          "duration": 3.799999952316284
+        },
+        {
+          "name": "Hit_Knockback",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Hit_Knockback_RM",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Idle_FoldArms_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Lantern_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_No_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Rail_Call",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Rail_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_Shield_Break",
+          "duration": 1.0666667222976685
+        },
+        {
+          "name": "Idle_Shield_Loop",
+          "duration": 2.5
+        },
+        {
+          "name": "Idle_TalkingPhone_Loop",
+          "duration": 2.933333396911621
+        },
+        {
+          "name": "LayToIdle",
+          "duration": 1.5333333015441895
+        },
+        {
+          "name": "Melee_Hook",
+          "duration": 0.46666666865348816
+        },
+        {
+          "name": "Melee_Hook_Rec",
+          "duration": 0.6000000238418579
+        },
+        {
+          "name": "NinjaJump_Idle_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "NinjaJump_Land",
+          "duration": 1.2666666507720947
+        },
+        {
+          "name": "NinjaJump_Start",
+          "duration": 0.9666666388511658
+        },
+        {
+          "name": "OverhandThrow",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Shield_Dash_RM",
+          "duration": 1.100000023841858
+        },
+        {
+          "name": "Shield_OneShot",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Slide_Exit",
+          "duration": 0.5
+        },
+        {
+          "name": "Slide_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "Slide_Start",
+          "duration": 0.8333333134651184
+        },
+        {
+          "name": "Sword_Block",
+          "duration": 1.2333333492279053
+        },
+        {
+          "name": "Sword_Dash_RM",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "Sword_Regular_A",
+          "duration": 0.4333333373069763
+        },
+        {
+          "name": "Sword_Regular_A_Rec",
+          "duration": 0.9666666388511658
+        },
+        {
+          "name": "Sword_Regular_B",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "Sword_Regular_B_Rec",
+          "duration": 1.0333333015441895
+        },
+        {
+          "name": "Sword_Regular_C",
+          "duration": 2.0
+        },
+        {
+          "name": "Sword_Regular_Combo",
+          "duration": 3.0
+        },
+        {
+          "name": "TreeChopping_Loop",
+          "duration": 0.9666666388511658
+        },
+        {
+          "name": "Walk_Carry_Loop",
+          "duration": 2.0
+        },
+        {
+          "name": "Yes",
+          "duration": 2.5
+        },
+        {
+          "name": "Zombie_Idle_Loop",
+          "duration": 1.3333333730697632
+        },
+        {
+          "name": "Zombie_Scratch",
+          "duration": 1.7999999523162842
+        },
+        {
+          "name": "Zombie_Walk_Fwd_Loop",
+          "duration": 1.3333333730697632
+        }
+      ],
+      "defaultClip": "Idle_Loop",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-female-motion.txt",
+      "source": "https://quaternius.com/packs/universalbasecharacters.html",
+      "sha256": "926020fff0d8afa8e16bdead048900b4808329fb1c658cb735c669057c7ee5f5",
+      "description": "成年女性，无服装中性白模，已适配 85 个动作/姿态。含根位移片段以 RM 标注；不是独立的 85 套动作来源。"
+    },
+    {
+      "id": "furniture-table",
+      "name": "长方餐桌",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-table.glb",
+      "thumbnail": "thumbnails/furniture-table.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/table.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "ff1a94498d023957f4bc3ff6f55a7a82977d336dbf01a573b3364f03afe5ff61",
+      "bytes": 8196,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.9573,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.76
+    },
+    {
+      "id": "furniture-tableRound",
+      "name": "圆桌",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-tableRound.glb",
+      "thumbnail": "thumbnails/furniture-tableRound.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/tableRound.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "f8daea9124a542a00b7bdacfddac82dc468573d43e44d7b54dd6316e9695754b",
+      "bytes": 6444,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.6579,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.76
+    },
+    {
+      "id": "furniture-tableCoffee",
+      "name": "长方茶几",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-tableCoffee.glb",
+      "thumbnail": "thumbnails/furniture-tableCoffee.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/tableCoffee.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "8ed57bd15369eecac5b3e45d4eb9d4d087e5b17189594e07426fc37934e2e88c",
+      "bytes": 8256,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.207,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.42
+    },
+    {
+      "id": "furniture-tableCoffeeSquare",
+      "name": "方形茶几",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-tableCoffeeSquare.glb",
+      "thumbnail": "thumbnails/furniture-tableCoffeeSquare.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/tableCoffeeSquare.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "4840c52d50bf0a3fc18203db89d98772b5ced33fc8138f939383da567a6ce8fb",
+      "bytes": 8276,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.7304,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.42
+    },
+    {
+      "id": "furniture-desk",
+      "name": "书桌",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-desk.glb",
+      "thumbnail": "thumbnails/furniture-desk.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/desk.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "c824a727eb44967b803714902ff4aa094eaecf0702c566a8d9e49828b7724348",
+      "bytes": 15048,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.4521,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.76
+    },
+    {
+      "id": "furniture-deskCorner",
+      "name": "转角书桌",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-deskCorner.glb",
+      "thumbnail": "thumbnails/furniture-deskCorner.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/deskCorner.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "7b0a8f9577c869c5804cfb456fb666da1224218aa33ffec42c73d23756d2b445",
+      "bytes": 17984,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.9266,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.76
+    },
+    {
+      "id": "furniture-chair",
+      "name": "木椅",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-chair.glb",
+      "thumbnail": "thumbnails/furniture-chair.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/chair.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "c8a11eec93e89e31250ba91afc1b8d56c3bec7ae86640fd1239f595ff4180883",
+      "bytes": 10756,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.9,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.9
+    },
+    {
+      "id": "furniture-chairCushion",
+      "name": "软垫餐椅",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-chairCushion.glb",
+      "thumbnail": "thumbnails/furniture-chairCushion.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/chairCushion.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "33544228984857f2cb502b58452fed72157335f9b1caf29e96da5c9094c53fdc",
+      "bytes": 12588,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.9,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.9
+    },
+    {
+      "id": "furniture-chairDesk",
+      "name": "办公椅",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-chairDesk.glb",
+      "thumbnail": "thumbnails/furniture-chairDesk.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/chairDesk.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "46406619186034cbe92b19b79a5f1a8e3f442a17a70a7524ef2c0ad0f35095c6",
+      "bytes": 39016,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 1.1
+    },
+    {
+      "id": "furniture-chairRounded",
+      "name": "圆背椅",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-chairRounded.glb",
+      "thumbnail": "thumbnails/furniture-chairRounded.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/chairRounded.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "53f4933ec547179c499f04dbda1231cf44b83ec82c7f4ab981cdf680aee5c973",
+      "bytes": 17156,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.9,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.9
+    },
+    {
+      "id": "furniture-stoolBar",
+      "name": "圆面高脚凳",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-stoolBar.glb",
+      "thumbnail": "thumbnails/furniture-stoolBar.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/stoolBar.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "a86167a9f92401a61fec7e509ad089ecc552d0f299743add3aeb919acb24e341",
+      "bytes": 11816,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.75,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.75
+    },
+    {
+      "id": "furniture-stoolBarSquare",
+      "name": "方形高脚凳",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-stoolBarSquare.glb",
+      "thumbnail": "thumbnails/furniture-stoolBarSquare.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/stoolBarSquare.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "a7e1099d64eb35416d4d8c9b16921ef12ae7c1c1e6fff5ea75f3ae19cc934a8b",
+      "bytes": 9784,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.75,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.75
+    },
+    {
+      "id": "furniture-bench",
+      "name": "木质长凳",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-bench.glb",
+      "thumbnail": "thumbnails/furniture-bench.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/bench.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "ba05a6d23a5a5a44da016757632070e47ff7587ce10e2f6d6d52328b4cf5489b",
+      "bytes": 10756,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.45,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.45
+    },
+    {
+      "id": "furniture-benchCushionLow",
+      "name": "软垫矮凳",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-benchCushionLow.glb",
+      "thumbnail": "thumbnails/furniture-benchCushionLow.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/benchCushionLow.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "d1fac209eae2ea7393beefa4932dacb54d500e8f9932a1b17d2a842527df1b2c",
+      "bytes": 10268,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.882,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.42
+    },
+    {
+      "id": "furniture-loungeChair",
+      "name": "单人沙发",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-loungeChair.glb",
+      "thumbnail": "thumbnails/furniture-loungeChair.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/loungeChair.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "ddfe6bc4b3451bca61666d7b614552d6ed2a03d82fc76244b72ae3155874dc6c",
+      "bytes": 9648,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.9054,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.85
+    },
+    {
+      "id": "furniture-loungeSofa",
+      "name": "双人沙发",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-loungeSofa.glb",
+      "thumbnail": "thumbnails/furniture-loungeSofa.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/loungeSofa.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "1886b811c0d3ad0d8525a4fd43adf4112c497c8e0ed906f06877ca3517f4c7dd",
+      "bytes": 9644,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.8109,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.85
+    },
+    {
+      "id": "furniture-loungeSofaLong",
+      "name": "三人沙发",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-loungeSofaLong.glb",
+      "thumbnail": "thumbnails/furniture-loungeSofaLong.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/loungeSofaLong.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "452df1c862f97781615e2c1c832913b48cf6c6f011d3260dc023ff3f117cc9d1",
+      "bytes": 13112,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.8109,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.85
+    },
+    {
+      "id": "furniture-bedSingle",
+      "name": "单人床",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-bedSingle.glb",
+      "thumbnail": "thumbnails/furniture-bedSingle.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/bedSingle.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "41128adeda31527ea90dfbb8229059461149c5a8304de2d47c098d0e43210cc2",
+      "bytes": 18636,
+      "animated": false,
+      "animations": [],
+      "modelSize": 2.4,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.8
+    },
+    {
+      "id": "furniture-bedDouble",
+      "name": "双人床",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-bedDouble.glb",
+      "thumbnail": "thumbnails/furniture-bedDouble.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/bedDouble.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "d86dd6d0b85b57609932b3f420841183f1ac0b22e60ef4fcacb3164c80166f2d",
+      "bytes": 23368,
+      "animated": false,
+      "animations": [],
+      "modelSize": 2.4,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.8
+    },
+    {
+      "id": "furniture-bookcaseOpen",
+      "name": "开放书架",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-bookcaseOpen.glb",
+      "thumbnail": "thumbnails/furniture-bookcaseOpen.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/bookcaseOpen.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "750702218d68c062b15dfef6ab06a4014d1cfa8bd05f02e57c53b7e13bec157c",
+      "bytes": 18020,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.8,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 1.8
+    },
+    {
+      "id": "furniture-cabinetBedDrawer",
+      "name": "床头柜",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-cabinetBedDrawer.glb",
+      "thumbnail": "thumbnails/furniture-cabinetBedDrawer.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/cabinetBedDrawer.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "5b5dc4ad555a539f92d5915f6c565f8f22f4ebe95d9c1fed9f4fa82c33a3f926",
+      "bytes": 16088,
+      "animated": false,
+      "animations": [],
+      "modelSize": 0.5559,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.55
+    },
+    {
+      "id": "furniture-cabinetTelevision",
+      "name": "电视柜",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-cabinetTelevision.glb",
+      "thumbnail": "thumbnails/furniture-cabinetTelevision.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/cabinetTelevision.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "811719593d676ff76f7b5904d52c845ce0396af2bc9a6a2636c4818ead320b99",
+      "bytes": 10524,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.4194,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 0.55
+    },
+    {
+      "id": "furniture-lampRoundFloor",
+      "name": "落地灯",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-lampRoundFloor.glb",
+      "thumbnail": "thumbnails/furniture-lampRoundFloor.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/lampRoundFloor.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "50fe1b5b588edf15bfa9cc880f71a02a4fda6036350b24733d0ef4de5cc5e908",
+      "bytes": 6600,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.65,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 1.65
+    },
+    {
+      "id": "furniture-coatRackStanding",
+      "name": "落地衣帽架",
+      "category": "furniture",
+      "libraryGroup": "furniture",
+      "file": "models/furniture-coatRackStanding.glb",
+      "thumbnail": "thumbnails/furniture-coatRackStanding.png",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "sourcePath": "Models/GLTF format/coatRackStanding.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-furniture.txt",
+      "sha256": "bdeb186f31e978bf46f36e9628c094e00f1ae44ba5b9a0b02482740284888910",
+      "bytes": 13288,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1.8,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。",
+      "recommendedHeight": 1.8
+    },
+    {
+      "id": "geometry-shape-cube",
+      "name": "正方体",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-cube.glb",
+      "thumbnail": "thumbnails/geometry-shape-cube.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-cube.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "987d4e44cb8dacbf2f9f83c9a839c6caaba61a8de32a4bea5852942ad6313522",
+      "bytes": 11596,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-cube-half",
+      "name": "扁长方体",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-cube-half.glb",
+      "thumbnail": "thumbnails/geometry-shape-cube-half.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-cube-half.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "6318ed9dcb46ef3fe4e9c7554dfb15706ff875d3f0c71c3225edc8c669ad4fd2",
+      "bytes": 11612,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-cube-rounded",
+      "name": "圆角方块",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-cube-rounded.glb",
+      "thumbnail": "thumbnails/geometry-shape-cube-rounded.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-cube-rounded.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "7485df168aec2f86d5bffe5a111f8f24647e0d08caafdcc19723a4ec012517df",
+      "bytes": 32596,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-cylinder",
+      "name": "圆柱体",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-cylinder.glb",
+      "thumbnail": "thumbnails/geometry-shape-cylinder.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-cylinder.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "e92f97fb16fe3e13af2c21583bdae0196506f20344efeb18ba155bbddd133077",
+      "bytes": 14016,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-cylinder-half",
+      "name": "矮圆柱",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-cylinder-half.glb",
+      "thumbnail": "thumbnails/geometry-shape-cylinder-half.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-cylinder-half.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "c1b1b07a7fe420c8035a334f908814a162be0f1645a8194775aa750408fcc2d2",
+      "bytes": 12576,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-hollow-cylinder",
+      "name": "空心圆柱",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-hollow-cylinder.glb",
+      "thumbnail": "thumbnails/geometry-shape-hollow-cylinder.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-hollow-cylinder.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "7206d0a078ac15f44c6c44c5eb7d71df14ad070e4245220b35dd07a86d989063",
+      "bytes": 17656,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-hexagon",
+      "name": "六棱柱",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-hexagon.glb",
+      "thumbnail": "thumbnails/geometry-shape-hexagon.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-hexagon.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "7b18cbf4a817c6f21c6d8e5be1e44758f792a42e20f42c05ad480619dee2be8d",
+      "bytes": 12296,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-hollow-hexagon",
+      "name": "空心六棱柱",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-hollow-hexagon.glb",
+      "thumbnail": "thumbnails/geometry-shape-hollow-hexagon.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-hollow-hexagon.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "a6eac523342e19f6219ab94b6903d37fccd244b9687b1bbdca472f14692cbf64",
+      "bytes": 14384,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-slope",
+      "name": "斜坡楔形",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-slope.glb",
+      "thumbnail": "thumbnails/geometry-shape-slope.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-slope.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "4aa99b3dbc5e14437939a63d035f5d693330b26322b2c34d43a4c3162f7d25cb",
+      "bytes": 11328,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-shape-triangular-prism",
+      "name": "三棱柱",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-shape-triangular-prism.glb",
+      "thumbnail": "thumbnails/geometry-shape-triangular-prism.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/shape-triangular-prism.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "78f53d628ab67f7f634a231f0b8144f61811f41b39b2df68761f61e93ccb2153",
+      "bytes": 11376,
+      "animated": false,
+      "animations": [],
+      "modelSize": 1,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-floor-thick",
+      "name": "加厚地板",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-floor-thick.glb",
+      "thumbnail": "thumbnails/geometry-floor-thick.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/floor-thick.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "663d8c8dc6aade8f1f0d5440e6a50876b32d74e6bfc61b505b9db2a9e3738070",
+      "bytes": 11616,
+      "animated": false,
+      "animations": [],
+      "modelSize": 2,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-stairs",
+      "name": "直梯台阶",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-stairs.glb",
+      "thumbnail": "thumbnails/geometry-stairs.png",
+      "source": "https://kenney.nl/assets/prototype-kit",
+      "sourcePath": "Models/GLB format/stairs.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/kenney-prototype.txt",
+      "sha256": "ac5ec89575257018ade4d1d25ae017b2314f716dc017612877ea5c0204cb81d7",
+      "bytes": 13392,
+      "animated": false,
+      "animations": [],
+      "modelSize": 2,
+      "description": "静态预演模型，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-sphere",
+      "name": "球体",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-sphere.glb",
+      "thumbnail": "thumbnails/geometry-sphere.png",
+      "author": "超级无敌导演画布",
+      "source": "本地程序化构建的标准几何体",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/basic-geometry.txt",
+      "sha256": "fd9dc7a0314d958df1d240edf661e57b1b4c3957249f5a559ca49cffdf782073",
+      "bytes": 24856,
+      "modelSize": 1,
+      "animated": false,
+      "animations": [],
+      "description": "标准基础几何体，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-cone",
+      "name": "圆锥体",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-cone.glb",
+      "thumbnail": "thumbnails/geometry-cone.png",
+      "author": "超级无敌导演画布",
+      "source": "本地程序化构建的标准几何体",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/basic-geometry.txt",
+      "sha256": "17c1c80afc079de77202a843a225daa9748a160d1426ec67a82b183baa62a3f9",
+      "bytes": 5628,
+      "modelSize": 1,
+      "animated": false,
+      "animations": [],
+      "description": "标准基础几何体，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-torus",
+      "name": "圆环",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-torus.glb",
+      "thumbnail": "thumbnails/geometry-torus.png",
+      "author": "超级无敌导演画布",
+      "source": "本地程序化构建的标准几何体",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/basic-geometry.txt",
+      "sha256": "51badd89c070f194c621bea483d5d635a3d35dacce288786710af6a94c1b1be5",
+      "bytes": 31192,
+      "modelSize": 1,
+      "animated": false,
+      "animations": [],
+      "description": "标准基础几何体，可移动、旋转、缩放及修改颜色。"
+    },
+    {
+      "id": "geometry-pyramid",
+      "name": "四棱锥",
+      "category": "geometry",
+      "libraryGroup": "geometry",
+      "file": "models/geometry-pyramid.glb",
+      "thumbnail": "thumbnails/geometry-pyramid.png",
+      "author": "超级无敌导演画布",
+      "source": "本地程序化构建的标准几何体",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/basic-geometry.txt",
+      "sha256": "de9a1bf06573e5ccfc6f470bbae26a55cda6a58be30e170596d56da443d063b5",
+      "bytes": 1808,
+      "modelSize": 1,
+      "animated": false,
+      "animations": [],
+      "description": "标准基础几何体，可移动、旋转、缩放及修改颜色。"
+    }
+  ],
+  "retiredAssets": [
+    {
+      "id": "adult-male-rigged",
+      "name": "成人比例男演员 · 骨骼白模",
+      "category": "character",
+      "file": "models/adult-male-rigged.glb",
+      "source": "https://quaternius.com/packs/universalbasecharacters.html",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-universal-base-characters.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "idle",
+          "label": "站立呼吸",
+          "duration": 3,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "walk",
+          "label": "原地走路",
+          "duration": 1.2000000476837158,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "run",
+          "label": "原地跑步",
+          "duration": 0.7200000286102295,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "wave",
+          "label": "挥手",
+          "duration": 2.4000000953674316,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "sit",
+          "label": "坐姿",
+          "duration": 3,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "cheer",
+          "label": "双手举起",
+          "duration": 2.4000000953674316,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        }
+      ],
+      "rigged": true,
+      "boneCount": 65,
+      "skinCount": 1,
+      "proportions": "realistic",
+      "proportionsNote": "成人基础人体比例，Superhero原型略理想化；非Q版、非照片级写实。",
+      "defaultHeight": 1.8,
+      "modelSize": 1.8389,
+      "bytes": 886772,
+      "sha256": "41499d8e5cf3d03f939c7f81478f67e866f417149b522741ed8744da6f5488ed",
+      "triangles": 14318,
+      "originalBounds": {
+        "min": [
+          -0.9294323991218112,
+          -0.009509849888516313,
+          -0.16345080095368408
+        ],
+        "max": [
+          0.9294324424934728,
+          1.8100766650860056,
+          0.12803739335794287
+        ]
+      },
+      "downloadMirror": "https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/tree/5821923af517ac5fdc82505faa92a0d575fc1b1a/Universal%20Base%20Characters%5BStandard%5D/Universal%20Base%20Characters%5BStandard%5D",
+      "mirrorCommit": "5821923af517ac5fdc82505faa92a0d575fc1b1a",
+      "sourceFile": "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+      "modifications": "保留原网格、骨架、蒙皮权重和参考姿态；原贴图替换为哑光材质；嵌入匹配本骨架的6种本地程序化基础预演动作。",
+      "limitations": "基础预演动作，非动作捕捉；走跑为原地循环，请配合位置关键帧移动。坐姿不含椅子；不同骨架动作不能直接互换。",
+      "animationSource": "镜场为本工程本地制作的程序化动作，无第三方动作或动捕数据。"
+    },
+    {
+      "id": "adult-female-rigged",
+      "name": "成人比例女演员 · 骨骼白模",
+      "category": "character",
+      "file": "models/adult-female-rigged.glb",
+      "source": "https://quaternius.com/packs/universalbasecharacters.html",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "licenseFile": "licenses/quaternius-universal-base-characters.txt",
+      "animated": true,
+      "animations": [
+        {
+          "name": "idle",
+          "label": "站立呼吸",
+          "duration": 3,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "walk",
+          "label": "原地走路",
+          "duration": 1.2000000476837158,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "run",
+          "label": "原地跑步",
+          "duration": 0.7200000286102295,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "wave",
+          "label": "挥手",
+          "duration": 2.4000000953674316,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "sit",
+          "label": "坐姿",
+          "duration": 3,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        },
+        {
+          "name": "cheer",
+          "label": "双手举起",
+          "duration": 2.4000000953674316,
+          "loop": true,
+          "inPlace": true,
+          "source": "本地程序化基础预演，非动捕"
+        }
+      ],
+      "rigged": true,
+      "boneCount": 65,
+      "skinCount": 1,
+      "proportions": "realistic",
+      "proportionsNote": "成人基础人体比例，Superhero原型略理想化；非Q版、非照片级写实。",
+      "defaultHeight": 1.7,
+      "modelSize": 1.7,
+      "bytes": 1158128,
+      "sha256": "0198ad8d692a16508e1e6786d4532f468a1835f5c0fae7653d18e1238273b9e4",
+      "triangles": 15060,
+      "originalBounds": {
+        "min": [
+          -0.8344331101674881,
+          -0.00840710894944254,
+          -0.16246949431349073
+        ],
+        "max": [
+          0.8344329878487169,
+          1.766643851798447,
+          0.14022762239328995
+        ]
+      },
+      "downloadMirror": "https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/tree/5821923af517ac5fdc82505faa92a0d575fc1b1a/Universal%20Base%20Characters%5BStandard%5D/Universal%20Base%20Characters%5BStandard%5D",
+      "mirrorCommit": "5821923af517ac5fdc82505faa92a0d575fc1b1a",
+      "sourceFile": "Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
+      "modifications": "保留原网格、骨架、蒙皮权重和参考姿态；原贴图替换为哑光材质；嵌入匹配本骨架的6种本地程序化基础预演动作。",
+      "limitations": "基础预演动作，非动作捕捉；走跑为原地循环，请配合位置关键帧移动。坐姿不含椅子；不同骨架动作不能直接互换。",
+      "animationSource": "镜场为本工程本地制作的程序化动作，无第三方动作或动捕数据。"
+    }
+  ]
+}

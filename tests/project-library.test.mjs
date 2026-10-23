@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {indexedDB,IDBKeyRange} from 'fake-indexeddb';
+import {projectLibrary} from '../src/project-library.mjs';
+import {demoProject} from '../src/model.mjs';
+globalThis.IDBKeyRange=IDBKeyRange;
+function fixture(){const name='test-'+crypto.randomUUID();const connect=()=>new Promise((resolve,reject)=>{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>r.result.createObjectStore('projects');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});const raw=async(key,value)=>{const db=await connect();return new Promise((resolve,reject)=>{const tx=db.transaction('projects',value?'readwrite':'readonly'),s=tx.objectStore('projects');const r=value?s.put(value,key):s.get(key);let result;r.onsuccess=()=>result=r.result;tx.oncomplete=()=>{db.close();resolve(result)};tx.onabort=()=>reject(tx.error)})};return {lib:projectLibrary(connect),raw};}
+test('migrates legacy project once, preserving legacy backup and identity',async()=>{const {lib,raw}=fixture(),p=demoProject();p.name='旧作品';await raw('current',p);assert.equal(await lib.initialize(),true);assert.equal((await lib.list()).length,1);assert.deepEqual(await lib.read(p.id),p);await lib.rename(p.id,'新名称');await lib.initialize();assert.equal((await lib.read(p.id)).name,'新名称');assert.equal((await raw('current')).name,'旧作品')});
+test('fresh library stays empty and concurrent initialization does not duplicate',async()=>{const {lib}=fixture();await Promise.all([lib.initialize(),lib.initialize()]);assert.deepEqual(await lib.list(),[])});
+test('saves separate projects and stores only lightweight metadata in listing',async()=>{const {lib}=fixture(),a=demoProject(),b=demoProject();b.id=crypto.randomUUID();a.name='A';b.name='B';await Promise.all([lib.add(a),lib.add(b)]);a.name='A edit';await lib.save(a);assert.equal((await lib.read(b.id)).name,'B');const rows=await lib.list();assert.equal(rows.length,2);assert.equal(typeof rows[0].objects,'number');assert.equal(rows[0].ai,undefined);assert.equal(rows[0].board,undefined)});
+test('same-ID import never overwrites an existing project',async()=>{const {lib}=fixture(),p=demoProject();await lib.add(p);const imported=structuredClone(p);imported.name='另一版本';const copy=await lib.add(imported);assert.notEqual(copy.id,p.id);assert.equal(imported.id,p.id);assert.equal((await lib.read(p.id)).name,p.name);assert.equal((await lib.read(copy.id)).name,'另一版本')});
+test('forced copy has independent animation and media data',async()=>{const {lib}=fixture(),p=demoProject();await lib.add(p);const copy=await lib.add(p,{forceCopy:true});copy.objects[0].position[0]=98;await lib.save(copy);assert.notEqual((await lib.read(p.id)).objects[0].position[0],98)});
+test('trash is reversible, preserves assets, and prevents stale editor saves',async()=>{const {lib}=fixture(),p=demoProject();await lib.add(p);await lib.archive(p.id,true);await assert.rejects(lib.save(p),/回收站/);assert.deepEqual(await lib.read(p.id),p);await lib.archive(p.id,false);p.name='已恢复';await lib.save(p);assert.equal((await lib.list())[0].archived,false)});
+test('invalid project and empty rename do not damage stored contents',async()=>{const {lib}=fixture(),p=demoProject();await lib.add(p);await assert.rejects(lib.rename(p.id,'  '),/名称/);assert.throws(()=>lib.save({...p,objects:[]}));assert.deepEqual(await lib.read(p.id),p)});
+test('cover and original creation time survive later auto saves',async()=>{const {lib}=fixture(),p=demoProject();await lib.add(p);const before=(await lib.list())[0];await lib.cover(p.id,'data:image/jpeg;base64,AA==');await lib.save({...p,name:'改名'});const after=(await lib.list())[0];assert.equal(after.cover,'data:image/jpeg;base64,AA==');assert.equal(after.createdAt,before.createdAt)});
+test('corrupt legacy record is retained and migration is not falsely completed',async()=>{const {lib,raw}=fixture();await raw('current',{name:'bad'});await assert.rejects(lib.initialize());assert.deepEqual(await raw('current'),{name:'bad'});assert.equal(await raw('library:migrated'),undefined)});
+test('quit can wait for in-flight library transactions to commit',async()=>{const {lib}=fixture(),p=demoProject();const add=lib.add(p);assert.equal(lib.pending,1);await lib.idle();await add;assert.equal(lib.pending,0);assert.equal((await lib.list()).length,1)});
+
+// A late task receipt must merge with the latest project inside the write transaction.
+test('late creative receipts retain newer project edits and task states',async()=>{
+ const {createCreativeTask}=await import('../src/workstation/creative-agent.mjs');
+ const {lib}=fixture(),p=demoProject();p.workstation.script='小林在街角停下。';
+ const task=createCreativeTask(p,{flow:'story-package',prompt:'拆分镜'});task.updatedAt=100;
+ p.workstation.creativeTasks=[task];await lib.add(p);
+ const latest=await lib.read(p.id);latest.name='用户刚修改的工程';latest.workstation.script+='阿青走来。';
+ latest.workstation.creativeTasks[0].status='interrupted';latest.workstation.creativeTasks[0].updatedAt=300;
+ const save=lib.save(latest);const receipt=lib.patchCreativeTasks(p.id,[{...task,status:'running',updatedAt:200}]);
+ await Promise.all([save,receipt]);const result=await lib.read(p.id);
+ assert.equal(result.name,latest.name);assert.equal(result.workstation.script,latest.workstation.script);
+ assert.equal(result.workstation.creativeTasks[0].status,'interrupted');
+ await lib.archive(p.id,true);assert.equal(await lib.patchCreativeTasks(p.id,[task]),null);
+ assert.equal((await lib.list())[0].archived,true);
+});

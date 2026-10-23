@@ -1,0 +1,65 @@
+Quaternius / CC0-1.0
+Adult female mannequin and base body, with adapted UAL1 and UAL2 Standard clips.
+Official:
+https://quaternius.com/packs/universalbasecharacters.html
+https://quaternius.com/packs/universalanimationlibrary.html
+https://quaternius.com/packs/universalanimationlibrary2.html
+
+Explore all the animations in the Animation Viewer!
+https://quaternius.com/animviewer.html
+
+-------------------------------------------------------
+License:
+CC0 1.0 Universal (CC0 1.0) 
+Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+------------------------------------------------------
+Models by @Quaternius
+Consider supporting me on Patreon!
+
+https://www.patreon.com/quaternius
+
+-------------------------------------------------------
+Join the Discord Server:
+https://discord.gg/vJqnRUYRfT
+
+Mirrors and source hashes:
+[
+  {
+    "repository": "agentkaerf/FreeModels",
+    "commit": "db3df04d1e4714298a09510b26fb6de6645138a2",
+    "path": "Universal Animation Library 2[Standard]/Female Mannequin/Unreal-Godot/Mannequin_F.glb",
+    "sha": "28ce0f6d3343739ac679b4a243179322cb751791",
+    "local": "female-mannequin.glb"
+  },
+  {
+    "repository": "agentkaerf/FreeModels",
+    "commit": "db3df04d1e4714298a09510b26fb6de6645138a2",
+    "path": "Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb",
+    "sha": "dc684c2a664927964307e8eb7b27b0000ebf6a18",
+    "local": "ual2.glb"
+  },
+  {
+    "repository": "agentkaerf/FreeModels",
+    "commit": "db3df04d1e4714298a09510b26fb6de6645138a2",
+    "path": "Universal Animation Library 2[Standard]/Female Mannequin/README.txt",
+    "sha": "f5c552c228dbc040c85474455a0c9f4cb3df65a7",
+    "local": "female-readme.txt"
+  },
+  {
+    "repository": "agentkaerf/FreeModels",
+    "commit": "db3df04d1e4714298a09510b26fb6de6645138a2",
+    "path": "Universal Animation Library 2[Standard]/License.txt",
+    "sha": "233f759611a4467aefaa5b4e21d68b389fea33f7",
+    "local": "ual2-license.txt"
+  },
+  {
+    "repository": "NafisRayan/Animate-Rigged-Humanoid-No-Blender",
+    "commit": "5821923af517ac5fdc82505faa92a0d575fc1b1a",
+    "path": "Universal Animation Library[Standard]/Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb",
+    "sha": "473e59080288428d0b6da826ba19324d07b191f0",
+    "local": "ual1.glb"
+  }
+]
+Base body mirror commit 5821923af517ac5fdc82505faa92a0d575fc1b1a, original female glTF and binary retained locally; see quaternius-universal-base-characters.txt. Adapted materials and animation bind offsets; both models are adult, without clothing, neutral previz presentation.

@@ -1,0 +1,86 @@
+/* Shot production checklist: one collapsible, scrollable surface that does not
+   reflow the canvas or compete with node tool panels (z-index below modals). */
+.shot-checklist{position:absolute;z-index:34;top:64px;right:12px;width:332px;max-height:calc(100% - 214px);display:flex;flex-direction:column;background:#1e1d21;border:1px solid #45414b;border-radius:12px;box-shadow:0 12px 34px #0006;overflow:hidden;color:#dcd9e2}
+.shot-checklist[hidden]{display:none!important}
+.shot-checklist-head{display:flex;align-items:flex-start;gap:8px;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #37343c;background:#242329;flex:none}
+.shot-checklist-head>div:first-child{min-width:0}
+.shot-checklist-head b{display:block;font-size:13px;color:#eeeaf6}
+.shot-checklist-head small{display:block;margin-top:3px;color:#a9a2b5;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shot-checklist-tools{display:flex;align-items:center;gap:3px;flex-wrap:wrap;justify-content:flex-end}
+.shot-checklist-tools button{min-height:30px;padding:4px 8px;font-size:11px}
+.shot-checklist-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 0 8px}
+.shot-checklist-body[hidden]{display:none!important}
+.shot-list-summary{margin:0;padding:9px 12px;color:#b8b0c8;font-size:11px;line-height:1.6;background:#1b1a1f;border-bottom:1px solid #34313a}
+.shot-list{list-style:none;margin:0;padding:0}
+.shot-list-item{padding:10px 12px;border-bottom:1px solid #34313a}
+.shot-list-item:last-child{border-bottom:0}
+.shot-list-item.active{background:#2c2834}
+.shot-list-item.needs-review{background:#2a2320}
+.shot-list-head{display:flex;align-items:flex-start;gap:6px}
+.shot-list-title{flex:1;min-width:0;display:flex;align-items:flex-start;gap:8px;text-align:left;background:transparent;border:0;padding:0;color:#e9e5f1}
+.shot-list-title:hover{background:transparent;color:#fff}
+.shot-number{flex:none;min-width:23px;height:23px;display:grid;place-items:center;border-radius:6px;background:#38333f;color:#d9cdf1;font-size:11px;font-variant-numeric:tabular-nums}
+.shot-list-title>span:last-child{min-width:0}
+.shot-list-title b{display:block;font-size:12px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot-list-title small{display:block;margin-top:2px;color:#9c95aa;font-size:10px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot-edit{flex:none;min-height:28px;padding:3px 7px;font-size:10px;color:#b8b1c5}
+.shot-status{display:grid;grid-template-columns:36px minmax(0,1fr);gap:6px;margin-top:6px;font-size:11px;line-height:1.5}
+.shot-status-label{color:#948da2}
+.shot-status-text{color:#cdc7d8;min-width:0;overflow-wrap:anywhere}
+.shot-status[data-state=ok] .shot-status-text{color:#c5dfca}
+.shot-status[data-state=warn] .shot-status-text{color:#edc39a}
+.shot-status[data-state=info] .shot-status-text{color:#b9cce0}
+.shot-status[data-state=neutral] .shot-status-text{color:#a39cae}
+.shot-missing{margin:7px 0 0;padding:6px 8px;border-radius:6px;background:#332a25;color:#e6c3a6;font-size:10px;line-height:1.55}
+.shot-missing b{color:#f0d8bf;margin-right:4px}
+.shot-list-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.shot-next{min-height:30px;padding:5px 10px;font-size:11px;border-color:#5f536e;color:#e7ddf7;background:#332d3c}
+.shot-next.primary{background:#c1afff;border-color:#c1afff;color:#241d33;font-weight:600}
+.shot-list-meta{color:#8d8799;font-size:10px;white-space:nowrap}
+.shot-list-empty{padding:18px 14px;line-height:1.65;color:#aaa3b6;font-size:12px}
+.shot-list-empty b{display:block;color:#e9e5f1;font-size:13px;margin-bottom:6px}
+.shot-list-empty p{margin:0 0 12px}
+.shot-list-empty-actions{display:flex;gap:6px;flex-wrap:wrap}
+.shot-list-empty-actions button{font-size:11px}
+.shot-review-list{margin:10px 0 0;padding-left:18px;line-height:1.6;color:#cfc8da;font-size:12px}
+.shot-review-list li{margin-bottom:6px}
+.shot-review-list li span{display:block;color:#a49caf;font-size:11px}
+.shot-review-list li b{color:#f0e9fb}
+/* Image result adoption keeps the impact summary inline in one decision surface. */
+.image-adoption-impact{margin-top:12px;padding:10px 12px;border:1px solid #45404d;border-radius:8px;background:#1b1a20;font-size:11px;line-height:1.65;color:#c9c2d6}
+.image-adoption-impact p{margin:0 0 6px}
+.image-adoption-impact p:last-child{margin-bottom:0}
+.image-adoption-impact b{color:#e9e2f3;margin-right:5px}
+.image-adoption-warning{margin-top:10px;color:#e6b49b;font-size:11px}
+.ws-official-change{max-width:560px}
+.ws-official-impact{display:grid;gap:8px;margin:14px 0;font-size:12px}
+.ws-official-impact>div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;line-height:1.6}
+.ws-official-impact dt{color:#948da2}
+.ws-official-impact dd{margin:0;color:#ddd5e8;overflow-wrap:anywhere}
+@media (max-width:1150px){
+ .shot-checklist{width:292px;right:10px;top:58px;max-height:calc(100% - 196px)}
+ .shot-checklist-head{padding:9px 10px}
+ .shot-list-item{padding:9px 10px}
+}
+@media (max-height:760px){
+ .shot-checklist{max-height:calc(100% - 214px)}
+ .shot-list-title small{display:none}
+ .shot-status{margin-top:4px}
+}
+
+/* Scan each shot first; open its details only when a decision needs them. */
+.shot-checklist-head small,.shot-list-summary,.shot-list-title small,.shot-list-meta,.shot-edit{font-size:12px}
+.shot-list-title b{font-size:13px}
+.shot-checklist-tools button,.shot-next{font-size:12px;min-height:32px}
+.shot-list-item{padding:12px}
+.shot-glance{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:#bcb5c8}
+.shot-glance span+span:before{content:'·';margin-right:6px;color:#827b8c}
+.shot-glance [data-state=ok]{color:#c5dfca}
+.shot-glance [data-state=warn]{color:#edc39a}
+.shot-details{margin-top:8px;font-size:12px;color:#aaa2b8}
+.shot-details summary{cursor:pointer;min-height:24px;line-height:24px}
+.shot-details[open]{padding-bottom:3px}
+.shot-status,.shot-missing,.image-adoption-impact,.image-adoption-warning{font-size:12px}
+.image-adoption-impact details{margin:0 0 6px}
+.image-adoption-impact summary{cursor:pointer;color:#c9c2d6;min-height:28px}
+.image-adoption-impact details p{max-height:110px;overflow:auto}

@@ -1,0 +1,26 @@
+# 依赖与构建产物
+node_modules/
+dist/
+release/
+*.app
+*.dmg
+*.zip
+
+# 离线资产（CC0，体积较大，单独发布）
+public/assets/models/
+public/assets/thumbnails/
+
+# 运行数据与本地配置（可能含工程、生成素材、API Key）
+work/
+data/
+generated/
+text-model.json
+*.local
+.env
+.env.*
+!.env.example
+
+# 系统与日志
+.DS_Store
+Thumbs.db
+*.log

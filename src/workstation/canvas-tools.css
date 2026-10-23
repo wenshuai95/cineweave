@@ -1,0 +1,73 @@
+/* Canvas-first creation: tools remain beside the live canvas, never another page. */
+body .app{position:relative;grid-template-columns:minmax(0,1fr)}
+body .workbench{grid-column:1}
+.ws-canvas-tools{grid-row:2;grid-column:1;align-self:start;justify-self:start;z-index:12;display:flex;align-items:center;gap:6px;margin:10px 14px;padding:6px;background:#20272af5;border:1px solid #4b565c;border-radius:10px;box-shadow:0 4px 18px #0004}
+.ws-canvas-tools[hidden],.ws-canvas-dock[hidden]{display:none!important}
+.ws-canvas-tools button{min-height:34px;font-size:13px;background:transparent;border-color:transparent;padding:6px 12px}
+.ws-canvas-tools button[aria-pressed=true]{background:#3b413b;border-color:#a19371;color:#f0cd97}
+.ws-canvas-tools button.ws-needs-review{border-bottom-color:#d4a56e}
+.ws-canvas-dock{grid-row:2;grid-column:1;align-self:stretch;justify-self:end;z-index:24;width:var(--ws-dock-width,760px);max-width:85vw;min-width:540px;min-height:0;position:relative;display:flex;flex-direction:column;background:#1b2228;border-left:1px solid #58636d;box-shadow:-18px 0 45px #0006}
+.ws-canvas-dock.expanded{width:85vw}
+.ws-dock-header{display:flex;align-items:center;gap:10px;flex:none;min-height:48px;padding:8px 14px 8px 20px;border-bottom:1px solid #46525d;background:#242d34}
+.ws-dock-header strong{font-size:15px;color:#e7edf2}
+.ws-dock-header span{margin-right:auto;color:#9eafb9;font-size:12px}
+.ws-dock-header button{font-size:12px;min-height:30px}
+.ws-dock-grip{position:absolute;left:-5px;top:0;bottom:0;width:10px;cursor:ew-resize;z-index:4;touch-action:none}
+.ws-dock-grip:hover,.ws-dock-grip:focus-visible,.ws-canvas-dock.resizing .ws-dock-grip{background:#dfbb7955;outline:none}
+.ws-canvas-dock.resizing{user-select:none}
+.ws-canvas-dock>.ws-tool-page{flex:1;min-height:0;width:100%;grid-row:auto;grid-column:auto}
+.ws-canvas-dock .ws-page-header{padding:10px 18px!important;gap:8px;background:#1e262c}
+.ws-canvas-dock .ws-page-header h2,.ws-canvas-dock .ws-page-header>div>p{display:none}
+.ws-canvas-dock .ws-workflow-notice{padding:8px 16px;gap:8px;flex-wrap:wrap}
+.ws-canvas-dock .ws-workflow-notice span{flex:1;min-width:220px}
+.ws-canvas-dock .ws-header-actions{width:100%;justify-content:flex-start;gap:7px}
+.ws-canvas-dock .ws-header-actions button{font-size:12px!important;min-height:32px!important}
+.ws-canvas-dock #wsPageScript .ws-agent-messages{padding:24px 22px;gap:22px}
+.ws-canvas-dock #wsPageScript .ws-chat-welcome h3{font-size:23px}
+.ws-canvas-dock #wsPageScript .ws-chat-welcome p{font-size:14px;line-height:1.8}
+.ws-canvas-dock #wsPageScript .ws-chat-composer{padding:8px 18px 14px}
+.ws-canvas-dock #wsPageScript .ws-compose-foot>span{font-size:12px}
+.ws-canvas-dock #wsPageScript .ws-compose-foot{flex-wrap:wrap}
+.ws-canvas-dock #wsPageScript .ws-chat-workspace.has-drawer>.ws-chat-main{display:none}
+.ws-canvas-dock #wsPageScript .ws-script-drawer{flex:1;max-width:none;border-left:0}
+.ws-canvas-dock #wsPageAssets .ws-assets-main{padding:16px;min-width:0}
+.ws-canvas-dock #wsPageAssets .ws-assets-preview{width:50%;max-width:none;padding:16px;min-width:0}
+.ws-canvas-dock #wsPageAssets .ws-flow-agent{padding:14px;margin-bottom:12px}
+.ws-canvas-dock #wsPageAssets .ws-flow-agent h3{font-size:16px}
+.ws-canvas-dock #wsPageAssets .ws-asset-tabs{padding:10px 16px;gap:8px;flex-wrap:wrap}
+.ws-canvas-dock #wsPageAssets .ws-asset-tabs span{margin-left:0;font-size:12px}
+.ws-canvas-dock #wsPageAssets .ws-asset-browser{grid-template-columns:1fr}
+.ws-canvas-dock #wsPageAssets .ws-asset-categories{position:static;flex-direction:row;flex-wrap:wrap;gap:4px}
+.ws-canvas-dock #wsPageAssets .ws-asset-categories #wsPlanScript{margin:0}
+.ws-canvas-dock #wsPageAssets .ws-asset-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.ws-canvas-dock #wsPageAssets .ws-assets-body{display:flex;flex:1;min-height:0}
+.ws-canvas-dock #wsPageAssets .ws-asset-row{flex-wrap:wrap;gap:6px}
+.ws-canvas-dock #wsPageAssets .ws-asset-name{min-width:90px}
+.ws-canvas-dock #wsPageAssets .ws-asset-meta{display:none}
+/* Width follows the resizable dock, rather than the full window. */
+.ws-canvas-dock.compact .ws-dock-header span{display:none}
+.ws-canvas-dock.compact .ws-dock-header strong{margin-right:auto}
+.ws-canvas-dock.compact #wsPageAssets .ws-assets-body:has(.ws-assets-preview:not([hidden])){flex-direction:column}
+.ws-canvas-dock.compact #wsPageAssets:not(.ws-flow-no-detail) .ws-assets-main{flex:0 1 42%;min-height:140px}
+.ws-canvas-dock.compact #wsPageAssets .ws-assets-preview{width:100%!important;flex:1;border-left:0;border-top:1px solid #46525d}
+.ws-canvas-dock.compact #wsPageScript .ws-chat-starters{flex-direction:column}
+
+/* These are creation tools within the existing sidebar, not floating over it. */
+.ws-canvas-tools{display:grid;grid-template-columns:1fr 1fr;margin:12px 10px 8px;padding:5px;position:static;box-shadow:none;align-self:auto;justify-self:auto;flex-shrink:0}
+.ws-canvas-tools button{padding:7px 4px;font-size:13px;white-space:nowrap}
+.ws-canvas-tools #wsArrangeStory{grid-column:1/-1;color:#b9c9c5;border-top:1px solid #3b494d;border-radius:0}
+body[data-ws-page=edit] .ws-canvas-tools,body[data-ws-page=deliver] .ws-canvas-tools{display:none!important}
+.node-source-actions{display:flex;gap:7px;padding:10px 12px 4px;flex-wrap:wrap}
+.node-source-actions button{min-height:32px;padding:6px 9px;font-size:12px;color:#e3d0ab;background:#343a38;border-color:#5c665e}
+.node .node-text{max-height:140px;overflow:hidden;white-space:pre-wrap}
+.inspector .node-source-actions{padding:0;flex-direction:column}
+.script-source-preview{max-height:280px;overflow:auto;white-space:pre-wrap;padding:16px;border:1px solid #53616b;border-radius:8px;line-height:1.8}
+
+/* Canvas-first refinement: keep the canvas visible beside its tools. */
+.ws-canvas-dock{width:var(--ws-dock-width,580px);min-width:min(420px,85vw)}
+.ws-canvas-dock:has(#wsPageAssistant:not([hidden])) .ws-dock-header strong,.ws-canvas-dock:has(#wsPageAssistant:not([hidden])) .ws-dock-header>span{display:none}
+.ws-canvas-dock:has(#wsPageAssistant:not([hidden])) .ws-dock-header{justify-content:flex-end;min-height:36px;padding:4px 14px}
+body[data-canvas-mode=board] .workbench{grid-template-columns:min(var(--panel-left,260px),230px) 6px minmax(360px,1fr) 6px min(var(--panel-right,280px),330px)}
+body[data-canvas-mode=board].canvas-inspector-empty .workbench{grid-template-columns:min(var(--panel-left,260px),230px) 6px minmax(360px,1fr) 0 0}
+body[data-canvas-mode=board].canvas-inspector-empty .workbench>.inspector,body[data-canvas-mode=board].canvas-inspector-empty [data-panel-resize=right]{display:none!important}
+.video-references{margin-top:16px;color:#d5dde1}.video-references summary{cursor:pointer;padding:8px 0}.video-reference-list{max-height:200px;overflow:auto;display:flex;flex-direction:column;gap:6px}.video-reference-list label{display:flex;gap:8px;align-items:center;padding:8px;background:#192026;border-radius:6px;min-height:38px}.video-reference-list span{flex:1;min-width:0;overflow-wrap:anywhere}.video-reference-list small{color:#b6c4cb}.video-reference-list input{flex:none}.video-reference-list input:focus-visible{outline:2px solid var(--gold)}

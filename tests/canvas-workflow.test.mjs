@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {demoProject,object,uid,clone,validateProject} from '../src/model.mjs';
+import {connectCanvasNodes,modelNodeToStage} from '../src/generated-model.mjs';
+const node=(type,extra={})=>({id:uid(),type,title:type,text:'',x:50,y:50,w:280,...extra});
+const model=kind=>node('model',{modelKind:kind,modelSize:2,modelSrc:'data:model/gltf-binary;base64,AAAA'});
+test('scene and character model wires import once into the chosen director and survive save/reload',()=>{
+ for(const kind of ['scene','human','animal','creature']){const p=demoProject(),m=model(kind),d=node('director');p.nodes.push(m,d);const before=clone(p),edge={from:m.id,to:d.id},r=connectCanvasNodes(p,edge);assert.equal(r.imported,true);assert.equal(p.objects.length,before.objects.length+1);assert.equal(p.edges.length,before.edges.length+1);assert.ok(p.edges.some(e=>e.to===d.id&&e.from===m.id));assert.ok(!p.edges.some(e=>e.from===m.id&&e.to===before.nodes.find(n=>n.type==='director').id));assert.equal(connectCanvasNodes(p,edge).imported,false);assert.equal(p.objects.length,before.objects.length+1);assert.equal(p.edges.length,before.edges.length+1);assert.equal(validateProject(clone(p)).nodes.find(n=>n.id===m.id).objectId,r.objectId);
+ // Cutting/reconnecting must preserve edited animation and visibility.
+ const o=p.objects.find(o=>o.id===r.objectId);o.hidden=true;o.locked=true;o.position=[4,0,3];p.edges=p.edges.filter(e=>e.from!==m.id);connectCanvasNodes(p,edge);assert.deepEqual(o.position,[4,0,3]);assert.equal(o.hidden,true);assert.equal(o.locked,true);assert.equal(p.objects.length,before.objects.length+1);
+ }
+});
+test('linking one model to two shared director entries keeps one object',()=>{const p=demoProject(),m=model('scene'),d=node('director');p.nodes.push(m,d);const o=modelNodeToStage(p,m);const r=connectCanvasNodes(p,{from:m.id,to:d.id});assert.equal(r.objectId,o.id);assert.equal(r.imported,false);assert.equal(p.edges.filter(e=>e.from===m.id).length,2);});
+test('text/image wires remain references and reverse director wires do not import geometry',()=>{const p=demoProject(),count=p.objects.length,d=p.nodes.find(n=>n.type==='director'),image=node('image'),m=model('animal');p.nodes.push(image,m);connectCanvasNodes(p,{from:image.id,to:d.id});connectCanvasNodes(p,{from:d.id,to:m.id});assert.equal(p.objects.length,count);assert.ok(!m.objectId);});
+test('failed model connections do not leave orphan objects or wires',()=>{const p=demoProject(),m=model('human'),d=p.nodes.find(n=>n.type==='director');p.nodes.push(m);while(p.objects.length<300)p.objects.push(object('box','box'));const before=clone(p);assert.throws(()=>connectCanvasNodes(p,{from:m.id,to:d.id}),/上限/);assert.deepEqual(p,before);assert.throws(()=>connectCanvasNodes(p,{from:m.id,to:'missing'}));assert.deepEqual(p,before);});

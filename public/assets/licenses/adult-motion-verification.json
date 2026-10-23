@@ -1,0 +1,253 @@
+{
+  "verifiedAt": "2026-10-10",
+  "authoring": "本工程本地程序化Quaternion动画，无外来动作数据。按实测+Y上/+Z前轴标定，腿使用两节IK、膝盖朝前；每秒30次采样，所有循环首尾完全匹配。",
+  "visualCheck": "实际变形网格的idle/walk/run/wave/sit/cheer六宫格已目视检查，非只看骨架线。",
+  "results": [
+    {
+      "id": "adult-male-rigged",
+      "originalGeometryBufferBytes": 720076,
+      "originalGeometryBufferSha256": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+      "originalBufferPreservedExactly": true,
+      "nodesMeshesSkinsPreservedExactly": true,
+      "boneCount": 65,
+      "animations": 6,
+      "embeddedResourcesOnly": true,
+      "sha256": "41499d8e5cf3d03f939c7f81478f67e866f417149b522741ed8744da6f5488ed",
+      "motionTests": [
+        {
+          "name": "idle",
+          "duration": 3,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.013255400461222996,
+          "lowestSampledVertex": -0.007862834364377257
+        },
+        {
+          "name": "walk",
+          "duration": 1.2000000476837158,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.49687528865202446,
+          "lowestSampledVertex": -0.0080579063531977
+        },
+        {
+          "name": "run",
+          "duration": 0.7200000286102295,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.6345933338498932,
+          "lowestSampledVertex": -0.00918825362702716
+        },
+        {
+          "name": "wave",
+          "duration": 2.4000000953674316,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.08732522716170762,
+          "lowestSampledVertex": -0.007862747503343367
+        },
+        {
+          "name": "sit",
+          "duration": 3,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.0073275885668622745,
+          "lowestSampledVertex": -0.007863818990787582
+        },
+        {
+          "name": "cheer",
+          "duration": 2.4000000953674316,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.023587337888227686,
+          "lowestSampledVertex": -0.007862747503343367
+        }
+      ],
+      "authoring": [
+        {
+          "name": "idle",
+          "duration": 3,
+          "samples": 91,
+          "channels": 19,
+          "sampledFloorMin": -0.0050274176891844545,
+          "kneeForwardMin": 0.04396786018888223
+        },
+        {
+          "name": "walk",
+          "duration": 1.2,
+          "samples": 37,
+          "channels": 19,
+          "sampledFloorMin": -0.0050275587331933,
+          "kneeForwardMin": 0.056908848718278456
+        },
+        {
+          "name": "run",
+          "duration": 0.72,
+          "samples": 23,
+          "channels": 19,
+          "sampledFloorMin": -0.005027876378826147,
+          "kneeForwardMin": 0.08510802251054092
+        },
+        {
+          "name": "wave",
+          "duration": 2.4,
+          "samples": 73,
+          "channels": 19,
+          "sampledFloorMin": -0.005027417722325327,
+          "kneeForwardMin": 0.04395874144888269
+        },
+        {
+          "name": "sit",
+          "duration": 3,
+          "samples": 91,
+          "channels": 19,
+          "sampledFloorMin": -0.005028533607518201,
+          "kneeForwardMin": 0.248941239404771
+        },
+        {
+          "name": "cheer",
+          "duration": 2.4,
+          "samples": 73,
+          "channels": 19,
+          "sampledFloorMin": -0.005027417722325327,
+          "kneeForwardMin": 0.04395874144888269
+        }
+      ]
+    },
+    {
+      "id": "adult-female-rigged",
+      "originalGeometryBufferBytes": 990808,
+      "originalGeometryBufferSha256": "3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208",
+      "originalBufferPreservedExactly": true,
+      "nodesMeshesSkinsPreservedExactly": true,
+      "boneCount": 65,
+      "animations": 6,
+      "embeddedResourcesOnly": true,
+      "sha256": "0198ad8d692a16508e1e6786d4532f468a1835f5c0fae7653d18e1238273b9e4",
+      "motionTests": [
+        {
+          "name": "idle",
+          "duration": 3,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.012085108016108364,
+          "lowestSampledVertex": -0.006699938957666092
+        },
+        {
+          "name": "walk",
+          "duration": 1.2000000476837158,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.47665526993250207,
+          "lowestSampledVertex": -0.0068551189595084504
+        },
+        {
+          "name": "run",
+          "duration": 0.7200000286102295,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.6241461102583593,
+          "lowestSampledVertex": -0.007963732970187116
+        },
+        {
+          "name": "wave",
+          "duration": 2.4000000953674316,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.08306740985463011,
+          "lowestSampledVertex": -0.006699876235412476
+        },
+        {
+          "name": "sit",
+          "duration": 3,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.007049703424566634,
+          "lowestSampledVertex": -0.006700661635954853
+        },
+        {
+          "name": "cheer",
+          "duration": 2.4000000953674316,
+          "tracks": 19,
+          "loopEndpointsMatch": true,
+          "unitQuaternions": true,
+          "finiteSkinnedVertices": true,
+          "maximumSampledVertexMotion": 0.022390202265954267,
+          "lowestSampledVertex": -0.006699876235412476
+        }
+      ],
+      "authoring": [
+        {
+          "name": "idle",
+          "duration": 3,
+          "samples": 91,
+          "channels": 19,
+          "sampledFloorMin": -0.006699788675480921,
+          "kneeForwardMin": 0.04726838248405574
+        },
+        {
+          "name": "walk",
+          "duration": 1.2,
+          "samples": 37,
+          "channels": 19,
+          "sampledFloorMin": -0.006699916578833112,
+          "kneeForwardMin": 0.07593261323052153
+        },
+        {
+          "name": "run",
+          "duration": 0.72,
+          "samples": 23,
+          "channels": 19,
+          "sampledFloorMin": -0.006700161888968372,
+          "kneeForwardMin": 0.10522716108252209
+        },
+        {
+          "name": "wave",
+          "duration": 2.4,
+          "samples": 73,
+          "channels": 19,
+          "sampledFloorMin": -0.006699788715584524,
+          "kneeForwardMin": 0.04726021714824338
+        },
+        {
+          "name": "sit",
+          "duration": 3,
+          "samples": 91,
+          "channels": 19,
+          "sampledFloorMin": -0.006700583858244305,
+          "kneeForwardMin": 0.2342980869861307
+        },
+        {
+          "name": "cheer",
+          "duration": 2.4,
+          "samples": 73,
+          "channels": 19,
+          "sampledFloorMin": -0.006699788715584524,
+          "kneeForwardMin": 0.04726021714824338
+        }
+      ]
+    }
+  ]
+}

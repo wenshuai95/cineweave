@@ -1,0 +1,1 @@
+Basic geometry meshes: sphere, cone, torus, pyramid. Created locally for this application. Released under CC0-1.0. https://creativecommons.org/publicdomain/zero/1.0/

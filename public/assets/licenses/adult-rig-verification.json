@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-10-10",
+  "method": "Three.js GLTFLoader parse; joint range and weight sum checks; rotate upperarm_l and verify skinned vertices actually deform. No source geometry or animation modifications from validation.",
+  "results": [
+    {
+      "id": "adult-male-rigged",
+      "skinMeshes": 3,
+      "bones": 65,
+      "animations": 6,
+      "weightedVertices": 8483,
+      "badWeights": 0,
+      "movedVerticesAfterArmRotation": 1526,
+      "status": "pass",
+      "sourceAnimations": 0
+    },
+    {
+      "id": "adult-female-rigged",
+      "skinMeshes": 3,
+      "bones": 65,
+      "animations": 6,
+      "weightedVertices": 8844,
+      "badWeights": 0,
+      "movedVerticesAfterArmRotation": 1483,
+      "status": "pass",
+      "sourceAnimations": 0
+    }
+  ],
+  "note": "源骨骼验证完成后新增六种程序化动画；完整当前动作检查见adult-motion-verification.json。"
+}

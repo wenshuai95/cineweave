@@ -1,0 +1,6 @@
+https://raw.githubusercontent.com/ChrisChen667788/wind-comic/main/skills/screenwriter/SKILL.md
+SHA256: 56cf9085db873dc843ae1e2d48f9b49e3dab4495d56d8df9d23f51b2b113274b
+https://raw.githubusercontent.com/ChrisChen667788/wind-comic/main/LICENSE
+SHA256: a2fefe23a217db3bac7b2ebcd7554f4ef6611e1f6dd803bfb438c0735a7783cd
+Downloaded: 2026-10-15
+Reviewed text guidance only; no upstream scripts executed.

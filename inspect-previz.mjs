@@ -1,0 +1,10 @@
+import fs from 'node:fs';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';import {normalizeAsset,visibleBounds} from './src/asset-geometry.mjs';import {sampleObject} from './src/model.mjs';import {AnimationMixer,Vector3,MathUtils} from 'three';
+globalThis.ProgressEvent=class{constructor(t,x){Object.assign(this,x)}};
+const p=JSON.parse(fs.readFileSync('../../jade-seal-production-20261017/production/玉印-白模工程-v02.directorcanvas.json'));
+let result={};
+for(const id of ['stage-female','stage-male']){let o=p.objects.find(x=>x.id===id),b=Buffer.from(o.modelSrc.split(',')[1],'base64'),ln=b.readUInt32LE(12),j=JSON.parse(b.subarray(20,20+ln));delete j.images;delete j.textures;delete j.samplers; j.materials=[{pbrMetallicRoughness:{baseColorFactor:[1,1,1,1]}}];for(const m of j.meshes)for(const x of m.primitives)x.material=0;
+let jb=Buffer.from(JSON.stringify(j));jb=Buffer.concat([jb,Buffer.alloc((4-jb.length%4)%4,32)]);let body=b.subarray(20+ln),head=Buffer.alloc(20);head.writeUInt32LE(0x46546c67);head.writeUInt32LE(2,4);head.writeUInt32LE(head.length+jb.length+body.length,8);head.writeUInt32LE(jb.length,12);head.writeUInt32LE(0x4e4f534a,16);let buf=Buffer.concat([head,jb,body]);
+const a=await new GLTFLoader().parseAsync(buf.buffer.slice(buf.byteOffset,buf.byteOffset+buf.byteLength),'');let root=normalizeAsset(a.scene,o.modelSize);let mixer=new AnimationMixer(a.scene);result[id]={};
+for(const t of [5,8,12,15,30,34,50]){let s=sampleObject(o,t);mixer.stopAllAction();let c=a.animations.find(x=>x.name===s.modelClip);if(c){mixer.clipAction(c).play();mixer.setTime(s.actionTime??t)}root.position.add(new Vector3(...s.position));root.rotation.y=MathUtils.degToRad(s.rotation);root.updateMatrixWorld(true);let points={};root.traverse(n=>{if(['Head','hand_l','hand_r','foot_l','foot_r','pelvis'].includes(n.name))points[n.name]=n.getWorldPosition(new Vector3()).toArray().map(v=>+v.toFixed(3))});result[id][t]=points;root.position.sub(new Vector3(...s.position));}
+}
+fs.writeFileSync('../../jade-seal-production-20261017/review/pose-points.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,1));

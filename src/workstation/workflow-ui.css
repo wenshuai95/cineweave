@@ -1,0 +1,8 @@
+.ws-bottomnav button{position:relative;letter-spacing:.5px;min-width:100px}
+.ws-bottomnav button small{position:absolute;left:calc(50% + 13px);top:5px;font-size:10px;letter-spacing:0;white-space:nowrap;color:#b8c4cb}
+.ws-bottomnav button.ws-needs-review small{color:#edc283}
+body:not([data-ws-page=canvas]) .topbar #exportBtn{display:none}
+body:is([data-ws-page=script],[data-ws-page=assets]) .topbar .brand small{display:none}
+.ws-workflow-notice{flex:none;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:9px 22px;background:#302b23;color:#e9c993;font-size:13px;line-height:1.6;border-bottom:1px solid #5e5038}
+.ws-workflow-notice button{flex:none;font-size:12px;min-height:32px}
+@media(max-width:700px){.ws-bottomnav button{min-width:0;padding:4px 18px}.ws-bottomnav button small{display:none}.ws-workflow-notice{padding:8px 12px;flex-wrap:wrap;gap:5px}}

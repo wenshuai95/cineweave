@@ -1,0 +1,121 @@
+超级无敌导演画布 v1.2.9 开发报告
+执行：ZCode GLM-5.3（实际运行日志确认；调用配置指定Flash但未生效）　审核与验证：Codex
+日期：2026-10-14　基线：v1.2.8（../canvas-v129/before 有源码备份）
+说明：本轮按“无交互 edit 模式”执行，未运行任何命令；npm test / npm run test:server / npm run build 由 Codex 执行。以下“测试”均为新增的 node:test 用例（tests/v129.test.mjs），运行结果以 Codex 为准。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+一、逐项实现情况
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【P0-1 缩放锚点修正】已实现
+- src/timeline-nav.mjs 重写 setZoom：缩放前用尺区几何（ruler.offsetLeft / offsetWidth，经 metrics 回调或默认 host.querySelector('.timeline-ruler') 读取）计算锚点的车道时间占比，缩放后按 newLeft + frac*newWidth - px 把同一时间放回同一屏幕位置（修复了初版 frac*width+px-left 的符号错误，经理审核指出的公式已更正并配非对称锚点测试）。
+- 按钮缩放锚点：main.js 传 anchorClientX——播放杆在可见车道区域内（不被左侧 130px 固定标签栏遮住）则以播放杆为锚，否则视口中心。
+- Alt/Option＋滚轮：createTimelineNav wheel 处理器新增，以鼠标位置为锚按档位缩放并 preventDefault；无修饰键滚轮保持原生（纵向/触控板横滚），Shift＋滚轮横移、中键平移、Esc 取消、边缘限幅（clampTimelineScroll 按 scrollWidth-clientWidth）全部保留。
+- 无尺区几何信息的宿主回退到旧 scaledScroll 比例换算（兼容旧测试与异常环境）。
+- 测试：tests/v129.test.mjs「zoom keeps an asymmetric anchor time…」「zoom clamps at both content edges…」「Alt+wheel zooms around the mouse…」「without lane metrics zoom falls back…」。锚点用 clientX=250（非视口中心）的非对称锚点，验证 2→4 倍与 4→2 倍往返后滚动位置精确还原（318↔100），及左/右缘限幅。
+
+【P0-2 全览/细节切换】已实现
+- createTimelineNav 新增 fitToggle()/fitState()：进入“适应全部”前记忆 {zoom,scrollLeft}，再次点击恢复细节视图；fitState().canReturn 驱动按钮禁用态。
+- main.js #timelineFit 改为切换式：文案「适应全部 / ↩ 返回细节 / 已适应全部（禁用）」随状态更新（updateFitButton，onZoom 时同步）。
+- 测试：「fit toggle remembers detail zoom and scroll, then returns exactly」验证 3 倍 + 滚动 300 → 全览（z=1,left=0）→ 返回（z=3,left=300）→ 再入全览仍记忆；无记忆时 fitState 返回 canReturn:false（禁用语义）。
+
+【P0-3 播放杆找回与跟随开关】已实现
+- 播放循环中仅 followPlayhead 为真时调用 revealPlayhead（不再每帧无条件滚动）；revealPlayhead 本身只在播放杆出界时滚动。
+- 手动横滚暂停跟随：#tracks 上监听 wheel（Shift 或 |deltaX|>|deltaY| 且非 Alt 缩放）与中键 pointerdown，播放中触发即 followPlayhead=false 并刷新按钮；「↩ 播放杆」按钮一键回到播放杆并恢复跟随；重新播放（#playBtn 启动、模型动作预览启动）自动恢复跟随。
+- 尺区/播放杆只调时间、片段/关键帧只移动内容、Esc 取消与帧吸附为既有行为，未改动。
+- 限制：跟随暂停检测只覆盖滚轮横滚与中键平移两类显式用户横滚；程序性滚动（播放跟随、缩放锚定、恢复现场）不会误触发。拖拽片段时 setTime 引起的滚动不属于“用户横滚”，不暂停跟随。
+
+【P0-4 参数级前/后关键帧】已实现
+- timeline-playhead.mjs 新增 adjacentParameterKeyTime(object,parameter,time,direction)：只看该参数通道，精确重复时间去重、1e-6 容差跳过当前帧、边界返回 null；parameter 传 null 回退对象总览（原 adjacentKeyTime 保留，重构出共享 adjacentFromTimes）。
+- parameterTracks：展开后的每个参数行标签变为「状态钻石 ◇/◆ + 参数名 + ◁ ▷ 本参数导航」；updatePlayhead 每帧刷新钻石状态（容差 .0001，与检查器 ◇/◆ 一致）与边界禁用。
+- 对象级「关键帧导航」行（◁前/后▷ 全部参数）原样保留。
+- 测试：「per-parameter key navigation scopes to one channel…」含参数隔离（对象姿态键 t=5 不属于 positionX）、去重、两侧边界。
+
+【P0-5 循环播放与“仅动画轨道”】已实现
+- advancePlayTime(time,dt,duration,loop)：非循环到结尾停止；循环取余回开头继续；负 dt 钳 0。播放循环 loop() 改用它；导出走 stage.exportVideo 独立计时不经过该函数（不受循环开关影响），单次播放默认不变。
+- #timelineLoop 开关（aria-pressed + active 态），开启时 toast 说明不影响导出。
+- 新模块 src/timeline-filter.mjs isAnimatedTrack：姿态键 o.keys、任一参数通道、动作片段（含 mode:'hold' 定格，不误判）、pathHandles 路径、被镜头编排引用（shots.cameraId）均算动画；仅默认循环 modelClip 不算。
+- #animatedOnlyBtn 开关只过滤 renderTracks 的轨道显示（选中对象始终保留），不修改工程、不影响导出与撤销。
+- 测试：「advancePlayTime…」「animated-track detection counts hold actions, paths and shot usage…」。
+
+【P1-6 布局预设与面板】已实现
+- src/panel-layout.mjs：导出 layoutPresets（compose 构图 / animate 动画 / preview 预演，均为同一套面板的尺寸组合，不新建场景数据）；applyPreset / saveCustom / applyCustom / hasCustom / reset（恢复默认）；collapse / expand / togglePanel / isCollapsed / collapsedKeys 面板收起与恢复；存储升级为 {v:2,sizes,collapsed,custom}，自动兼容 v1 纯尺寸对象与损坏数据。
+- 收起实现：面板元素加 .hidden、对应分隔条加 hidden 属性、CSS 变量置 0px；恢复条 #layoutRestore 挂在中央区左下角，仅列出已收起面板的找回按钮（素材栏/属性栏/时间轴/机位监看），保证面板可找回。
+- 入口：工具栏「◱ 布局」菜单（预设/保存我的布局/应用我的布局/恢复默认/面板收起恢复）+ 设置→界面的构图/动画/预演/我的布局按钮；安装期间首次 apply() 的 TDZ 时序问题已用 layoutReady 标志规避。
+- 1280×800 约束由 fitLayout 既有钳制保证，新增测试对三个预设逐一断言（中列 ≥360、时间轴/监看留白达标，动画预设 timeline≥400、预演预设 preview≥400、构图 timeline≤200）。
+- 限制：预设/收起为 DOM 交互，单测仅覆盖纯函数与数值钳制；实际拖拽、收起、恢复需要 Codex 手工核验（见“待验证”）。
+
+【P1-7 节点搜索/快速定位】已实现
+- 新模块 src/node-search.mjs nodeMatchesQuery：标题+文字内容、多词 AND、大小写不敏感、空查询全通过、不改动节点。
+- 画布侧栏新增搜索框 #nodeSearch（boardSidebarPane 内、类型筛选下方）：输入即过滤素材列表并与类型筛选叠加；无结果时提示「没有匹配…」并给“清空搜索”按钮；Enter 定位第一个结果；Esc/✕ 清空；与离线模型库搜索 #assetSearch 相互独立。
+- 点击结果复用既有定位行为（选中并居中画布，一次 persist），不删除、不隐藏工程内容；搜索框是 input，全局快捷键（Space/Delete/数字等）因 editingTarget 保护不会触发。
+- 测试：「node search matches title and text, multi-word AND, never mutates the node」。
+
+【P1-8 恢复工作现场】已实现（文字草稿除外，见“未实现”）
+- 新模块 src/workspace-state.mjs：按工程 ID 存 localStorage（键 director-canvas-workspace-v1，最多 80 个工程按更新时间淘汰），内容为 {mode,selectedId,time,board:{x,y,zoom},timeline:{zoom,scrollLeft},expanded[],filter}；读取端逐字段类型校验与钳制，损坏 JSON 返回 null。
+- main.js：saveWorkspaceUI（persist 时限频 1s，切工程/beforeunload 强制）与恢复逻辑（openManagedProject：先保存旧工程，再恢复新工程；对象不存在即回退默认；timeline 滚动经 pendingTimelineScroll 在时间轴可见后应用）；UI 状态与工程内容、撤销栈完全分离；恢复后 playing 恒为 false（播放器不自动继续）。
+- 测试：「workspace state round-trips per project, clamps corrupt values and degrades safely」含往返、损坏回退、越界钳制、无存储句柄安全降级。
+- 限制：工程在浏览器崩溃时最多丢最近 1 秒内的 UI 状态（保存限频）；时间轴滚动位置在画布模式恢复时延迟到进入导演台后应用。
+
+【P1-9 任务入口简化】已实现（范围受既有接口限制，如实说明）
+- modelTasksModal 重写为「任务中心」：同一弹窗分「图片生成 · oiioii」（本机记录，按工程列出最近一条，可恢复/加入画布）与「3D 建模 · 腾讯混元」（服务端 /api/model3d/tasks 真实记录，按工程过滤，恢复沿用 watchModel）两区；明确文案区分“生成任务”与“浏览器一次性下载（无队列进度）”，恢复只查询下载、不重复提交付费生成。
+- 图片任务记录由全局单条升级为按工程保存最近一条（localStorage 键不变 jingchang-image-task，格式 v2 {version:2,tasks}，自动兼容读取旧单条格式）；imageGenerationModal 提交与“恢复上次图片任务”改用该存储。
+- 新增顶栏「任务」按钮（#taskCenterBtn）；原各入口（API 设置内“任务中心”、图片节点“3D 任务/恢复”、右键菜单、图片→3D 模型流程内按钮）全部指向同一任务中心，原恢复功能保留。
+- 接口限制（按要求记录）：oiioii 侧只有 /api/oiioii/task/:id 按需查询，服务端不保存历史列表，因此本地只能持久化“每工程最近一条”记录，不能列出全部历史图片任务（如实呈现，不伪造队列）；视频导出、素材/模型下载是浏览器一次性下载，无任务记录可统一。
+
+【版本与帮助】已实现
+- package.json / package-lock.json → 1.2.9；server.mjs /api/health version → 1.2.9。
+- helpModal：新增时间轴导航（Alt 缩放/全览细节往返/循环/仅动画/跟随找回/参数行导航）、节点搜索、布局预设与我的布局、任务中心、工作现场按工程记忆（文字草稿除外）的说明。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+二、修改文件清单
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+源码：
+- src/timeline-nav.mjs（重写：锚点缩放、Alt+滚轮、fitToggle、metrics 注入、边缘限幅）
+- src/timeline-playhead.mjs（新增 adjacentParameterKeyTime / advancePlayTime / adjacentFromTimes；原有函数行为不变）
+- src/timeline-filter.mjs（新增：isAnimatedTrack）
+- src/node-search.mjs（新增：nodeMatchesQuery）
+- src/workspace-state.mjs（新增：saveWorkspaceState / loadWorkspaceState）
+- src/panel-layout.mjs（预设、收起/恢复、自定义布局、v2 存储；defaults/readLayout/fitLayout 向后兼容）
+- src/main.js（顶栏任务按钮、布局按钮、侧栏搜索框、时间轴导航新控件、循环/跟随/仅动画状态与逻辑、参数行导航渲染与刷新、任务中心、图片任务按工程记录、工作现场保存/恢复、帮助文本、设置布局预设、openManagedProject/goProjects/beforeunload/setMode/playBtn 等接线）
+- src/ui-polish.css（追加 v1.2.9 控件样式：参数行导航、节点搜索、布局恢复条、任务分区、循环/仅动画/跟随按钮）
+其他：
+- server.mjs（health 版本 1.2.9）
+- package.json / package-lock.json（版本 1.2.9）
+- tests/v129.test.mjs（新增，10 个用例）
+
+未改动：导出（exportModal/stage.exportVideo）、人物定格（action-hold/modelClipModal）、导入（drop-import/importMediaBatch）、撤销（checkpoint/undo）、工程库与锁（project-library/manager）、人物/运镜预设、离线模型库、连接线等既有功能路径。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+三、验证情况
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- 我未执行任何命令（无 Bash 权限）。请 Codex 执行：
+  1) npm test　2) npm run test:server（需 JINGCHANG_TEST_SERVER=1 起服务）　3) npm run build
+- 新增测试设计为验证真实行为而非按钮字符串：非对称锚点往返（318↔100 精确断言）、边缘限幅、Alt 滚轮缩放锚定与 Shift 横移共存、fit 记忆往返、循环推进取余/停止、参数级导航隔离/去重/边界、动画轨道判定（含定格/路径/镜头）、搜索匹配与不可变性、工作现场往返/损坏回退/钳制、布局预设 1280×800 约束。
+- 兼容性核对（静态）：interaction-v124.test.mjs 的旧 zoom/pan/wheel 断言在新回退路径下语义不变；final-review.test.mjs 以字符串边界截取 main.js 片段，本轮改动均在其截取边界之外；panel-layout.test.mjs 的 readLayout/fitLayout 断言不受 v2 存储影响（readLayout 入参仍为尺寸对象）。
+- 需要 Codex 手工核验的 UI 项：长时间轴缩放后播放杆/鼠标锚点位置、播放中手动横滚暂停跟随与“↩ 播放杆”找回、不同参数行的 ◁▷ 与禁用态、全览↔细节往返、循环播放到结尾回绕、「仅动画」过滤后选中对象仍显示、布局预设/收起/恢复条、1280×800 下主操作区、节点搜索定位与 Enter、工程切换后模式/选中/视口/时间轴恢复、任务中心两个分区、旧工程（无工作现场记录）打开回退默认。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+四、未实现与风险
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 未提交文字草稿的按工程/节点隔离保存：按综合开发意见第 8 条“若本版无法安全处理，应明确列入后续”——本轮未实现（涉及正在编辑的 textarea 生命周期与关闭时机，风险大于收益），帮助文本已注明“未提交的文字草稿暂不记忆”。
+2. 布局预设/收起为 DOM 行为，自动化测试只覆盖数值约束与纯函数；手感与 1280×800 实测需 Codex 核验。
+3. 任务中心不展示 oiioii 历史任务列表（服务端无列表接口），每工程仅最近一条记录；不伪造进度。
+4. 跟随暂停的检测面：只识别滚轮横滚与中键平移；其他第三方脚本引起的程序性滚动不会暂停跟随（当前无此来源）。
+5. fitToggle 记忆为会话内（不跨刷新）——刷新后从工程工作现场恢复时间轴 zoom/scroll，记忆从当次进入细节视图起重新积累，属预期。
+6. 工作现场保存限频 1 秒：极端崩溃可能丢失最后一次 1 秒内的 UI 状态（工程内容仍走原自动保存）。
+7. npm test/build 未由我运行；若 v129 测试或构建报错，优先检查 tests/v129.test.mjs 的 mock 与 src/timeline-nav.mjs 的 clampTimelineScroll 取整（Math.round）是否与断言精度冲突（当前用例均选用整数精确值规避）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+五、回归保留清单（复核确认未破坏）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+外部图片/视频/音频/GLB 导入（含批量与拖入）、导演台输出视频连线、H.264 MP4/WebM 导出、数值双击全选与拖动调值、动作定格实时预览（含滑块/当前帧取帧）、路径走位与贝塞尔手柄、关键帧与动作多选框选、撤销重做（工作现场不进撤销栈）、场景隐藏/Solo、工程锁与备份、双视角机位监看、项目库/回收站、设置与 API 配置均未改动核心路径。
+
+Codex最终审核补充（以此为交付状态）
+- 修复面板尺寸上限与旧布局配置隐式显隐问题；收起状态与模式显隐独立，不改变画布模式下的时间轴隐藏。
+- 循环 dt 负值保护；浮点回绕断言采用误差容限。
+- 工程状态分开保存展开/折叠轨道与纵向滚动，重置新工程缩放和跨工程全览记忆，同步按钮状态；活跃工程每秒更新UI快照。
+- 我的布局保存面板收起状态，兼容旧尺寸记录；动画预设监看220px。
+- 实际自动测试：npm test 193项中187通过、6服务端项跳过；npm run test:server 对这6项全部通过。构建通过；Three.js分块仍有500KB体积提示。
+- 实际UI：120秒旧工程导入，参数导航1→3→80与独立旋转6秒；锚点误差0.34px；全览往返；数值双击全选；循环越过结尾；真实横滚暂停跟随；面板收起找回；正文搜索/空结果；任务空记录；A/B工程恢复隔离；1280×800无整页横向溢出。
+- 本轮未执行付费生成、全量视频导出和所有外部素材格式的手工回归；其核心逻辑由既有自动用例覆盖，不能把这些测试描述成每个功能全手工测试。

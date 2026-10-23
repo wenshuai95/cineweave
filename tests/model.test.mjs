@@ -1,0 +1,16 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {demoProject,validateProject,sampleObject,frame,addKey,object,activeCamera,clone} from '../src/model.mjs';
+test('demo and JSON round trip preserve the editable project',()=>{const p=demoProject();assert.equal(validateProject(JSON.parse(JSON.stringify(p))).objects.length,9);assert.equal(p.shots.length,3);});
+test('animation interpolates endpoints, smooth and hold correctly',()=>{const o=object('actor','A');const a=frame(o,0,'linear'),b=frame(o,4);b.position=[8,0,0];addKey(o,a);addKey(o,b);assert.deepEqual(sampleObject(o,2).position,[4,0,0]);assert.deepEqual(sampleObject(o,9).position,[8,0,0]);o.keys[0].ease='hold';assert.deepEqual(sampleObject(o,3).position,[0,0,0]);o.keys[0].ease='smooth';assert.equal(sampleObject(o,1).position[0],1.25);});
+test('adding at same time replaces the key, preserving sorted order',()=>{const o=object('actor','A');addKey(o,frame(o,4));addKey(o,frame(o,0));const k=frame(o,4);k.position=[3,0,0];addKey(o,k);assert.equal(o.keys.length,2);assert.equal(o.keys[1].position[0],3);});
+test('camera cuts follow half-open shot ranges',()=>{const p=demoProject();assert.equal(activeCamera(p,5.99).id,p.shots[0].cameraId);assert.equal(activeCamera(p,6).id,p.shots[1].cameraId);assert.equal(activeCamera(p,9).id,p.shots[2].cameraId);assert.equal(activeCamera(p,12).id,p.shots[2].cameraId);});
+test('rejects overlapping cuts and corrupt coordinates without modifying active project',()=>{const p=demoProject(),bad=clone(p);bad.shots[1].start=5;assert.throws(()=>validateProject(bad),/重叠/);bad.shots[1].start=6;bad.objects[0].position=[0,NaN,0];assert.throws(()=>validateProject(bad),/场景对象/);assert.doesNotThrow(()=>validateProject(p));});
+test('rejects external or executable media URLs',()=>{const p=demoProject();p.nodes[0].src='javascript:alert(1)';assert.throws(()=>validateProject(p),/内嵌/);});
+test('ground colors survive project round trips and older projects keep the default',()=>{const p=demoProject();assert.doesNotThrow(()=>validateProject(clone(p)));p.groundColor='#b69a74';assert.equal(validateProject(JSON.parse(JSON.stringify(p))).groundColor,'#b69a74');for(const bad of ['red','#fff','url(test)',42,null]){p.groundColor=bad;assert.throws(()=>validateProject(clone(p)),/地面颜色/);}});
+test('shot bundles round trip while malformed or contradictory group identities fail',()=>{
+ const p=demoProject(),id=p.nodes[0].id;p.boardGroups=[{id:'shot-test',name:'镜头',memberIds:[id],shotBundle:true,shotSourceId:id,collapsed:true}];assert.equal(validateProject(clone(p)).boardGroups[0].shotSourceId,id);
+ for(const patch of [{shotBundle:'yes'},{shotSourceId:'missing'},{shotSourceId:undefined},{shotBundle:false},{videoVersions:true},{storyShots:true}]){const bad=clone(p);Object.assign(bad.boardGroups[0],patch);assert.throws(()=>validateProject(bad),/镜头分组/);}
+ const stray=clone(p);delete stray.boardGroups[0].shotBundle;assert.throws(()=>validateProject(stray),/镜头分组来源/);
+ const other=clone(p);other.boardGroups[0].shotSourceId=p.nodes[1].id;assert.throws(()=>validateProject(other),/镜头分组来源/);
+ const legacy=demoProject();legacy.boardGroups=[{id:'old-version',name:'旧版本',memberIds:[legacy.nodes[0].id],videoVersions:true}];assert.doesNotThrow(()=>validateProject(legacy));
+});

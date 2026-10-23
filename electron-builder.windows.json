@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "cn.directorcanvas.desktop",
+  "productName": "超级无敌导演画布",
+  "directories": {
+    "app": "build/windows-app",
+    "output": "release/windows",
+    "buildResources": "desktop"
+  },
+  "electronVersion": "44.7.0",
+  "asar": false,
+  "files": [
+    "**/*"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "executableName": "DirectorCanvas",
+    "icon": "DirectorCanvas.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "deleteAppDataOnUninstall": false,
+    "artifactName": "DirectorCanvas-Setup-${version}-${arch}.${ext}"
+  }
+}

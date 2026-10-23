@@ -1,0 +1,21 @@
+------------------------------------------------------
+Ultimate Modular Males by @Quaternius
+Consider supporting me on Patreon, even $1 helps me a lot!
+
+https://www.patreon.com/quaternius
+-------------------------------------------------------
+
+License:
+CC0 1.0 Universal (CC0 1.0) 
+Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Source pages (both explicitly CC0):
+https://quaternius.com/packs/ultimatemodularwomen.html
+https://quaternius.com/packs/ultimatemodularcharacters.html
+
+Downloaded from public mirror at commit db3df04d1e4714298a09510b26fb6de6645138a2
+https://github.com/agentkaerf/FreeModels
+The mirror contains the same License.txt in both packs (its title says Males); female pack license also verified on the author website.
+Meshes, materials, rig weights and animation samples unchanged; embedded buffer and prefixed clip names for the local app.

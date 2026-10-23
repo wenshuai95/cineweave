@@ -1,0 +1,65 @@
+/* Node-anchored contextual UI (小云雀式): toolbar above the selected node, tool panel beside it.
+   Geometry is written inline (fixed, viewport coords) by node-popover.mjs; this file only pins
+   size and stacking so the portaled overlay (modalRoot / body) never depends on #board's scope
+   or the world's clipping. No animations; Escape and focus handling stay with the caller. */
+.node-action-bar.node-action-anchored{position:fixed;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:max-content;max-width:min(680px,calc(100vw - 24px));flex-wrap:wrap;z-index:71}
+.node-action-bar .node-action-relation{display:flex;align-items:center;max-width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 7px 0 3px;margin-right:2px;border-right:1px solid #4a4651;color:#c3b7da;font-size:11px}
+.node-action-bar .node-action-relation[hidden]{display:none!important}
+.node-action-bar.docked{border-style:dashed;border-color:#6c5f84}
+/* Passthrough backdrop: canvas stays visible and interactive, no mask, no blur. */
+.node-tool-backdrop{position:fixed;inset:0;pointer-events:none;background:transparent;z-index:70}
+.node-tool-backdrop>.modal.node-tool-panel{position:fixed;margin:0;pointer-events:auto;width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 110px);overflow:auto;overscroll-behavior:contain}
+.node-tool-backdrop>.modal.node-tool-panel :is(button,input,select,textarea):focus-visible{outline:2px solid var(--gold,#e4b575);outline-offset:2px}
+/* Sticky actions bleed to the panel edges and cancel the modal's bottom padding so they rest
+   flush at the rounded bottom while the body scrolls. */
+.node-tool-panel .modal-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:8px;margin:16px -26px -26px;padding:12px 26px;background:#20262a;border-top:1px solid #39424a;border-radius:0 0 13px 13px}
+
+/* Media controls are local to their type; the generation composer stays compact. */
+.node-tool-backdrop>.modal.video-composer-panel{width:min(580px,calc(100vw - 24px));padding:18px}
+.video-composer-panel h2{font-size:18px;margin:0}
+.video-composer-panel>.subtitle{font-size:12px;line-height:1.6;margin:8px 0 12px;color:#adb7bf}
+.video-composer-panel .modal-actions{margin:12px -18px -18px;padding:12px 18px}
+.video-composer .field{font-size:12px;margin:0;min-width:0}
+.video-composer textarea{resize:vertical;min-height:92px;max-height:240px;line-height:1.65;font-size:14px}
+.reference-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;max-height:130px;overflow:auto}
+.reference-chip{display:flex;align-items:center;max-width:178px;background:#171c20;border:1px solid #48515a;border-radius:8px;min-width:0}
+.reference-chip button{border:0;background:transparent;min-height:36px;padding:5px;color:inherit;display:flex;align-items:center;gap:6px;min-width:0}
+.reference-chip button:first-child{flex:1;text-align:left}
+.reference-chip img,.ref-kind{width:34px;height:34px;object-fit:cover;border-radius:5px;flex-shrink:0}
+.ref-kind{background:#313c46;display:grid;place-items:center;font-size:20px;color:#d5c29f}
+.reference-chip b{display:block;font-size:12px;white-space:nowrap;color:#f4d39f}
+.reference-chip small{display:block;max-width:96px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;color:#aeb9c1;font-size:11px}
+.reference-empty{font-size:12px;color:#aeb9c1;margin:4px 0}
+.reference-picker{margin-bottom:12px;border:0;padding:0}
+.reference-picker summary{font-size:12px;color:#e0c59f;cursor:pointer;padding:5px 0}
+.reference-picker .video-reference-list{max-height:140px;overflow:auto;display:grid;gap:5px;margin:8px 0}
+.video-reference-list label{display:flex;gap:8px;align-items:center;font-size:12px;min-height:28px}
+.video-reference-list label>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.video-reference-list small{color:#aeb9c1;flex-shrink:0}
+.video-prompt-wrap{position:relative;margin-bottom:12px}
+.reference-mentions{position:absolute;left:0;right:0;top:100%;background:#252e35;border:1px solid #6d7780;border-radius:8px;padding:5px;max-height:180px;overflow:auto;z-index:4;box-shadow:0 8px 24px #0008}
+.reference-mentions[hidden]{display:none}
+.reference-mentions button{display:flex;gap:10px;align-items:center;border:0;background:transparent;width:100%;text-align:left;padding:9px;min-height:36px}
+.reference-mentions button[aria-selected=true]{background:#43515d;color:#fff}
+.reference-mentions button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c2cad0;font-size:12px}
+.composer-settings{display:grid;grid-template-columns:minmax(130px,2fr) repeat(3,minmax(62px,1fr));gap:8px}
+.composer-settings select{width:100%;min-width:0;font-size:12px;padding:7px}
+.video-composer .help-text{font-size:12px;line-height:1.6;margin:10px 0}
+.video-composer .preset-help{font-size:12px;line-height:1.5;padding:9px;margin-bottom:0}
+.media-panel-preview{border-radius:10px;overflow:hidden;background:#111518;display:grid;place-items:center;min-height:120px;border:1px solid #3b454f}
+.media-panel-preview :is(img,video){display:block;width:100%;max-height:240px;object-fit:contain}
+.media-panel-preview audio{width:100%;padding:18px 8px;box-sizing:border-box}
+.media-panel-audio .media-panel-preview{background:linear-gradient(145deg,#28373d,#18242a);min-height:130px}
+.media-panel-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.media-panel-tools button{font-size:12px;min-height:34px}
+.node-media-panel .help-text{line-height:1.65;color:#b9c3cb;font-size:12px}
+@media(max-width:760px){.composer-settings{grid-template-columns:repeat(3,minmax(0,1fr))}.composer-settings label:first-child{grid-column:1/-1}.reference-chip{max-width:155px}}
+/* Keep the action strip compact and prevent sticky footers covering content. */
+.node-action-bar.node-action-anchored{padding:6px;gap:6px;border-radius:10px}
+.node-action-bar.node-action-anchored strong{font-size:12px;max-width:130px}
+.node-action-bar.node-action-anchored button{font-size:12px;min-height:32px;padding:6px 8px}
+.node-tool-panel:has(.node-media-panel),.node-tool-panel.video-composer-panel{display:flex;flex-direction:column;overflow:hidden}
+.node-tool-panel:has(.node-media-panel)>.row,.video-composer-panel>.row,.node-tool-panel:has(.node-media-panel)>.subtitle,.video-composer-panel>.subtitle{flex-shrink:0}
+.node-tool-panel .node-media-panel,.video-composer-panel .video-composer{min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:4px;flex:1 1 auto}
+.node-tool-panel:has(.node-media-panel) .modal-actions,.video-composer-panel .modal-actions{position:static;flex-shrink:0}
+.node-tool-panel:has(.node-media-panel) .subtitle{overflow-wrap:anywhere}

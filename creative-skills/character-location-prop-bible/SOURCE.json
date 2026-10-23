@@ -1,0 +1,73 @@
+{
+  "repository": "0xhughs/director-skills",
+  "commit": "35ca0a2b4cd55b0668aa9ea0f40273324b774bb4",
+  "license": "MIT",
+  "downloaded": "2026-10-17",
+  "review": "Declarative text guidance only; no upstream code executed. App uses reviewed compact rules in writing-agent.mjs, not runtime loading of arbitrary SKILL.md.",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "5c609a7d9174ac54756c1cf35d486920618adb9a0a9ee8688121ea9a0d80ee70"
+    },
+    {
+      "path": "SKILL.md",
+      "sha256": "3aa7722fc49475551f92f93565148596c54d8c6a65f317baad3299fd64110201"
+    },
+    {
+      "path": "checklists/continuity_checklist.md",
+      "sha256": "5366c8bf03312657ce910e26f16bd4b3a7c9b56c0144c94067c078889825ff6f"
+    },
+    {
+      "path": "examples/character_continuity_update.md",
+      "sha256": "6fe7c6e91ee57faaa21ad6f302c26fdc6b26dc2a64c08154a2faf046e6a093b1"
+    },
+    {
+      "path": "examples/location_continuity_update.md",
+      "sha256": "20d4ee22d306ba45dfc8e4aed7e068be287c2bd56b7016fa3f0d77a2d4851d92"
+    },
+    {
+      "path": "references/continuity_system.md",
+      "sha256": "efa14c202f76222bbb85469be2957abc56953571ca3f3d43e1a19c4d63cf68d5"
+    },
+    {
+      "path": "references/golden_image_workflow.md",
+      "sha256": "5d75414810241720d2d5288eb0c61b3ca18a9451363c0bebb4cef616269a554d"
+    },
+    {
+      "path": "references/identity_anchors.md",
+      "sha256": "d69cfe6da70d63524a6d53e0c468f407b79bf71f8fa00e22730158683584eb74"
+    },
+    {
+      "path": "references/visual_bible_system.md",
+      "sha256": "2cf0c241bebe49a5f1c7d80afad2a3ca2cdb3d88411c9f242c1e27ae1cbe84d4"
+    },
+    {
+      "path": "templates/character_profile.md",
+      "sha256": "6ac8d89c3d9188f6ff76869d94e2171a40e903a28e3894f3ba8f1aec7e154072"
+    },
+    {
+      "path": "templates/continuity_checklist.md",
+      "sha256": "235955e059a8f8f43f2ce22766eb59571c7c0a69277b728ef392b60050baa484"
+    },
+    {
+      "path": "templates/costume_profile.md",
+      "sha256": "bf411365d26801049629ed0ce49d2ff405e87a2eae6b8c2bb1849edf62637a8e"
+    },
+    {
+      "path": "templates/location_profile.md",
+      "sha256": "831f1774919fa0781f5726ae4713cdbc1a5e58bb8fba620e1497c1fbe3081a7e"
+    },
+    {
+      "path": "templates/prop_profile.md",
+      "sha256": "e0507ff522a6e3d51fe29c80e42e39092815fea52b42199de26d91284558a644"
+    },
+    {
+      "path": "templates/visual_style_bible.md",
+      "sha256": "1f018e02a651e6e0a387a357ed9ad34d1f506474c5bb559defc395a4821f117f"
+    },
+    {
+      "path": "tests/continuity_tests.md",
+      "sha256": "decbd38e183e30c5f5bb37c908a1b3501a24c877cc281f1e4c321be17f0e4a6d"
+    }
+  ]
+}

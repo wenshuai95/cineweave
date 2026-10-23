@@ -1,0 +1,44 @@
+/* The card is a preview. Editing and next steps appear only for the selection. */
+#board .node{border-radius:12px;background:#222a32;overflow:visible}
+#board .node-head{padding:12px 14px;gap:9px;background:transparent;border-bottom:0}
+#board .node-head b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600}
+#board .node-type{font-size:11px;letter-spacing:0;background:#313d47;color:#b7c9d3;flex-shrink:0}
+#board .node .node-text{padding:4px 16px 16px;font-size:14px;line-height:1.65;max-height:none;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6}
+#board .node .node-text:empty{display:none}
+#board .node-media{border-radius:0;max-height:230px;object-fit:contain;background:#151b20}
+#board .node-source-actions{display:none}
+#board .node-meta{font-size:12px;gap:10px;padding:10px 14px;align-items:center;color:#acbbc6}
+#board .node-meta span:first-child{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#board .node-meta span:last-child{flex-shrink:0;font-size:11px;color:#bdcfca}
+.node-empty{min-height:110px;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#1a2229;color:#afc0cb;line-height:1.6;font-size:14px;border-block:1px solid #394650}
+.node-empty b{color:#e1e8ed;font-weight:500}
+.node-empty small{font-size:12px;color:#a4b4bf}
+.node-action-bar{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);max-width:calc(100% - 24px);width:max-content;z-index:8;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;padding:10px;background:#202a33f5;border:1px solid #64716f;border-radius:12px;box-shadow:0 6px 24px #0005}
+.node-action-bar[hidden]{display:none!important}
+.node-action-bar>strong{font-size:13px;max-width:140px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-inline:3px}
+.node-action-bar button{font-size:13px;min-height:36px;padding:7px 10px}
+.node-action-bar .node-more{color:#c1cbd3;background:transparent}
+.template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.template-tile{white-space:normal;text-align:left;padding:16px;display:flex;flex-direction:column;gap:9px;min-width:0;background:#252f38;border-color:#46545f;border-radius:10px}
+.template-tile b{font-size:16px;line-height:1.5;color:#eee6d7}
+.template-tile span{font-size:14px;line-height:1.65;color:#bdcbd6}
+.template-tile small{font-size:12px;line-height:1.6;color:#a2b7b0}
+.template-section-title{font-size:14px;color:#b9c9d4;margin:20px 0 8px}
+.template-note{font-size:13px;line-height:1.75;color:#b5c3cd;margin-top:16px}
+.node-edit-form textarea{min-height:210px;font-size:15px;line-height:1.8}
+.node-edit-form .field{font-size:14px}
+.node-edit-form input{font-size:15px}
+.node-editor-note{font-size:13px;line-height:1.7;color:#abbcc7;margin-top:12px}
+.node-content-disclosure{margin-top:14px}
+.node-content-disclosure summary{font-size:13px;line-height:1.6;cursor:pointer;color:#b4c3ce;padding:6px 0}
+.node-content-disclosure .field{font-size:13px}
+#boardToolbar[data-selection-count="0"] :is(#boardGroupBtn,#boardUngroupBtn,#boardAlignBtn,#boardCopyBtn,#boardDeleteBtn),#boardToolbar[data-selection-count="1"] :is(#boardGroupBtn,#boardAlignBtn){display:none}
+.workspace-toolbar:has(#workflowTemplates:not(.hidden)){flex-wrap:wrap;height:auto;min-height:47px;padding-block:6px;row-gap:6px}
+.workspace-toolbar:has(#workflowTemplates:not(.hidden))>div:first-child{min-width:0}
+@media(max-width:1100px){.node-action-bar>strong{display:none}.node-action-bar button{font-size:12px;padding:7px 8px}}
+@media(max-width:620px){.template-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.node-action-bar,.template-tile{transition:none}}
+
+/* Keep selection actions clear of the optional minimap. */
+#board:has(#boardMinimap:not(.hidden)) .node-action-bar{max-width:calc(100% - 210px);left:calc((100% - 180px)/2)}
+@media(max-width:1100px){#board:has(#boardMinimap:not(.hidden)) .node-action-bar{max-width:calc(100% - 24px);left:50%}#board:has(.node-action-bar:not([hidden])) #boardMinimap{bottom:190px}}

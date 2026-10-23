@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-10-10",
+  "kenney": [
+    {
+      "page": "https://kenney.nl/assets/mini-characters",
+      "license": "CC0-1.0",
+      "download": "https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip"
+    },
+    {
+      "page": "https://kenney.nl/assets/car-kit",
+      "license": "CC0-1.0",
+      "download": "https://kenney.nl/media/pages/assets/car-kit/1a312ec241-1775131960/kenney_car-kit.zip"
+    },
+    {
+      "page": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0-1.0",
+      "download": "https://kenney.nl/media/pages/assets/city-kit-suburban/2c871b7af2-1745479373/kenney_city-kit-suburban_20.zip"
+    }
+  ],
+  "quaternius": [
+    {
+      "id": "horse",
+      "title": "Horse",
+      "creator": "Quaternius",
+      "source": "https://poly.pizza/m/qvTrSG9pZF",
+      "license": "CC0 1.0",
+      "download": "https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb"
+    },
+    {
+      "id": "shiba",
+      "title": "Shiba Inu",
+      "creator": "Quaternius",
+      "source": "https://poly.pizza/m/y4wdQpg767",
+      "license": "CC0 1.0",
+      "download": "https://static.poly.pizza/ba6d0ee3-bcc0-4ef0-9d3c-a3e245b41c77.glb"
+    },
+    {
+      "id": "husky",
+      "title": "Husky",
+      "creator": "Quaternius",
+      "source": "https://poly.pizza/m/wcWiuEqwzq",
+      "license": "CC0 1.0",
+      "download": "https://static.poly.pizza/611d25c7-430f-4bb5-ab2c-d8f5f3cb9712.glb"
+    },
+    {
+      "id": "cow",
+      "title": "Cow",
+      "creator": "Quaternius",
+      "source": "https://poly.pizza/m/5XSc2Fka3F",
+      "license": "CC0 1.0",
+      "download": "https://static.poly.pizza/48c5f4af-07d6-4493-a261-0919967afe85.glb"
+    }
+  ],
+  "adultCharacters": {
+    "official": "https://quaternius.com/packs/universalbasecharacters.html",
+    "officialDownload": "https://quaternius.itch.io/universal-base-characters",
+    "license": "CC0-1.0",
+    "mirror": "https://github.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/tree/5821923af517ac5fdc82505faa92a0d575fc1b1a/Universal%20Base%20Characters%5BStandard%5D/Universal%20Base%20Characters%5BStandard%5D",
+    "mirrorCommit": "5821923af517ac5fdc82505faa92a0d575fc1b1a",
+    "reasonForMirror": "官方itch连接被网络重置；镜像存放Standard原文件与原许可，许可另由作者官网核实。",
+    "files": [
+      {
+        "id": "adult-male-rigged",
+        "sourceFile": "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+        "sha256": "41499d8e5cf3d03f939c7f81478f67e866f417149b522741ed8744da6f5488ed",
+        "boneCount": 65,
+        "skinCount": 1,
+        "animated": true,
+        "modifications": "保留原网格、骨架、蒙皮权重和参考姿态；原贴图替换为哑光材质；嵌入匹配本骨架的6种本地程序化基础预演动作。"
+      },
+      {
+        "id": "adult-female-rigged",
+        "sourceFile": "Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
+        "sha256": "0198ad8d692a16508e1e6786d4532f468a1835f5c0fae7653d18e1238273b9e4",
+        "boneCount": 65,
+        "skinCount": 1,
+        "animated": true,
+        "modifications": "保留原网格、骨架、蒙皮权重和参考姿态；原贴图替换为哑光材质；嵌入匹配本骨架的6种本地程序化基础预演动作。"
+      }
+    ],
+    "motionUpdate": {
+      "creator": "本工程本地制作",
+      "externalMotionData": false,
+      "type": "程序化基础预演，非动捕",
+      "clips": {
+        "idle": "站立呼吸",
+        "walk": "原地走路",
+        "run": "原地跑步",
+        "wave": "挥手",
+        "sit": "坐姿",
+        "cheer": "双手举起"
+      },
+      "verification": "adult-motion-verification.json"
+    }
+  }
+}
