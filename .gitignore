@@ -15,6 +15,10 @@ work/
 data/
 generated/
 text-model.json
+.local/
+credentials*
+*.pem
+*.key
 *.local
 .env
 .env.*
