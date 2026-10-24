@@ -12,7 +12,31 @@
 npm install
 ```
 
-## 日常开发
+## 日常开发（不需要 DMG）
+
+方式 A：最接近生产，改完代码重新 build：
+
+```bash
+npm run build
+npm start          # http://127.0.0.1:4173
+```
+
+方式 B：前端热更新（两个终端）：
+
+```bash
+# 终端 1：后端 API
+npm start
+
+# 终端 2：Vite 热更新
+npm run dev        # http://127.0.0.1:5173，/api 自动代理到 4173
+```
+
+注意：浏览器 `127.0.0.1:4173` / `:5173` 的 IndexedDB 与 Electron App 的数据目录相互独立；
+要迁移工程用「导出工程 JSON → 导入」。
+
+DMG 只在发布/交付时构建，日常开发不需要。
+
+## 常用命令
 
 ```bash
 npm run build     # Vite 构建
