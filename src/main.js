@@ -592,7 +592,7 @@ function jumpToStage(stage){
  if(stage==='edit'){wsShell?.setPage('edit');return;}
  if(stage==='generate'){
   const node=p.nodes.find(n=>n.id===selected);
-  if(!node)return toast('先在画布中选中一个节点，再生成图片或视频');
+  if(!node)return generationPanel(null,'image');
   if(node.type==='video')return providerVideoModal(node);
   if(['text','image','scene','actor'].includes(node.type))return aiImageModal(node);
   return toast('该节点不支持直接生成；请选择文本、图片、角色或场景节点');
@@ -1661,7 +1661,7 @@ async function generationPanel(source,mode='image'){
    }
    const resultNode=mode==='image'?p.nodes.find(n=>n.generatedTask===taskId):p.nodes.at(-1);
    setMode('board');filter='all';commit();if(resultNode)select(resultNode.id);fitBoard();resultUrl=src;
-   q('#genResult').innerHTML=`<div class="help-text">已加入画布 · ${providerId} · ${escValue(q('#genModel').value)}</div>`;
+   q('#genResult').innerHTML=`<div class="generation-result" style="display:flex;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1px solid #39393c;border-radius:8px">${mode==='image'?`<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px">`:`<video src="${src}" controls style="width:96px;height:64px;object-fit:cover;border-radius:6px"></video>`}<div><b>${providerId} · ${escValue(q('#genModel').value)}</b><div class="help-text">已加入画布 · ${quote?.cost===0?'本地免费':'按服务商实际计费'}</div><div class="help-text">任务 ${taskId.slice(0,8)}…</div></div></div>`;
    setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;
   }catch(e){setStatus(e.message);}
   finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;}}
@@ -1676,114 +1676,6 @@ async function aiImageModal(source,{promptOverride}={}){
  return generationPanel(source,'image');
 }
 async function providerVideoModal(source){return generationPanel(source,'video');}
-
-async function comfyImageModal(source){
- const project=p,projectId=p.id,sourceId=source?.id;
- nodeToolModal(source?.id,t('comfy.title'),t('comfy.subtitle'),`<div class="image-composer"><p class="help-text">${t('comfy.free')}</p><div class="composer-scroll"><label class="field">${t('comfy.prompt')}<textarea id="comfyPrompt" rows="4" maxlength="6000">${esc(typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-settings image-settings"><label class="field grow">${t('comfy.model')}<select id="comfyModel"></select></label><label class="field">${t('comfy.size')}<select id="comfySize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="field">${t('comfy.steps')}<input id="comfySteps" type="number" min="1" max="60" value="20"></label></div><p id="comfyStatusText" class="help-text">ComfyUI…</p></div>`,`<span id="comfyMessage" class="composer-price"></span><button id="comfyCancel">${t('common.cancel')}</button><button id="comfyRun" class="primary" disabled>${t('comfy.generate')}</button>`);
- const panel=document.querySelector('#comfyPrompt')?.closest('.modal');if(!panel)return;const q=s=>panel.querySelector(s);
- const status=text=>{if(q('#comfyStatusText'))q('#comfyStatusText').textContent=text;};
- const live=()=>panel.isConnected&&p===project;
- q('#comfyCancel').onclick=()=>closeModal();
- try{
-  const health=await api('/api/comfy/status');
-  if(!live())return;
-  if(!health.ok)throw Error(t('comfy.notRunning'));
-  const data=await api('/api/comfy/models');
-  if(!data.models?.length)throw Error('ComfyUI 没有可用 checkpoint');
-  q('#comfyModel').innerHTML=data.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
-  status(`${health.version||'ComfyUI'} · ${data.models.length} models`);
-  q('#comfyRun').disabled=false;
- }catch(e){status(e.message);q('#comfyRun').disabled=true;return;}
- q('#comfyRun').onclick=async()=>{
-  if(!live())return;
-  const prompt=q('#comfyPrompt').value.trim(),modelId=q('#comfyModel').value,size=q('#comfySize').value,steps=Number(q('#comfySteps').value)||20;
-  if(!prompt)return status(t('comfy.prompt'));
-  const button=q('#comfyRun');button.disabled=true;q('#comfyCancel').disabled=true;q('#comfyMessage').textContent=t('comfy.free');
-  try{
-   const quote=await api('/api/comfy/quote',{modelId,prompt,size,steps,projectId});
-   const submitted=await api('/api/comfy/generate',{quoteId:quote.quoteId,projectId,sourceId});
-   const taskId=submitted.taskId;status(t('comfy.working'));
-   let task=null;
-   for(let i=0;i<240;i++){
-    await new Promise(r=>setTimeout(r,2000));if(!live())return;
-    task=await api('/api/comfy/task/'+encodeURIComponent(taskId));
-    if(task.status==='succeeded')break;
-    if(task.status==='failed')throw Error(task.error?.message||task.message||'ComfyUI failed');
-    if(task.message)status(task.message);
-   }
-   if(!task||task.status!=='succeeded')throw Error('ComfyUI timeout');
-   const response=await fetch(`/api/comfy/task/${encodeURIComponent(taskId)}/file/0`);
-   if(!response.ok)throw Error('ComfyUI image download failed');
-   const src=await readDataURL(await response.blob());
-   if(!live())return;
-   const context=imageAssetContext(project,sourceId);
-   const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt,context,createNode:extra=>asset('image',{title:'ComfyUI · '+prompt.slice(0,25),...extra})});
-   if(plan.already){status(t('comfy.already'));return;}
-   checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);setMode('board');filter='all';commit();select(node.id);fitBoard();closeModal();toast(t('comfy.added'));
-  }catch(e){status(e.message);}
-  finally{if(live()){button.disabled=false;q('#comfyCancel').disabled=false;}}
- };
-}
-
-async function seedreamImageModal(source){
- const project=p,projectId=p.id,sourceId=source?.id;
- nodeToolModal(source?.id,'Seedream 生图','即梦 / 火山方舟图片模型；提交后按方舟实际计费。',`<div class="image-composer"><p class="help-text">仅按提示词生成新图；原图保留。生成完成后自动加入画布。</p><div class="composer-scroll"><label class="field">画面描述<textarea id="seedreamPrompt" rows="4" maxlength="6000">${esc(typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-settings image-settings"><label class="field grow">模型<select id="seedreamModel"></select></label><label class="field">尺寸<select id="seedreamSize"><option>1024x1024</option><option>1536x1024</option><option>1024x1536</option></select></label></div><p id="seedreamStatus" class="help-text" role="status">正在读取 Seedream 配置…</p></div>`,`<span id="seedreamPrice" class="composer-price" role="status"></span><button id="seedreamCancel">取消</button><button id="seedreamGenerate" class="primary" disabled>查询并生成</button>`);
- const panel=document.querySelector('#seedreamPrompt')?.closest('.modal'); if(!panel)return;
- const q=s=>panel.querySelector(s); let quote=null,models=[];
- const status=text=>{if(q('#seedreamStatus'))q('#seedreamStatus').textContent=text;};
- const live=()=>panel.isConnected&&p===project;
- try{
-  const config=await api('/api/providers/config');
-  if(!live())return;
-  if(!config.config?.seedream?.configured){
-   status('尚未配置 Seedream API Key。请先到「设置 → API 服务」填写。');
-   q('#seedreamGenerate').textContent='去设置';
-   q('#seedreamGenerate').disabled=false;
-   q('#seedreamGenerate').onclick=()=>{closeModal();aiModal();};
-   return;
-  }
-  q('#seedreamModel').innerHTML='<option>正在读取模型…</option>';
-  models=await api('/api/providers/seedream/models');
-  if(!live())return;
-  if(!models.models?.length)throw Error('账号没有可用的 Seedream 模型，请先在火山方舟开通');
-  q('#seedreamModel').innerHTML=models.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
-  const defaultModel=models.models.find(m=>m.default)?.id||models.models[0].id;
-  q('#seedreamModel').value=defaultModel;
-  status('已配置。首次点「查询并生成」会获取报价，再次点击确认提交。');
-  q('#seedreamGenerate').disabled=false;
-  q('#seedreamGenerate').textContent='查询并生成';
- }catch(e){status(e.message);q('#seedreamGenerate').disabled=true;return;}
- q('#seedreamCancel').onclick=()=>closeModal();
- q('#seedreamPrompt').oninput=()=>{quote=null;if(q('#seedreamGenerate')){q('#seedreamGenerate').textContent='查询并生成';q('#seedreamPrice').textContent='';}};
- q('#seedreamModel').onchange=()=>{quote=null;q('#seedreamGenerate').textContent='查询并生成';q('#seedreamPrice').textContent='';};
- q('#seedreamSize').onchange=()=>{quote=null;q('#seedreamGenerate').textContent='查询并生成';q('#seedreamPrice').textContent='';};
- q('#seedreamGenerate').onclick=async()=>{
-  if(!live())return;
-  const button=q('#seedreamGenerate'),prompt=q('#seedreamPrompt').value.trim(),modelId=q('#seedreamModel').value,size=q('#seedreamSize').value;
-  if(!prompt){status('请先填写画面描述');return;}
-  if(!quote){
-   button.disabled=true;status('正在获取报价…');
-   try{quote=await api('/api/providers/seedream/quote',{modelId,prompt,size,projectId});if(!live())return;q('#seedreamPrice').textContent=quote.note||'按方舟实际计费';button.textContent='确认并生成（按实际计费）';status('确认后将提交 Seedream 生成，不可撤销。');}
-   catch(e){status(e.message);quote=null;}
-   finally{if(live())button.disabled=false;}
-   return;
-  }
-  button.disabled=true;q('#seedreamCancel').disabled=true;status('Seedream 正在生成，通常需要几十秒…');
-  try{
-   const result=await api('/api/providers/seedream/generate',{quoteId:quote.quoteId,projectId,sourceId});
-   const task=result.task||result;if(!task?.id)throw Error('任务没有返回 ID');
-   const response=await fetch('/api/providers/task/'+encodeURIComponent(task.id)+'/file/0');
-   if(!response.ok)throw Error('生成图片读取失败');
-   const src=await readDataURL(await response.blob());
-   if(!live())return;
-   const context=imageAssetContext(project,sourceId);
-   const plan=planCanvasImageResult(project,{sourceId,taskId:task.id,src,prompt,context,createNode:extra=>asset('image',{title:'Seedream · '+prompt.slice(0,25),...extra})});
-   if(plan.already){status('该图片已在画布中');return;}
-   checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);setMode('board');filter='all';commit();select(node.id);fitBoard();closeModal();toast('Seedream 图片已加入画布');
-  }catch(e){status(e.message+'；请核对任务记录，勿重复提交');}
-  finally{if(live()){button.disabled=false;q('#seedreamCancel').disabled=false;}}
- };
-}
 
 let taskCenterFilter='all',taskCenterSelected=null,taskCenterBusy=new Set();
 function taskRecords(){return collectTaskRecords({project:p});}
