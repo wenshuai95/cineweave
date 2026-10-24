@@ -220,7 +220,7 @@
     "stageLabel": "Real-time 3D / meters",
     "stageCaption": "WASD move · QE up/down · IJKL / left-drag turn · right-drag pan · Alt+wheel FOV",
     "deleteSelection": "Delete selected",
-    "addAction": "＋ Character action",
+    "addAction": "Add action",
     "addCameraMove": "＋ Camera move",
     "addKeyframe": "◇ Add keyframe",
     "shotSequence": "Shot sequence",
@@ -232,7 +232,19 @@
     "timelineHelp": "Drag to retime · Delete to remove · Double-click to edit",
     "preview": "Camera monitor",
     "capture": "▣ Capture to canvas",
-    "depth": "◐ Depth map"
+    "depth": "◐ Depth map",
+    "shotTrack": "▣　Shot edit",
+    "keyNav": "Keyframe navigation",
+    "actionTrack": "　Action clips",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "previous": "◁ Prev",
+    "next": "Next ▷",
+    "allParams": "All parameters",
+    "cameraPreset": "Camera move preset",
+    "previousKey": "Previous keyframe",
+    "nextKey": "Next keyframe",
+    "enterKey": "Double-click to edit time and easing"
   },
   "edit": {
     "title": "Edit",
@@ -444,5 +456,23 @@
     "taskEmptyTitle": "No creative tasks yet",
     "taskEmptyText": "Start a storyboard & asset task in chat; results are saved here for review before adoption.",
     "backToChat": "Back to chat"
+  },
+  "help": {
+    "title": "Guide",
+    "subtitle": "Start on the canvas; open the Director when you need spatial previz.",
+    "canvasTitle": "Start on the canvas",
+    "canvasP1": "Use New to add script, text, image or video nodes, or drag images, videos, audio and GLB files from Finder. Multiple files are arranged near the drop point and the whole batch can be undone at once.",
+    "canvasP2": "Select a node to see common actions beside it; double-click or press Enter to open it, F2 to edit its name and content. Images currently support text-to-image only; existing images are not uploaded for generation.",
+    "canvasP3": "Drag from a node port to create a connection, or click a port to choose a source/target. Images, videos and audio can be selected as references in the video panel with a stated purpose. Connections never submit generation automatically.",
+    "directorTitle": "Director & previz",
+    "directorP1": "Local GLB files can connect to the Director, and models from the offline library can be added directly. Every Director node is an entrance to the same shared project scene, not an independent scene.",
+    "directorP2": "Select an object and adjust it with the axes or right-side parameters; double-click a number to select it all. Actions and movement are designed separately; use + Character action / + Camera move on the timeline, and shot sequencing to switch cameras.",
+    "directorP3": "◇ next to a parameter records it; ◆ means a keyframe exists. Expand a track and use ◁▷ to jump between keyframes; double-click a keyframe or action clip to edit. The previz assistant previews a plan before you adopt it, with undo available.",
+    "produceTitle": "Generate, edit & save",
+    "produceP1": "Before generating, check the quote, prompt, references and parameters, then confirm explicitly. Task center shows creative, image, video and delivery records; restore only queries existing tasks and never re-submits.",
+    "produceP2": "Previz screenshots and exported videos return to the canvas. Video/audio nodes can be sent to Edit; after a rough cut, export a file or send it back to the canvas.",
+    "produceP3": "Projects autosave locally; export a backup from the Project menu. Deleting a canvas node only removes the node and its connections; placed Director objects stay. Before deleting media in asset management, check whether it is used in Edit.",
+    "shortcuts": "Shortcuts & limits",
+    "canvasKeys": "Canvas shortcut reference"
   }
 }
