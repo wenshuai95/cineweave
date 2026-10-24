@@ -1,5 +1,4 @@
 import {planCanvasImageResult} from '../src/canvas-image-result.mjs';
-import {mergeImageTaskObservation,markTaskQueryError} from '../src/task-center.mjs';
 import {recordingFormat} from '../src/video-format.mjs';
 import {appendDirectorVideo} from '../src/director-output.mjs';
 import test from 'node:test';
@@ -23,7 +22,6 @@ function handler(first,next){
 const snippets={
  importMediaBatch:handler('async function importMediaBatch(',"$('#mediaFile').onchange=async"),
  referencePackModal:handler('function referencePackModal(','function aiTaskModal('),
- watchImage:handler('async function watchImage(','async function textPlanModal('),
  capture:handler('async function capture(options','async function exportModal('),
  captureDepth:handler('async function captureDepth(','async function capture(options'),
  addAsset:handler('function addAsset(type)','function addAssetModal('),
@@ -37,7 +35,7 @@ function fixture(count=1){
 function environment(p=fixture()){
  const elements=new Map(),messages=[],effects={checkpoints:0,commits:0,closed:0,downloads:0,renders:0};
  const $=key=>{if(!elements.has(key))elements.set(key,{value:'',checked:false,disabled:false,textContent:'',innerHTML:'',style:{},isConnected:true,addEventListener(){}});return elements.get(key)};
- const imageTasks={};const c={p,t,getLocale:()=> 'zh-CN',setLocale,loadImageTaskStore:()=>imageTasks,saveImageTaskStore:()=>{},renderTaskCenter:()=>{},mergeImageTaskObservation,markTaskQueryError,planCanvasImageResult,imageAssetContext,activeDirectorId:null,selected:null,modeMemory:{board:null},recordingFormat,appendDirectorVideo,managerOpen:false,transitioning:false,mode:'board',filter:'all',time:2,override:null,exporting:false,localWork:0,assetCatalog:[{}],watchingImages:new Set(),AbortController,DOMException,Blob,
+ const imageTasks={};const c={p,t,getLocale:()=> 'zh-CN',setLocale,renderTaskCenter:()=>{},planCanvasImageResult,imageAssetContext,activeDirectorId:null,selected:null,modeMemory:{board:null},recordingFormat,appendDirectorVideo,managerOpen:false,transitioning:false,mode:'board',filter:'all',time:2,override:null,exporting:false,localWork:0,assetCatalog:[{}],watchingImages:new Set(),AbortController,DOMException,Blob,
  $, $$:()=>[],document:{hidden:false,addEventListener(){},removeEventListener(){}},
  toast:m=>messages.push(m),checkpoint:()=>effects.checkpoints++,commit:()=>effects.commits++,closeModal:()=>effects.closed++,modal(){},stop(){},select(){},fitBoard(){},renderPreviewSelect(){},setTime:t=>c.time=t,setMode:m=>c.mode=m,
  esc:String,download:()=>effects.downloads++,classifyImportFile:()=>({ok:true,kind:'image',mime:'image/png'}),labels:{image:'图片'},
@@ -72,22 +70,6 @@ test('media replacement does not write image data into a target whose type chang
 test('reference pack cancel before export immediately closes without disabling button',()=>{
  const {c,$,effects}=environment();c.referencePackModal();$('#referenceCancel').onclick();
  assert.equal(effects.closed,1);assert.equal($('#referenceCancel').disabled,false);assert.equal(c.exporting,false);
-});
-test('full canvas defers generated image and the same task can be recovered after freeing capacity',async()=>{
- const {c,$,effects,messages}=environment(fixture(500));let queries=0;
- c.api=async()=>{queries++;return {status:'succeeded',imageUrl:'mock-only'}};
- c.fetch=async()=>({ok:true,blob:async()=>new Blob(['fixture'])});
- await c.watchImage('saved-task',c.p.id,null,'fixture');
- assert.equal(c.p.nodes.length,500);assert.equal(effects.checkpoints,0);assert.equal(c.watchingImages.has('saved-task'),false);assert.match(messages.at(-1),/恢复/);assert.match($('#imageStatus').textContent,/恢复/);validateProject(c.p);
- c.p.nodes.pop();await c.watchImage('saved-task',c.p.id,null,'fixture');
- assert.equal(c.p.nodes.length,500);assert.equal(c.p.nodes.at(-1).generatedTask,'saved-task');assert.equal(effects.checkpoints,1);assert.equal(queries,2);validateProject(c.p);
-});
-test('shipped image handler fills a template picture at capacity and keeps its wires',async()=>{
- const p=fixture(500);delete p.nodes[0].src;p.boardGroups=[{id:'template',name:'参考',collapsed:true,memberIds:['node0','node1']}];p.edges=[{from:'node1',to:'node0'}];
- const {c,effects}=environment(p);c.api=async()=>({status:'succeeded',imageUrl:'mock-only'});c.fetch=async()=>({ok:true,blob:async()=>new Blob(['fixture'])});
- await c.watchImage('template-result',p.id,'node0','角色设定');
- assert.equal(p.nodes.length,500);assert.equal(p.nodes[0].generatedTask,'template-result');assert.equal(p.nodes[0].src,'data:image/png;base64,AA==');
- assert.deepEqual(p.boardGroups[0].memberIds,['node0','node1']);assert.deepEqual(p.edges,[{from:'node1',to:'node0'}]);assert.equal(effects.checkpoints,1);validateProject(p);
 });
 for(const name of ['capture','captureDepth'])test(`${name} at capacity preserves a valid project without rendering or checkpoint`,async()=>{
  const {c,effects,messages}=environment(fixture(500)),before=JSON.stringify(c.p);await c[name]();

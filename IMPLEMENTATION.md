@@ -26,7 +26,7 @@
    - 新增真实计划函数回归，覆盖「首次加入 → 设正式 → 重复加入」版本数不变，以及替换图片后允许新版本。
 3. **P1 提交参考快照**
    - 视频报价提交时，前端用 `referenceSnapshotFor(project,captured.refs)` 捕获实际提交的参考身份，并把 `referenceSnapshot` 放进 quote 请求。
-   - `oiioii-video-service.mjs` 校验并只保留 `nodeId/kind/assetId/versionId` 或 16 位 `srcHash`，随任务写入现有 `jobs.json`；不保存 base64、密钥或大图字节。旧任务缺快照时返回 `legacy:true, unknown:true`，不读取当前工程冒充历史。
+   - `旧版媒体 CLI-video-service.mjs` 校验并只保留 `nodeId/kind/assetId/versionId` 或 16 位 `srcHash`，随任务写入现有 `jobs.json`；不保存 base64、密钥或大图字节。旧任务缺快照时返回 `legacy:true, unknown:true`，不读取当前工程冒充历史。
    - `planVideoResult` 直接使用任务记录里的提交快照；提交 A 后用户换成 B，结果返回仍记录 A，镜头清单按 B 提示复核。报价签名、云端防重提、任务查询与恢复路径未改变。
    - 新增「提交 A → 换 B → 结果仍记录 A 并提示复核」、任务保存/重启往返、旧任务 unknown 回归。
 4. **P2 删除资产后无法清复核**
@@ -57,7 +57,7 @@
 - `src/canvas-image-result.mjs`：图片结果可携带来源上下文 `imageResultContext`，空白/非资产不携带。
 - `src/video-generation.mjs`：报价时捕获参考提交快照，视频结果使用任务提交快照 `referenceSnapshot`；旧任务显式标记 `legacy/unknown`。
 - `src/workstation/asset-images.mjs`：图片版本元数据保留 16 位 `srcHash`，用于判断同一内容复用版本。
-- `oiioii-video-service.mjs`：报价/任务记录校验并持久化小型参考快照；旧任务返回显式 unknown；收费防重提与查询恢复路径不变。
+- `旧版媒体 CLI-video-service.mjs`：报价/任务记录校验并持久化小型参考快照；旧任务返回显式 unknown；收费防重提与查询恢复路径不变。
 - `src/workstation/story-canvas.mjs`：正式图节点优先选择当前版本；导出 `syncAssetImageLinks` 复用既有图片连线；退役节点保留自己的版本来源。
 - `src/workstation/shell.mjs`：侧栏工具入口改为「文稿与分镜」，去除重复创作助手；分镜上游变化提示绑定到文稿工具。
 - `src/workstation/assets-page.mjs`：更换/移除正式图前显示关联镜头、旧正式图、视频和剪辑影响；确认后才修改，提示复核；移除官方版本也走同一影响确认。

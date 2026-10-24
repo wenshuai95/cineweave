@@ -34,9 +34,6 @@
     "textModel": "Text model",
     "textHelp": "DeepSeek / compatible API for Creative Assistant, previz director and scene planning.",
     "textSettings": "Text model settings",
-    "mediaOiiio": "Media generation · OiiOii",
-    "mediaHelp": "Uses the local CLI authorization; a quote is shown before any generation.",
-    "mediaNodeHelp": "Start image/video generation from a node toolbar; find tasks under Tasks at the top.",
     "seedreamTitle": "Seedream image (Jimeng / Ark)",
     "seedreamHelp": "Used by the canvas node “Seedream image”. The key stays on this computer and never enters the project or repository.",
     "configured": "Configured · ending {hint}",
@@ -346,7 +343,6 @@
     "timelineHelp": "Adds to the local media library and appends to the Edit timeline; previz exports use the same path.",
     "replaceMedia": "Import / replace media",
     "seedream": "Seedream image",
-    "oiioii": "oiioii image",
     "layoutToDirector": "Existing assets → Director",
     "badge3d": "3D model · reference image",
     "typeText": "Text",
@@ -449,7 +445,7 @@
     "tplStoryText": "Ask Creative Assistant to organize literary storyboards and asset prompts, preview then adopt.",
     "tplStoryHint": "Requires a configured text-model API.",
     "tplFlows": "Reference workflows",
-    "tplNote": "Reference workflows only create nodes; they never call models or consume quota. Use existing tools for images, OiiOii CLI for video, and import finished audio."
+    "tplNote": "Reference workflows only create nodes; they never call models or consume quota. Use existing tools for images, the Provider video for video, and import finished audio."
   },
   "script": {
     "title": "Script writing",
@@ -626,7 +622,7 @@
   },
   "imageChooser": {
     "title": "AI image",
-    "subtitle": "Choose local ComfyUI or cloud Seedream. OiiOii CLI is no longer used.",
+    "subtitle": "Choose local ComfyUI or cloud Seedream. ",
     "comfy": "ComfyUI (local, free)",
     "comfyHint": "SDXL on this computer; no cloud cost.",
     "seedream": "Seedream (cloud)",

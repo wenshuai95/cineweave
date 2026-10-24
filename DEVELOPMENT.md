@@ -115,5 +115,5 @@ server.mjs          本地服务入口
 
 ## 注意
 
-- 不要把 API Key、`text-model.json`、oiioii 授权文件提交进仓库
+- 不要把 API Key、`text-model.json`、旧版媒体 CLI 授权文件提交进仓库
 - 资产来源/许可证文件要随资产包一起分发

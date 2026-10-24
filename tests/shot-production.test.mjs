@@ -10,7 +10,7 @@ function fixture(){
    {id:'asset-node',type:'text',title:'院子',text:'场景',x:320,y:0,w:280,storyRef:{kind:'asset',id:'a1'}},
    {id:'img1',type:'image',title:'院子 · 正式图片',text:'',x:640,y:0,w:280,src:'data:image/png;base64,AAAA',mediaId:'m-v1',storyImageRef:{assetId:'a1',versionId:'v1'}},
    {id:'generator',type:'video',title:'镜头 01 · 生成入口',text:'',x:320,y:360,w:280},
-   {id:'video1',type:'video',title:'OiiOii · 院子',text:'',x:640,y:360,w:280,src:'data:video/mp4;base64,AAAA',mediaId:'m-video1',generatedTask:'task-1',generatedSource:'generator',generatedProvider:'oiioii',generatedAt:100,referenceSnapshot:[{nodeId:'img1',assetId:'a1',versionId:'v1'}]}
+   {id:'video1',type:'video',title:'Provider · 院子',text:'',x:640,y:360,w:280,src:'data:video/mp4;base64,AAAA',mediaId:'m-video1',generatedTask:'task-1',generatedSource:'generator',generatedProvider:'provider',generatedAt:100,referenceSnapshot:[{nodeId:'img1',assetId:'a1',versionId:'v1'}]}
   ],
   edges:[{from:'shot-node',to:'generator'},{from:'img1',to:'asset-node'},{from:'img1',to:'shot-node'},{from:'img1',to:'video1'}],
   boardGroups:[

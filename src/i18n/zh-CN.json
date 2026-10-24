@@ -34,9 +34,6 @@
     "textModel": "文字模型",
     "textHelp": "DeepSeek / 兼容接口用于创作助手、白模导演和场景规划。",
     "textSettings": "文字模型设置",
-    "mediaOiiio": "媒体生成 · OiiOii",
-    "mediaHelp": "使用本机 CLI 的授权；生成前显示报价并由你确认。",
-    "mediaNodeHelp": "图片与视频从对应节点的工具栏开始；任务可在顶部「任务」中找回。",
     "seedreamTitle": "Seedream 图片（即梦 / 方舟）",
     "seedreamHelp": "用于画布节点的「Seedream 生图」。密钥只保存在本机，不进入工程或仓库。",
     "configured": "已配置 · 尾号 {hint}",
@@ -346,7 +343,6 @@
     "timelineHelp": "内容存入本机媒体库并追加到剪辑页轨道末尾；导出的白模预演视频也走这条路。",
     "replaceMedia": "导入 / 替换素材",
     "seedream": "Seedream 生图",
-    "oiioii": "oiioii 生成图片",
     "layoutToDirector": "现有资产布局 → 导演台",
     "badge3d": "3D 模型 · 参考图片",
     "typeText": "文本",
@@ -449,7 +445,7 @@
     "tplStoryText": "让现有创作助手整理文学分镜和资产提示词，预览后采用。",
     "tplStoryHint": "需要已配置的文字模型 API",
     "tplFlows": "搭好参考流程",
-    "tplNote": "参考流程仅创建节点，不会自动调用模型或消耗额度。图片可使用已有工具生成；视频可通过 OiiOii CLI 生成；音频可准备参考并导入成品。"
+    "tplNote": "参考流程仅创建节点，不会自动调用模型或消耗额度。图片可使用已有工具生成；视频可通过 the Provider video 生成；音频可准备参考并导入成品。"
   },
   "script": {
     "title": "剧本创作",
@@ -626,7 +622,7 @@
   },
   "imageChooser": {
     "title": "AI 生图",
-    "subtitle": "选择本地 ComfyUI 或云端 Seedream；不再使用 OiiOii CLI。",
+    "subtitle": "选择本地 ComfyUI 或云端 Seedream。",
     "comfy": "ComfyUI（本地，免费）",
     "comfyHint": "使用本机 SDXL，不产生云端费用。",
     "seedream": "Seedream（云端）",

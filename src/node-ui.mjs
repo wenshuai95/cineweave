@@ -2,7 +2,7 @@ import {videoVersionGroup} from './video-versions.mjs';
 import {getCanvasStoryContext} from './workstation/canvas-source.mjs';
 
 const names={text:'文本',image:'图片',video:'视频',audio:'音频',actor:'角色',scene:'场景',model:'3D 模型',director:'导演台'};
-const hints={text:'记录想法、台词或创作提示词',image:'从文件夹拖入图片，或使用已有生图工具',video:'选择图片或白模参考，通过 OiiOii 生成视频',audio:'拖入配音、音效或音乐，先整理台词也可以',actor:'补充外观、服装与固定识别点',scene:'描述空间、材质、光线与氛围',director:'当前工程共享场景；连入模型后进入导演台预演',model:'连接导演台，即可摆放和预演'};
+const hints={text:'记录想法、台词或创作提示词',image:'从文件夹拖入图片，或使用已有生图工具',video:'选择图片或白模参考，通过 Provider 生成视频',audio:'拖入配音、音效或音乐，先整理台词也可以',actor:'补充外观、服装与固定识别点',scene:'描述空间、材质、光线与氛围',director:'当前工程共享场景；连入模型后进入导演台预演',model:'连接导演台，即可摆放和预演'};
 export function nodePresentation(project,node){
  const context=getCanvasStoryContext(project,node.id);
  const kind=context?.kind;

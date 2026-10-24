@@ -4,7 +4,7 @@ import {videoVersionSnapshotHtml} from '../src/video-versions-ui.mjs';
 import {pruneGroups,regroup,buildCanvasCopy,pasteCanvasCopy} from '../src/board-operations.mjs';
 import {starterProject,validateProject} from '../src/model.mjs';
 import {normalizeSequence,placeClip} from '../src/workstation/sequence.mjs';
-import {planVideoResult} from '../src/video-generation.mjs';
+import {planVideoResult} from '../src/video-result.mjs';
 const video=(id,source='whitebox')=>({id,type:'video',title:id,text:'prompt',x:0,y:0,w:280,src:'data:video/mp4;base64,AAAA',generatedTask:'task-'+id,generatedSource:source});
 const project=()=>({nodes:[{id:'whitebox',type:'video',src:'original'},video('v1')],edges:[{from:'whitebox',to:'v1'}],boardGroups:[],workstation:{assets:[],story:{shots:[]},sequence:{fps:24,video:[],audio:[]}}});
 test('same source collects versions without overwriting whitebox, adoption, wires or media',()=>{

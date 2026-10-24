@@ -14,7 +14,7 @@ function fixture(){
    {id:'other-node',type:'text',title:'路人',text:'',x:600,y:0,w:280,storyRef:{kind:'asset',id:'a2'}},
    {id:'official',type:'image',title:'院子 · 正式图片',text:'',x:320,y:240,w:280,src:'data:image/png;base64,AAAA',mediaId:'m-v1',storyImageRef:{assetId:'a1',versionId:'v1'}},
    {id:'candidate',type:'image',title:'院子 · 生成候选图',text:'生成描述',x:640,y:240,w:280,src:'data:image/png;base64,BBBB',imageResultContext:{kind:'asset',sourceNodeId:'asset-node',assetId:'a1',assetName:'院子'}},
-   {id:'video1',type:'video',title:'OiiOii · 院子',text:'',x:640,y:520,w:280,src:'data:video/mp4;base64,AAAA',mediaId:'m-video1',generatedTask:'task-1',generatedInput:{references:[{nodeId:'official'}]},referenceSnapshot:[{nodeId:'official',assetId:'a1',versionId:'v1'}]}
+   {id:'video1',type:'video',title:'Provider · 院子',text:'',x:640,y:520,w:280,src:'data:video/mp4;base64,AAAA',mediaId:'m-video1',generatedTask:'task-1',generatedInput:{references:[{nodeId:'official'}]},referenceSnapshot:[{nodeId:'official',assetId:'a1',versionId:'v1'}]}
   ],
   edges:[{from:'official',to:'asset-node'},{from:'official',to:'shot-node'},{from:'official',to:'video1'}],
   boardGroups:[{id:'versions',name:'版本',memberIds:['video1'],collapsed:true,videoVersions:true,sourceNodeId:'shot-node',adoptedNodeId:'video1'}],

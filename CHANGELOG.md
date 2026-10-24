@@ -1,8 +1,14 @@
+## 1.22.2
+
+- 彻底移除 OiiOii：删除图片/视频模块、路由、任务账本、测试与文档引用
+- 图片统一 AI 生图（ComfyUI / Seedream），视频统一 Provider
+- 源码、测试、文档中 OiiOii 引用为 0
+
 ## 1.22.1
 
-- 修复：画布图片节点“生成图片”不再调用 OiiOii CLI
+- 修复：画布图片节点“生成图片”不再调用 旧版媒体 CLI CLI
 - 图片节点统一为 AI 生图选择器：ComfyUI 本地 / Seedream 云端
-- 视频生成入口统一为 Provider 视频；OiiOii `/api/oiioii` 已停用（410）
+- 视频生成入口统一为 Provider 视频；旧版媒体 CLI `/api/旧版媒体 CLI` 已停用（410）
 
 ## 1.22.0
 
@@ -16,7 +22,7 @@
 - 首次开源：画布 + 剪辑经典版源码
 - 许可证：AGPL-3.0 + 商业授权（`COMMERCIAL-LICENSE.md`）
 - 离线 CC0 资产单独发布（GitHub Release `assets-cc0.zip`）
-- 清理个人路径与本地配置，仓库不含 API Key / oiioii CLI
+- 清理个人路径与本地配置，仓库不含 API Key / 旧版媒体 CLI CLI
 
 ## Unreleased · Sprint 6
 

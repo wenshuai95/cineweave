@@ -4,7 +4,7 @@ import {startI18nDom, applyI18n} from './i18n/dom.mjs';
 import {translateToast} from './i18n/toast.mjs';
 import {inlineNodeText,writeInlineNodeText} from './inline-node-text.mjs';
 import {canvasRelations,wireRelationState,fitRelationView,snapshotCanvasView,relationTargets} from './canvas-focus.mjs';
-import {collectTaskRecords,taskCenterCounts,filterTaskRecords,mergeImageTaskObservation,markTaskQueryError,queryTaskRecord} from './task-center.mjs';
+import {collectTaskRecords,taskCenterCounts,filterTaskRecords,queryTaskRecord} from './task-center.mjs';
 import {showTextSettings} from './workstation/text-settings.mjs';
 import {directorFrameSamples} from './workstation/director-vision.mjs';
 import {directorContext,directorSignature,prepareDirectorEdit} from './workstation/director-agent.mjs';
@@ -16,7 +16,6 @@ import {freeNodePosition} from './node-placement.mjs';
 import {createVideoVersionUI,videoVersionCard} from './video-versions-ui.mjs';
 import {videoVersionGroup,adoptedVideo,collectVideoVersions} from './video-versions.mjs';
 import './video-versions.css';
-import {createVideoGeneration} from './video-generation.mjs';
 import {promptAssistantMarkup,attachPromptAssistant} from './prompt-assistant-ui.mjs';
 import {prepareCutCanvasResult} from './workstation/cut-library.mjs';
 import {planCanvasImageResult,canvasImagePrompt} from './canvas-image-result.mjs';
@@ -618,10 +617,10 @@ function renderBoard(){
  });
  $$('[data-group-toggle]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggleGroupCollapse(b.dataset.groupToggle);});
  $$('[data-group-list]').forEach(b=>b.onclick=e=>{e.stopPropagation();groupNodeList(b.dataset.groupList);});
- updateGroupFrames();renderNodeActionBar();renderCanvasStart();updateRelationControls();queueMicrotask(()=>videoGeneration().syncBoard());
+ updateGroupFrames();renderNodeActionBar();renderCanvasStart();updateRelationControls();
 }
 function updateEdgeSelection(){if(!p.edges.some(e=>selectedEdge&&e.from===selectedEdge.from&&e.to===selectedEdge.to))selectedEdge=null;$('#cutEdge').disabled=!selectedEdge;}
-function cutSelectedEdge(){if(!selectedEdge)return;checkpoint();p.edges=p.edges.filter(e=>e.from!==selectedEdge.from||e.to!==selectedEdge.to);selectedEdge=null;$('#contextMenu').classList.add('hidden');commit();videoGenerationController?.refreshReferences();toast('已剪断连线；导演台已有对象保留，可撤销');}
+function cutSelectedEdge(){if(!selectedEdge)return;checkpoint();p.edges=p.edges.filter(e=>e.from!==selectedEdge.from||e.to!==selectedEdge.to);selectedEdge=null;$('#contextMenu').classList.add('hidden');commit();toast('已剪断连线；导演台已有对象保留，可撤销');}
 function visibleBoardItems(){return boardItems(p,nodeSizeOf,nodeVisible);}
 function drawEdges(){
  updateEdgeSelection();const paths=[],wires=boardWires(p,visibleBoardItems()),relations=canvasRelations(p,boardSelection);
@@ -1527,24 +1526,6 @@ async function exportModal(){
 }
 let aiToken=null;
 async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await api('/api/ai/text/status',undefined,{signal});aiToken=status.token;}const timeout=AbortSignal.timeout(180000),combined=signal?AbortSignal.any([signal,timeout]):timeout;let response;try{response=await fetch(path,{...(data?{method:'POST',headers:{'Content-Type':'application/json','X-Jingchang-Token':aiToken},body:JSON.stringify(data)}:{}),signal:combined});}catch(e){if(signal?.aborted)throw new DOMException('已取消','AbortError');if(timeout.aborted)throw Error(translateToast('本机服务响应超时，请先在任务中心核对生成记录，再手动重试'));throw Error(translateToast('本机服务连接中断，请重新打开软件后核对任务记录'));}const result=await response.json();if(!response.ok)throw Error(translateToast(result.error||'本地服务请求失败'));return result;}
-let videoGenerationController;
-function videoGeneration(){return videoGenerationController??=createVideoGeneration({project:()=>p,managerOpen:()=>managerOpen,api,modal:(title,subtitle,body,actions,nodeId)=>nodeId?nodeToolModal(nodeId,title,subtitle,body,actions):modal(title,subtitle,body,actions),readDataURL,toast,asset,checkpoint,commit,persist,onTasksChanged:()=>renderTaskCenter(),refresh:refreshNodeOverlays,taskLayout:()=>requestAnimationFrame(()=>{drawEdges();updateGroupFrames();refreshNodeOverlays();}),focusNode:id=>{setMode('board');filter='all';locateCanvasNode(id);},resultReady:(id,groupId)=>{if(wsShell?.onCanvas()){setMode('board');filter='all';if(groupId)focusVersionGroup(groupId);else locateCanvasNode(id);}}});}
-// Preserve all image task pointers; migrate legacy single-record stores without inventing status.
-const IMAGE_TASK_KEY='jingchang-image-task';
-function loadImageTaskStore(){
- try{
-  const raw=JSON.parse(localStorage.getItem(IMAGE_TASK_KEY)||'null');
-  if(raw&&raw.version===3&&raw.tasks&&typeof raw.tasks==='object'&&!Array.isArray(raw.tasks))return raw.tasks;
-  if(raw&&raw.version===2&&raw.tasks&&typeof raw.tasks==='object'&&!Array.isArray(raw.tasks))return Object.fromEntries(Object.values(raw.tasks).filter(t=>t?.id).map(t=>[t.id,t]));
-  if(raw&&typeof raw==='object'&&!Array.isArray(raw)&&raw.id&&raw.projectId)return {[raw.id]:raw};
- }catch{}
- return {};
-}
-function saveImageTaskStore(tasks){try{localStorage.setItem(IMAGE_TASK_KEY,JSON.stringify({version:3,tasks}));}catch{}renderTaskCenter();}
-function rememberImageTask(id,projectId,sourceId,prompt,receipt={}){const tasks=loadImageTaskStore();tasks[id]={id,projectId,sourceId:sourceId||null,prompt:prompt||'',createdAt:Date.now(),...receipt};saveImageTaskStore(tasks);}
-
-
-
 async function providerVideoModal(source){
  const project=p,projectId=p.id,sourceId=source?.id;
  nodeToolModal(source?.id,t('video.title'),t('video.subtitle'),`<div class="image-composer"><p class="help-text">${t('video.free')}</p><div class="composer-scroll"><label class="field">${t('video.prompt')}<textarea id="providerVideoPrompt" rows="4" maxlength="6000">${esc(typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-settings image-settings"><label class="field grow">${t('video.provider')}<select id="providerVideoProvider"></select></label><label class="field grow">${t('video.model')}<select id="providerVideoModel"></select></label><label class="field">${t('video.duration')}<select id="providerVideoDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label></div><p id="providerVideoStatus" class="help-text"></p></div>`,`<button id="providerVideoCancel">${t('common.cancel')}</button><button id="providerVideoRun" class="primary" disabled>${t('video.generate')}</button>`);
@@ -1707,34 +1688,6 @@ async function seedreamImageModal(source){
  };
 }
 
-async function legacyOiiOiiImageModal(source,{promptOverride}={}){
- nodeToolModal(source?.id,'按描述生成新图','',`<div class="image-composer"><p class="help-text image-generation-scope">仅按文字描述生成新图；相连文本可带入提示词，已有图片不会上传或参与生成。原图保留。</p><div class="composer-scroll"><label class="field">描述你想生成的画面<textarea id="imagePrompt" rows="4" maxlength="6000" placeholder="描述场景、人物、构图与光线…">${esc(typeof promptOverride==='string'?promptOverride:typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-bottom-tools">${promptAssistantMarkup()}<details class="composer-parameters"><summary id="imageParameterSummary">模型与参数 · 正在读取…</summary><div class="composer-settings image-settings"><label class="field grow">模型<select id="imageModel" aria-label="图片生成模型"></select></label><label class="field">尺寸<select id="imageSize" aria-label="图片尺寸"></select></label><label class="field">画幅<select id="imageAspect" aria-label="图片画幅"></select></label></div></details></div><p id="imageStatus" class="help-text" role="status">正在读取模型目录…</p><details class="composer-details"><summary>恢复图片任务</summary><button id="resumeImage">恢复上次图片任务</button></details></div>`,`<span id="imageQuote" class="composer-price" role="status"></span><button id="quoteImage" class="primary" disabled>查看本次费用</button><button id="submitImage" class="primary" hidden disabled>确认并生成</button>`);
- const imagePanel=document.querySelector('#imagePrompt').closest('.modal'),$=s=>imagePanel.querySelector(s);imagePanel.classList.add('image-composer-panel');imagePanel.dataset.overlayKind='composer';refreshNodeOverlays();
- const project=p,projectId=p.id,sourceId=source?.id,imageRoot=$('.image-composer'),imagePrompt=$('#imagePrompt');let quote=null,models=[],revision=0;
- const imagePurchase=ready=>{$('#submitImage').hidden=!ready;$('#quoteImage').classList.toggle('primary',!ready);$('#quoteImage').textContent=ready?'重新查看费用':'查看本次费用';refreshNodeOverlays();};
- const live=()=>imagePanel.isConnected&&p===project&&(!source||project.nodes.includes(source));
- const stamp=()=>JSON.stringify(['imageModel','imageSize','imageAspect','imagePrompt'].map(id=>$('#'+id)?.value));
- imageRoot.querySelectorAll('details').forEach(el=>el.addEventListener('toggle',refreshNodeOverlays));
- const parameterSummary=()=>{$('#imageParameterSummary').textContent=[$('#imageModel')?.selectedOptions[0]?.textContent,$('#imageSize')?.value,$('#imageAspect')?.value].filter(Boolean).join(' · ')||'模型与参数';};
- imagePrompt.addEventListener('input',()=>{if(p===project&&project.nodes.includes(source)){source.imagePromptDraft=imagePrompt.value;persist();}});
- attachPromptAssistant(imageRoot,imagePrompt,{api,lastChange:source?.promptHistory?.filter(h=>h.kind==='image').at(-1),onApply:change=>{if(!source)return;checkpoint();source.promptHistory=[...(source.promptHistory||[]),{kind:'image',before:change.before,after:change.after}].slice(-5);},onRestore:()=>checkpoint(),valid:()=>p===project&&(!source||project.nodes.includes(source)),getContext:()=>({references:[],modelCapabilities:{domain:'image',mode:'text-to-image',model:$('#imageModel')?.selectedOptions[0]?.textContent,resolution:$('#imageSize')?.value,aspect:$('#imageAspect')?.value}}),refresh:refreshNodeOverlays});
- const restore=()=>{const tasks=loadImageTaskStore(),saved=Object.values(tasks).filter(t=>t.projectId===p.id).sort((a,b)=>b.createdAt-a.createdAt)[0];if(!saved){toast('没有待恢复的任务');return}watchImage(saved.id,saved.projectId,saved.sourceId,saved.prompt,saved.context)};$('#resumeImage').onclick=restore;
- try{const status=await api('/api/ai/status');if(!live())return;aiToken=status.token;if(!status.oiioii)throw Error('oiioii 尚未授权，请在终端运行 oiioii auth login');const data=await api('/api/oiioii/models');if(!live())return;models=data.models;if(!models.length)throw Error('账号未返回可用图片模型');$('#imageModel').innerHTML=models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
- const sizes=()=>{revision++;const m=models.find(m=>m.id===$('#imageModel').value);$('#imageSize').innerHTML=(m.sizes.length?m.sizes:['']).map(v=>`<option value="${esc(v)}">${esc(v||'平台默认')}</option>`).join('');$('#imageAspect').innerHTML=(m.aspects.length?m.aspects:['16:9','1:1','9:16']).map(v=>`<option>${esc(v)}</option>`).join('');quote=null;$('#submitImage').disabled=true;$('#imageQuote').textContent='';imagePurchase(false);parameterSummary();};sizes();$('#imageModel').onchange=sizes;for(const id of ['imageSize','imageAspect','imagePrompt'])$('#'+id).oninput=()=>{revision++;quote=null;$('#submitImage').disabled=true;$('#imageQuote').textContent='';imagePurchase(false);parameterSummary();};$('#quoteImage').disabled=false;$('#imageStatus').textContent='';
- $('#quoteImage').onclick=async()=>{if(!live())return;const current=revision,captured=stamp(),b=$('#quoteImage');quote=null;$('#submitImage').disabled=true;imagePurchase(false);b.disabled=true;try{const result=await api('/api/oiioii/quote',{modelId:$('#imageModel').value,resolution:$('#imageSize').value,aspect:$('#imageAspect').value});if(!live()||revision!==current||stamp()!==captured)return;quote=result;$('#imageQuote').textContent=`预计 ${quote.points??'平台计价'} 积分。${quote.sufficient===false?'积分不足。':''}实际以平台结算为准。`;$('#submitImage').disabled=quote.sufficient===false;imagePurchase(true);}catch(e){toast(e.message)}finally{if(b.isConnected)b.disabled=false}};
- $('#submitImage').onclick=async()=>{if(!quote||!live())return;const prompt=$('#imagePrompt').value.trim();if(!prompt){toast('请先填写图片描述');return}$('#submitImage').disabled=true;$('#quoteImage').disabled=true;$('#imageStatus').textContent='正在提交，请勿重复点击…';try{const taskContext=imageAssetContext(project,sourceId);const task=await api('/api/oiioii/generate',{quoteId:quote.quoteId,prompt});rememberImageTask(task.id,projectId,sourceId,prompt,{status:task.status,message:task.message,points:task.points,context:taskContext});watchImage(task.id,projectId,sourceId,prompt,taskContext);}catch(e){if($('#imageStatus'))$('#imageStatus').textContent=e.message+'；请通过任务中心或恢复入口核对记录，勿重复提交。';}};
- }catch(e){if($('#imageStatus'))$('#imageStatus').textContent=e.message;}
-}
-const watchingImages=new Set();
-async function watchImage(id,projectId,sourceId,prompt,taskContext){
- if(watchingImages.has(id)){toast('任务正在跟进');return}watchingImages.add(id);
- const status=text=>{if($('#imageStatus'))$('#imageStatus').textContent=text;};
- try{for(;;){const job=await api('/api/oiioii/task/'+encodeURIComponent(id));const records=loadImageTaskStore();if(records[id]){records[id]=mergeImageTaskObservation(records[id],job);saveImageTaskStore(records);}if(job.status==='succeeded'){
-  if(p.nodes.some(n=>n.generatedTask===id)){status('该图片已在画布中');return}if(managerOpen||p.id!==projectId){status('任务已完成，请切回原工程后恢复任务以加入画布');return}
-  const response=await fetch(job.imageUrl);if(!response.ok)throw Error('生成图片读取失败');const src=await readDataURL(await response.blob());if(managerOpen||p.id!==projectId)return;const context=taskContext===undefined?imageAssetContext(p,sourceId):taskContext;const plan=planCanvasImageResult(p,{sourceId,taskId:id,src,prompt,context,createNode:extra=>asset('image',{title:(context?.assetName?context.assetName+' · 生成候选图':'oiioii · '+prompt.slice(0,25)),...extra})});if(plan.already){status('该图片已在画布中');return}checkpoint();const n=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===n.id)]=n;else p.nodes.push(n);if(plan.edge)p.edges.push(plan.edge);if($('#imageStatus'))closeModal();setMode('board');filter='all';commit();select(n.id);fitBoard();toast(context?'图片已加入画布；可在节点工具栏加入正确资产版本':'oiioii 图片已加入画布');return;
- }if(['failed','cancelled','unknown','submitting'].includes(job.status)){status(job.message||'任务状态需人工核对，请查看 oiioii 记录');return}status('oiioii 正在生成，可关闭窗口继续编辑；通过「恢复上次图片任务」找回。');await new Promise(resolve=>setTimeout(resolve,5000));}
- }catch(e){const records=loadImageTaskStore();if(records[id]){records[id]=markTaskQueryError(records[id],e);saveImageTaskStore(records);}status(e.message+'；可稍后恢复任务');toast(e.message)}finally{watchingImages.delete(id);renderTaskCenter();}
-}
 async function textPlanModal(kind,id){
  if(!assetCatalog.length){try{const d=await fetch('/assets/manifest.json').then(r=>r.json());assetCatalog=d.assets||d}catch{}}
  const o=kind==='motion'?p.objects.find(o=>o.id===id):null,source=kind==='scene'?p.nodes.find(n=>n.id===id):null;if(o?.locked)return;
@@ -1758,7 +1711,7 @@ async function textPlanModal(kind,id){
 }
 
 let taskCenterFilter='all',taskCenterSelected=null,taskCenterBusy=new Set();
-function taskRecords(){return collectTaskRecords({project:p,imageTasks:loadImageTaskStore(),videoJobs:videoGenerationController?.getTasks()||[]});}
+function taskRecords(){return collectTaskRecords({project:p});}
 function renderTaskCenter(){
  const root=$('#unifiedTasks');if(!root?.isConnected||root.dataset.project!==p.id)return;
  const records=taskRecords(),counts=taskCenterCounts(records),focused=document.activeElement?.closest('[data-task-key]')?.dataset.taskKey,scroll=root.scrollTop;
@@ -1774,9 +1727,7 @@ function renderTaskCenter(){
  root.querySelector('[data-task-locate]')?.addEventListener('click',()=>{closeModal();wsShell.setPage('canvas');setMode('board');filter='all';locateCanvasNode(selected.nodeId);});
  root.querySelector('[data-task-query]')?.addEventListener('click',async()=>{
   if(taskCenterBusy.has(selected.key))return;const project=p;taskCenterBusy.add(selected.key);renderTaskCenter();
-  try{if(selected.kind==='image'){const raw=loadImageTaskStore()[selected.id];if(raw)await watchImage(raw.id,raw.projectId,raw.sourceId,raw.prompt,raw.context);}
-  else if(selected.kind==='video')await videoGeneration().watch(selected.id,project.id,$('#taskCenterStatus'));
-  else if(selected.kind==='export'){const receipt=await queryTaskRecord(selected,api);if(p!==project)return;const task=project.workstation.deliver.tasks.find(t=>t.id===selected.id);if(task){Object.assign(task,receipt,{updatedAt:Date.now()});persist();}}
+  try{if(selected.kind==='export'){const receipt=await queryTaskRecord(selected,api);if(p!==project)return;const task=project.workstation.deliver.tasks.find(t=>t.id===selected.id);if(task){Object.assign(task,receipt,{updatedAt:Date.now()});persist();}}
   }catch(e){if($('#taskCenterStatus')?.isConnected)$('#taskCenterStatus').textContent=e.message+'；未重新提交任务。';}
   finally{taskCenterBusy.delete(selected.key);renderTaskCenter();}
  });
@@ -1804,7 +1755,7 @@ function saveCreativeTasks(projectId,records){
 async function modelTasksModal(){
  const projectId=p.id;taskCenterSelected=null;taskCenterFilter='all';
  modal(t('task.title'),t('task.subtitle'),`<div id="unifiedTasks" data-project="${esc(projectId)}"></div><p id="taskCenterStatus" class="help-text" role="status"></p><section id="providerVideoTasksSection" class="settings-section" hidden><h3>${t('task.providerTasks')}</h3><div id="providerVideoTasks"></div></section>`);
- renderTaskCenter();await videoGeneration().syncBoard(true);renderTaskCenter();renderProviderVideoTasks(projectId);
+ renderTaskCenter();renderProviderVideoTasks(projectId);
 }
 async function renderProviderVideoTasks(projectId){
  const section=$('#providerVideoTasksSection'),body=$('#providerVideoTasks');if(!section||!body)return;
@@ -1968,7 +1919,7 @@ function connectionTargetModal(nodeId,port){
  $('#cancelConnection').onclick=closeModal;$('#confirmConnection').onclick=()=>{if(p!==project)return;const target=$('#connectionTarget').value;closeModal();connectBoardEdge(port==='out'?{from:nodeId,to:target}:{from:target,to:nodeId});};
 }
 function connectBoardEdge(edge){
- checkpoint();try{const result=connectCanvasNodes(p,edge);if(result.imported)p.objects.filter(o=>o.type!=='camera').forEach(o=>o.solo=false);commit(result.imported);renderProperties();videoGenerationController?.refreshReferences();toast(result.objectId?'已连接并接入导演台；双击导演台节点查看，重复连接不会复制模型':'参考连线已建立；从节点操作中选择生成，不会自动调用模型');}
+ checkpoint();try{const result=connectCanvasNodes(p,edge);if(result.imported)p.objects.filter(o=>o.type!=='camera').forEach(o=>o.solo=false);commit(result.imported);renderProperties();toast(result.objectId?'已连接并接入导演台；双击导演台节点查看，重复连接不会复制模型':'参考连线已建立；从节点操作中选择生成，不会自动调用模型');}
  catch(e){p=history.pop();updateUndo();toast(e.message);}
 }
 function connectNewDirector(n){
@@ -2005,7 +1956,7 @@ function nodeContextMenu(n,x,y){
  else if(context?.kind==='shot')items.push(leaf('编辑这个分镜',()=>openNodeTool(n.id)));
  else if(context)items.push(leaf('管理资产图片与版本',()=>openNodeTool(n.id)));
  else if(n.type==='text')items.push(leaf('用作项目剧本',()=>promoteNodeScript(n.id)));
- if(['text','scene','actor','image'].includes(n.type))items.push({label:'生成参考图片 · oiioii',children:[leaf('场景参考图',()=>imageForModel(n,'scene')),leaf('角色参考图 · 人物 / 动物 / 怪物',()=>imageForModel(n,'actor'))]});
+ if(['text','scene','actor','image'].includes(n.type))items.push({label:'生成参考图片',children:[leaf('场景参考图',()=>imageForModel(n,'scene')),leaf('角色参考图 · 人物 / 动物 / 怪物',()=>imageForModel(n,'actor'))]});
  if(['text','actor','scene'].includes(n.type))items.push({label:'用已有资产搭建场景',children:[leaf('规划布局并加入导演台',()=>textPlanModal('scene',n.id)),leaf('打开离线模型库',libraryModal)]});
  if(n.type==='model'||n.objectId||n.sceneObjectIds?.length){
   const directors=p.nodes.filter(v=>v.type==='director'&&v.id!==n.id);

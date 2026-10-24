@@ -20,7 +20,7 @@ Verification is bounded to one batch at desktop 1440x940 and 1080x720, one fix b
 - 一次弹层完成一个明确任务。必要参数默认可见；高级和维护项才进入“更多”。
 - 全局对话框统一字体、表单、关闭按钮、主操作位置、间距和焦点样式；费用、失败、取消、原素材保留等决策信息不能隐藏。
 - 不照搬没有真实能力的竞品按钮；保持原工程和导演台业务行为。
-参考依据：work/oiioii-study-20261016/研究报告.html；work/updream-study-20261016/Updream全流程实测与升级建议.html；https://developer.apple.com/design/human-interface-guidelines/design-principles
+参考依据：work/旧版媒体 CLI-study-20261016/研究报告.html；work/updream-study-20261016/Updream全流程实测与升级建议.html；https://developer.apple.com/design/human-interface-guidelines/design-principles
 
 1.16.2 创作助手：默认呈现对话，文稿、任务和设定使用清楚可见的并列入口。对话单独滚动，输入框固定在底部；切换入口保留未发送草稿。候选结果集中预览并明确采用，不自动覆盖画布。文稿保留自动保存、版本与选区改写；运行中保留取消。减少完成步骤和状态的重复显示，错误和费用提示仍可见。验收覆盖桌面窗口与收窄侧栏，使用隔离工程，不调用付费模型。
 

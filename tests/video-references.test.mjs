@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {referenceEntries,referenceProblem,validateReferenceMentions,compileReferencePrompt,mentionQuery,insertMention} from '../src/video-references.mjs';
 import {buildCanvasCopy,pasteCanvasCopy} from '../src/board-operations.mjs';
-import {planVideoResult} from '../src/video-generation.mjs';
+import {planVideoResult} from '../src/video-result.mjs';
 const nodes=[{id:'i',type:'image',src:'img',title:'同名'},{id:'v',type:'video',src:'vid',title:'同名'},{id:'a',type:'audio',src:'aud',title:'<音频>'},{id:'j',type:'image',src:'img',title:'第二张'}];
 test('mixed references use stable aliases across rename, reorder and removal',()=>{
  const first=referenceEntries(nodes,['i','v','a','i']);assert.deepEqual(first.map(r=>r.alias),['图片1','视频1','音频1']);

@@ -5,7 +5,7 @@
 import {bundleMemberIds} from './shot-bundles.mjs';
 import {sourceFingerprint} from './workstation/asset-image-context.mjs';
 
-const generatedVideo=node=>!!(node?.generatedTask||node?.generatedProvider==='oiioii');
+const generatedVideo=node=>!!(node?.generatedTask);
 const previzVideo=node=>!generatedVideo(node)&&(/白模|预演|previz/i.test(node?.title||'')||/白模预演|previz/i.test(node?.text||''));
 function linkedAssets(project,shot){
  const assets=project?.workstation?.story?.assets||[],ids=new Set(Array.isArray(shot?.assetIds)?shot.assetIds:[]);
