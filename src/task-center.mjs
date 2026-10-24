@@ -59,7 +59,7 @@ function projectRecord(project,kind,raw){
 export function collectTaskRecords({project}={}){
  if(!project||!validId(project.id))return [];
  const ws=project.workstation||{},out=[];
- for(const [kind,input] of [['creative',ws.creativeTasks],['export',ws.deliver?.tasks]]){
+ for(const [kind,input] of [['export',ws.deliver?.tasks]]){
   for(const raw of uniqueLatest(input)){
    if(raw.projectId&&raw.projectId!==project.id)continue;
    out.push(projectRecord(project,kind,raw));

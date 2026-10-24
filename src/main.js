@@ -37,7 +37,6 @@ import {validateImageFile} from './workstation/asset-images.mjs';
 import {recordingFormat} from './video-format.mjs';
 import {appendDirectorVideo} from './director-output.mjs';
 import {installWorkstation} from './workstation/shell.mjs';
-import {prepareCreativeAdoption,normalizeCreativeTasks} from './workstation/creative-agent.mjs';
 import {buildWorkstationBackup,restoreWorkstationBackup,BACKUP_SCHEMA,projectMediaReferences} from './workstation/backup.mjs';
 import {adjacentKeyTime,adjacentParameterKeyTime,advancePlayTime,frameTimecode,installPlayheadScrub} from './timeline-playhead.mjs';
 import {holdFrameLimit,holdFrameTime} from './action-hold.mjs';
@@ -156,7 +155,7 @@ function applyPendingTimelineScroll(){if(pendingTimelineScroll==null)return;cons
 function updateSaveMode(){$('#saveModeLabel').textContent=saveDelay===null?'本地创作 · 手动保存':'本地创作 · 自动保存';}
 async function saveNow(){if(!activeProject)return;document.activeElement?.blur();try{await library.idle();do{await projectSaver.flush();}while(projectSaver.pending);toast('已保存到本机');}catch{toast('保存失败，请重试或导出工程备份');}}
 updateSaveMode();
-window.directorDesktop?.onSaveRequest(async()=>{try{if(exporting||localWork||transitioning)throw Error('正在导出、读取素材或切换项目，请完成后退出。');document.activeElement?.blur();wsShell?.cancelCreativeTasks('interrupted');await creativeSaveChain;await library.idle();if(activeProject){do{await projectSaver.flush();}while(projectSaver.pending);await saveProjectCover();}return {ok:true};}catch(e){return {ok:false,message:e.message||'保存失败，请先导出工程备份。'};}});
+window.directorDesktop?.onSaveRequest(async()=>{try{if(exporting||localWork||transitioning)throw Error('正在导出、读取素材或切换项目，请完成后退出。');document.activeElement?.blur();await library.idle();if(activeProject){do{await projectSaver.flush();}while(projectSaver.pending);await saveProjectCover();}return {ok:true};}catch(e){return {ok:false,message:e.message||'保存失败，请先导出工程备份。'};}});
 window.directorDesktop?.onCommand(command=>{if(exporting)return;if(boardGesture){boardGesture.cancel();endSpaceHand();if(command==='undo'||command==='redo')return;}if(command==='select-all'){if(!managerOpen&&!transitioning&&mode==='board'&&!editingTarget({target:document.activeElement})&&!$('.modal')&&$('#contextMenu').classList.contains('hidden'))setBoardSelection(p.nodes.filter(n=>nodeVisible(n)).map(n=>n.id));else document.execCommand('selectAll');return;}if(command==='help')helpModal();if(command==='project'){goProjects();return}if(managerOpen){if(command==='api'||command==='settings')toast('请先打开一个项目，再进入设置');return;}if(command==='api')aiModal();if(command==='settings')settingsModal();if(command==='save')saveNow();if(command==='undo'||command==='redo'){if(document.activeElement?.matches('input,textarea,[contenteditable=true]'))document.execCommand(command);else if(!$('.modal'))undo(command==='redo');}});
 
 function commit(rebuild=false){syncCanonicalNodes(p);if(mode==='board')pruneBoardSelection();if(rebuild){stage?.rebuild(p);if(mode==='stage')stage?.select(selected)}renderSidebar();renderPreviewSelect();renderTracks();renderBoard();updateStats();persist();if(shotListOpen)renderShotChecklist()}
@@ -1818,25 +1817,6 @@ function renderTaskCenter(){
  });
  if(focused)root.querySelectorAll('[data-task-key]').forEach(b=>{if(b.dataset.taskKey===focused)b.focus({preventScroll:true});});
 }
-function renderCreativeJobs(){renderTaskCenter();}
-document.addEventListener('creative-tasks-changed',renderTaskCenter);
-let creativeSaveChain=Promise.resolve();
-function saveCreativeTasks(projectId,records){
- const incoming=normalizeCreativeTasks(records);
- const merge=()=>{
-  const merged=new Map(normalizeCreativeTasks(p.workstation.creativeTasks).map(t=>[t.id,t]));
-  for(const t of incoming){const old=merged.get(t.id);if(!old||t.updatedAt>=old.updatedAt)merged.set(t.id,t);}
-  p.workstation.creativeTasks=normalizeCreativeTasks([...merged.values()]);persist();renderCreativeJobs();
- };
- const operation=creativeSaveChain.catch(()=>{}).then(async()=>{
-  if(p.id===projectId){merge();return;}
-  // Update only tasks inside one database transaction, never a stale whole-project snapshot.
-  await library.patchCreativeTasks(projectId,incoming);
-  if(p.id===projectId)merge();
- });
- creativeSaveChain=operation;return operation;
-}
-
 async function modelTasksModal(){
  const projectId=p.id;taskCenterSelected=null;taskCenterFilter='all';
  modal(t('task.title'),t('task.subtitle'),`<div id="unifiedTasks" data-project="${esc(projectId)}"></div><p id="taskCenterStatus" class="help-text" role="status"></p><section id="providerVideoTasksSection" class="settings-section" hidden><h3>${t('task.providerTasks')}</h3><div id="providerVideoTasks"></div></section>`);
@@ -2408,12 +2388,7 @@ wsShell=installWorkstation({project:()=>p,isProjectActive:()=>activeProject&&!ma
 
  ensureScriptNode:ensureProjectScriptNode,
  getCanvasSelection(){const n=p.nodes.find(n=>n.id===selected);return n?{nodeId:n.id,title:n.title,kind:getCanvasStoryContext(p,n.id)?.kind||n.type}:null;},
- openTaskCenter:modelTasksModal,saveCreativeTasks,
- adoptCreativeTask(task){
-  const next=prepareCreativeAdoption(p,task);
-  checkpoint();p.workstation=next.workstation;p.nodes=next.nodes;p.edges=next.edges;p.boardGroups=next.boardGroups||[];
-  commit();renderProperties();renderCreativeJobs();return true;
- },
+ openTaskCenter:modelTasksModal,
  prepareCanvasTool(options={}){finishInlineNodeText();if(shotListOpen)toggleShotChecklist(false);if(options.mode!=='director'&&mode!=='board')setMode('board');},
  onToolShown(kind){if($('.node-tool-panel'))closeModal();requestAnimationFrame(()=>{stage?.resize();refreshNodeOverlays();const board=$('#board'),dock=$('.ws-canvas-dock');if(!dock||dock.hidden||mode!=='board')return;if(dock.classList.contains('node-assistant-floating')){const n=p.nodes.find(n=>n.id===dock.dataset.nodeId);if(n){p.board={...p.board,...composerView(n,{width:board.clientWidth,height:board.clientHeight},p.board.zoom)};boardTransform();const anchor=nodeAnchor(n.id)?.getBoundingClientRect();if(anchor)p.board.y+=board.getBoundingClientRect().top+150-anchor.top;boardTransform();saveWorkspaceUI();}refreshNodeOverlays();return;}const candidate=p.nodes.find(n=>n.id===selected),node=candidate||getScriptNode(p);if(!node)return;const rect=board.getBoundingClientRect(),available=rect.width;if(available<100)return;const z=p.board.zoom,group=collapsedGroupFor(p,node.id),item=group?groupCardRect(p,group):{x:node.x,y:node.y,w:node.w,h:nodeHeights.get(node.id)||240};p.board.x=available/2-(item.x+item.w/2)*z;p.board.y=rect.height/2-(item.y+item.h/2)*z;boardTransform();persist();});},
  syncGeneratedToCanvas:(kind,ids)=>sendPlanningToCanvas(kind,ids||p.workstation.story[kind].map(record=>record.id),{keepTool:true}),
