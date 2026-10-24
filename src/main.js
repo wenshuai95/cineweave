@@ -273,7 +273,7 @@ $('#shotChecklistBody').addEventListener('click',event=>{
  const locate=event.target.closest('[data-shot-locate]');
  if(locate){event.preventDefault();focusShotFromChecklist(locate.dataset.shotLocate);return;}
  const empty=event.target.closest('[data-shot-empty]');
- if(empty){toggleShotChecklist(false);if(empty.dataset.shotEmpty==='script')shotSheetModal();else createScriptNode();}
+ if(empty){toggleShotChecklist(false);shotSheetModal();}
 });
 let nodeOverlayFrame=0;
 const framedNodePanels=new WeakSet();
@@ -723,8 +723,8 @@ function renderCanvasStart(){
  let root=$('#boardStart');const empty=!p.nodes.length,filtered=!empty&&!visibleBoardItems().length;
  if(!empty&&!filtered){root?.remove();return;}
  if(!root){root=document.createElement('section');root.id='boardStart';root.className='board-empty-onboarding';$('#board').append(root);}
- root.innerHTML=empty?`<h2>从一个想法开始</h2><p>写下故事，或拖入图片、视频和音频。</p><div><button type="button" class="primary" data-start-story>写下故事</button><button type="button" data-start-import>导入素材</button></div>`:`<h2>此分类暂无节点</h2><button type="button" data-start-all>查看全部节点</button>`;
- root.querySelector('[data-start-story]')?.addEventListener('click',()=>createScriptNode());root.querySelector('[data-start-import]')?.addEventListener('click',()=>$('#importMedia').click());root.querySelector('[data-start-all]')?.addEventListener('click',()=>{filter='all';renderBoard();renderSidebar();fitBoard();});
+ root.innerHTML=empty?`<h2>从已有剧本开始</h2><p>造梦工坊不生成剧本。导入已有剧本和素材，或直接创建第一个镜头。</p><div><button type="button" class="primary" data-start-script>导入剧本</button><button type="button" data-start-shot>新建镜头</button><button type="button" data-start-import>导入素材</button></div>`:`<h2>此分类暂无节点</h2><button type="button" data-start-all>查看全部节点</button>`;
+ root.querySelector('[data-start-script]')?.addEventListener('click',()=>scriptReferenceModal());root.querySelector('[data-start-shot]')?.addEventListener('click',()=>shotSheetModal());root.querySelector('[data-start-import]')?.addEventListener('click',()=>$('#importMedia').click());root.querySelector('[data-start-all]')?.addEventListener('click',()=>{filter='all';renderBoard();renderSidebar();fitBoard();});
  root.onpointerdown=e=>e.stopPropagation();
 }
 function boardTransform(){$('#world').style.transform=`translate(${p.board.x}px,${p.board.y}px) scale(${p.board.zoom})`;$('#zoomLabel').textContent=Math.round(p.board.zoom*100)+'%';scheduleMinimap();refreshNodeOverlays()}
@@ -1412,7 +1412,7 @@ function addAsset(type){
 function addAssetModal(){
  const r=$('#quickAdd').getBoundingClientRect();
  showContextMenu($('#contextMenu'),{x:r.left,y:r.bottom+7,title:'新建节点',items:[
-  {label:'项目剧本',run:createScriptNode},
+  {label:'导入剧本参考',run:scriptReferenceModal},
   ...[['text','文本'],['image','图片'],['video','视频'],['audio','音频'],['actor','角色设定'],['scene','场景设定'],['director','3D 导演台']].map(([type,label])=>({label,run:()=>addAsset(type)})),
   {label:'导入 3D 模型',run:()=>$('#modelFile').click()},
   {label:'从流程模板开始',run:canvasTemplatesModal}

@@ -81,7 +81,7 @@ function summaryLine(items){
  return `<p class="shot-list-summary" role="status">${esc(parts.map(trShot).join(' · '))}</p>`;
 }
 export function shotChecklistHtmlFromItems(items){
- if(!items.length)return '<div class="shot-list-empty"><b data-i18n="shots.emptyTitle">还没有分镜</b><p data-i18n="shots.emptyText">先把故事整理成分镜，或在文稿里写下第一个镜头。镜头清单只读取现有数据，不会伪造进度。</p><div class="shot-list-empty-actions"><button type="button" data-shot-empty="script" data-i18n="shots.openWriting">打开文稿与分镜</button><button type="button" data-shot-empty="story" data-i18n="shots.writeStory">写下故事</button></div></div>';
+ if(!items.length)return '<div class="shot-list-empty"><b data-i18n="shots.emptyTitle">还没有分镜</b><p data-i18n="shots.emptyText">先把故事整理成分镜，或在文稿里写下第一个镜头。镜头清单只读取现有数据，不会伪造进度。</p><div class="shot-list-empty-actions"><button type="button" data-shot-empty="script" data-i18n="shots.openWriting">打开镜头表</button><button type="button" data-shot-empty="story" data-i18n="shots.writeStory">新建镜头</button></div></div>';
  return `${summaryLine(items)}<ol class="shot-list">${items.map(row).join('')}</ol>`;
 }
 export function shotChecklistHtml(project){
