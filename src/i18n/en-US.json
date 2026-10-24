@@ -65,7 +65,12 @@
     "enabled": "enabled",
     "disabled": "disabled",
     "comfyStarting": "Starting ComfyUI…",
-    "comfyStarted": "ComfyUI started"
+    "comfyStarted": "ComfyUI started",
+    "h3Title": "MiniMax H3 (optional local interface)",
+    "h3Help": "Only the interface is reserved. Models are not downloaded automatically.",
+    "h3Check": "Check H3 interface",
+    "h3Installed": "H3 interface available.",
+    "h3Missing": "H3 not installed: {count} missing item(s). Install the ComfyUI H3 node and models yourself."
   },
   "language": {
     "en": "English",

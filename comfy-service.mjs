@@ -3,6 +3,7 @@ import {createPersistentTaskStore} from './providers/persistent-task-store.mjs';
 import {describeProvider} from './providers/contracts.mjs';
 import {resolveComfyLaunch, spawnComfy} from './comfy-launcher.mjs';
 import {join} from 'node:path';
+import {probeComfyH3} from './providers/comfy-h3.mjs';
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 const isPrivate = host => LOOPBACK.has(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
@@ -27,6 +28,7 @@ export function createComfyService({baseUrl = process.env.COMFYUI_URL || COMFYUI
     status() { return {baseUrl: current, providerId: 'comfyui', configured: true}; },
     descriptor() { return describeProvider(provider); },
     async health() { return {...(await provider.health()), baseUrl: current}; },
+    async h3Status() { return probeComfyH3({baseUrl: current, fetchImpl}); },
     async start() {
       if (starting) return starting;
       starting = (async () => {

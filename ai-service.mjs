@@ -67,6 +67,7 @@ export async function handleAI(req,res,url){
   if(req.method==='GET'&&url.pathname==='/api/comfy/status'){json(res,await comfyService.health());return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/start'){json(res,await comfyService.start());return true;}
   if(req.method==='GET'&&url.pathname==='/api/comfy/models'){json(res,{models:await comfyService.models()});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/comfy/h3/status'){json(res,await comfyService.h3Status());return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/config'){json(res,{status:comfyService.configure((await body(req)).baseUrl)});return true;}
   if(req.method==='GET'&&url.pathname==='/api/comfy/tasks'){await comfyService.ready();json(res,{tasks:comfyService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/quote'){json(res,await comfyService.quote(await body(req)));return true;}

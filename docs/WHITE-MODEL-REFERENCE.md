@@ -106,3 +106,24 @@
 1. 你有火山方舟 Seedance 2.0/2.5 的模型权限吗？
 2. 你的 ComfyUI 是否已安装 H3 Reference 节点，并有 Comfy API 额度？
 3. 先做哪条链路：Seedance 2.5（推荐）还是 ComfyUI H3？
+
+## 五、本机策略（2026-10-24 确定）
+
+用户决定：**不实地安装 H3 模型，只保留接口**。
+
+实现方式：
+
+- 设置 → API 服务新增“MiniMax H3 本地接口（可选）”
+- 检测 ComfyUI：
+  - `MiniMaxH3ReferenceToVideo` 节点
+  - H3 UNET / CLIP / 视频 VAE / 音频 VAE
+- 缺模型时显示“未安装 H3：缺少 N 项”，不自动下载、不阻塞图片/视频生成
+- H3 Provider 接口保留，但不注册为可用生成服务，避免误导
+- 即梦 Canvas CLI 只作为测试链路
+
+已实测：
+
+- ComfyUI 0.39.0 已有 H3 节点
+- 本机缺少 4 个 H3 模型文件
+- 设置页正确提示缺少 4 项
+- 未下载模型、未提交 H3 生成

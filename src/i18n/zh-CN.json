@@ -65,7 +65,12 @@
     "enabled": "已启用",
     "disabled": "已关闭",
     "comfyStarting": "正在启动 ComfyUI…",
-    "comfyStarted": "ComfyUI 已启动"
+    "comfyStarted": "ComfyUI 已启动",
+    "h3Title": "MiniMax H3 本地接口（可选）",
+    "h3Help": "只保留接口，不自动下载模型。",
+    "h3Check": "检查 H3 接口",
+    "h3Installed": "H3 接口可用。",
+    "h3Missing": "未安装 H3：缺少 {count} 项。请自行安装 ComfyUI H3 节点和模型。"
   },
   "language": {
     "en": "English",
