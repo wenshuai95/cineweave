@@ -75,8 +75,9 @@ export function createKlingProvider({
       const modelId = input.modelId || defaultModel;
       const duration = [5, 10].includes(Number(input.duration)) ? Number(input.duration) : 5;
       const aspect = ['16:9', '9:16', '1:1'].includes(input.aspect) ? input.aspect : '16:9';
+      const image = typeof input.image === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(input.image) ? input.image : null;
       const quoteId = randomUUID();
-      quotes.set(quoteId, {modelId, prompt: input.prompt, duration, aspect, projectId: input.projectId || null, expiresAt: now() + 10 * 60 * 1000});
+      quotes.set(quoteId, {modelId, prompt: input.prompt, duration, aspect, image, projectId: input.projectId || null, expiresAt: now() + 10 * 60 * 1000});
       return {quoteId, providerId: 'kling', modelId, kind: 'video', cost: null, currency: 'CNY', note: '按 Kling 实际计费；提交后不可撤销', duration, aspect};
     },
     async submit(input = {}) {
@@ -86,10 +87,13 @@ export function createKlingProvider({
       const task = store.create({providerId: 'kling', modelId: quote.modelId, kind: 'video', projectId: input.projectId || quote.projectId, sourceId: input.sourceId, prompt: quote.prompt});
       store.update(task.id, {status: 'running', progress: 0.1, message: '正在提交 Kling…'});
       try {
-        const data = await request('/v1/videos/text2video', {method: 'POST', body: JSON.stringify({model_name: quote.modelId, prompt: quote.prompt, duration: String(quote.duration), aspect_ratio: quote.aspect, mode: 'std'})});
+        const path = quote.image ? '/v1/videos/image2video' : '/v1/videos/text2video';
+        const body = {model_name: quote.modelId, prompt: quote.prompt, duration: String(quote.duration), aspect_ratio: quote.aspect, mode: 'std'};
+        if (quote.image) body.image = quote.image.split(',')[1];
+        const data = await request(path, {method: 'POST', body: JSON.stringify(body)});
         const remoteId = data?.data?.task_id;
         if (!remoteId) throw new ProviderError('UPSTREAM', 'Kling 没有返回任务 ID');
-        store.update(task.id, {remoteId, progress: 0.2, message: 'Kling 正在生成…'});
+        store.update(task.id, {remoteId, remoteKind: quote.image ? 'image2video' : 'text2video', progress: 0.2, message: 'Kling 正在生成…'});
         return {taskId: task.id, task: store.get(task.id)};
       } catch (error) {
         store.update(task.id, {status: 'failed', error: {code: error.code || 'UPSTREAM', message: error.message}, message: error.message});
@@ -100,7 +104,7 @@ export function createKlingProvider({
       const task = store.get(taskId);
       if (!task) throw new ProviderError('TASK_NOT_FOUND', `任务不存在：${taskId}`);
       if (!['queued', 'running'].includes(task.status) || !task.remoteId) return task;
-      const data = await request(`/v1/videos/text2video/${encodeURIComponent(task.remoteId)}`, {}, 30000);
+      const data = await request(`/v1/videos/${task.remoteKind === 'image2video' ? 'image2video' : 'text2video'}/${encodeURIComponent(task.remoteId)}`, {}, 30000);
       const status = data?.data?.task_status;
       if (status === 'succeed') {
         const url = data?.data?.task_result?.videos?.[0]?.url;

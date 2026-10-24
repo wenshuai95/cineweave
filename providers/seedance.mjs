@@ -70,8 +70,9 @@ export function createSeedanceProvider({
       const modelId = input.modelId || defaultModel;
       const duration = [5, 10].includes(Number(input.duration)) ? Number(input.duration) : 5;
       const resolution = ['720p', '1080p'].includes(input.resolution) ? input.resolution : '720p';
+      const image = typeof input.image === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(input.image) ? input.image : null;
       const quoteId = randomUUID();
-      quotes.set(quoteId, {modelId, prompt: input.prompt, duration, resolution, projectId: input.projectId || null, expiresAt: now() + 10 * 60 * 1000});
+      quotes.set(quoteId, {modelId, prompt: input.prompt, duration, resolution, image, projectId: input.projectId || null, expiresAt: now() + 10 * 60 * 1000});
       return {quoteId, providerId: 'seedance', modelId, kind: 'video', cost: null, currency: 'CNY', note: '按方舟实际计费；提交后不可撤销', duration, resolution};
     },
     async submit(input = {}) {
@@ -81,10 +82,12 @@ export function createSeedanceProvider({
       const task = store.create({providerId: 'seedance', modelId: quote.modelId, kind: 'video', projectId: input.projectId || quote.projectId, sourceId: input.sourceId, prompt: quote.prompt});
       store.update(task.id, {status: 'running', progress: 0.1, message: '正在提交 Seedance…'});
       try {
-        const data = await request('/contents/generations/tasks', {method: 'POST', body: JSON.stringify({model: quote.modelId, content: [{type: 'text', text: quote.prompt}], duration: quote.duration, resolution: quote.resolution})});
+        const content = [{type: 'text', text: quote.prompt}];
+        if (quote.image) content.push({type: 'image_url', image_url: {url: quote.image}});
+        const data = await request('/contents/generations/tasks', {method: 'POST', body: JSON.stringify({model: quote.modelId, content, duration: quote.duration, resolution: quote.resolution})});
         const remoteId = data?.id;
         if (!remoteId) throw new ProviderError('UPSTREAM', 'Seedance 没有返回任务 ID');
-        store.update(task.id, {remoteId, progress: 0.2, message: 'Seedance 正在生成…'});
+        store.update(task.id, {remoteId, remoteKind: quote.image ? 'image2video' : 'text2video', progress: 0.2, message: 'Seedance 正在生成…'});
         return {taskId: task.id, task: store.get(task.id)};
       } catch (error) {
         store.update(task.id, {status: 'failed', error: {code: error.code || 'UPSTREAM', message: error.message}, message: error.message});

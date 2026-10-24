@@ -418,3 +418,36 @@ test('comfyui image-to-image uploads a reference and uses LoadImage/VAEEncode', 
   assert.equal(workflow[3].inputs.latent_image[0], '11');
   assert.equal(workflow[5], undefined);
 });
+
+
+test('seedance image-to-video sends an image_url content item', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).endsWith('/contents/generations/tasks') && options.method === 'POST') return new Response(JSON.stringify({id: 'i1'}), {status: 200});
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createSeedanceProvider({apiKey: 'k', enabled: true, fetchImpl});
+  const image = 'data:image/png;base64,AAAA';
+  const quote = await provider.quote({prompt: 'move', duration: 5, image});
+  await provider.submit({quoteId: quote.quoteId});
+  const body = JSON.parse(calls.find(c => c.options.method === 'POST').options.body);
+  assert.equal(body.content[0].type, 'text');
+  assert.equal(body.content[1].type, 'image_url');
+  assert.equal(body.content[1].image_url.url, image);
+});
+
+test('kling image-to-video uses the image2video endpoint and base64 payload', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).endsWith('/v1/videos/image2video')) return new Response(JSON.stringify({code: 0, data: {task_id: 'k2'}}), {status: 200});
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createKlingProvider({accessKey: 'ak', secretKey: 'sk', enabled: true, fetchImpl});
+  const quote = await provider.quote({prompt: 'move', duration: 5, image: 'data:image/png;base64,AAAA'});
+  await provider.submit({quoteId: quote.quoteId});
+  const body = JSON.parse(calls[0].options.body);
+  assert.equal(body.image, 'AAAA');
+  assert.ok(String(calls[0].url).endsWith('/v1/videos/image2video'));
+});

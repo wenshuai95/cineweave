@@ -1618,7 +1618,8 @@ async function generationPanel(source,mode='image'){
  q('#genCancel').onclick=()=>closeModal();
  const refs=p.nodes.filter(n=>n.type==='image'&&n.src&&n.id!==sourceId&&p.edges.some(e=>(e.from===sourceId&&e.to===n.id)||(e.to===sourceId&&e.from===n.id))).slice(0,6);
  const referenceSrc=refs[0]?.src||(source?.type==='image'&&source.src?source.src:null);
- q('#genRefs').innerHTML=referenceSrc?`<img src="${escValue(referenceSrc)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;margin:2px"> <span>参考图已连入；ComfyUI 图生图会使用它，Seedream 暂不支持参考图。</span>`:'无连线参考。当前 Provider 以文字描述生成为主。';
+ const updateRefNote=()=>{const info=providerList.find(x=>x.id===providerId);const supports=mode==='image'?providerId==='comfyui':!!info?.capabilities?.video?.imageToVideo;q('#genRefs').innerHTML=referenceSrc?`<img src="${escValue(referenceSrc)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;margin:2px"> <span>参考图已连入；${supports?'当前 Provider 会使用它':'当前 Provider 不支持图片参考，仅使用文字描述'}。</span>`:'无连线参考。当前 Provider 以文字描述生成为主。';};
+ updateRefNote();
  q('#genSizeField').hidden=mode!=='image';q('#genDurationField').hidden=mode!=='video';q('#genStepsField').hidden=mode!=='image';
  const prices={};const quotePaths={comfyui:'/api/comfy/quote',seedream:'/api/providers/seedream/quote'};
  const submitPaths={comfyui:'/api/comfy/generate',seedream:'/api/providers/seedream/generate'};
@@ -1631,7 +1632,7 @@ async function generationPanel(source,mode='image'){
    models=(data.models||[]).filter(m=>mode==='image'?m.kind!=='video':m.kind==='video');
    if(!models.length)throw Error('该服务商没有可用模型');
    q('#genModel').innerHTML=models.map(m=>`<option value="${escValue(m.id)}">${escValue(m.name)}</option>`).join('');
-   q('#genRun').disabled=false;setStatus('就绪。第一步查看费用，第二步确认生成。');
+   q('#genRun').disabled=false;updateRefNote();setStatus('就绪。第一步查看费用，第二步确认生成。');
   }catch(e){q('#genModel').innerHTML='';setStatus(e.message);}
  }
  async function loadProviders(){
@@ -1640,7 +1641,7 @@ async function generationPanel(source,mode='image'){
     const [comfy,cfg]=await Promise.all([api('/api/comfy/status'),api('/api/providers/config')]);
     providerList=[{id:'comfyui',label:'ComfyUI（本地）',enabled:!!comfy.ok},{id:'seedream',label:'Seedream（云端）',enabled:!!cfg.config?.seedream?.configured}];
    }else{
-    const data=await api('/api/video/providers');providerList=(data.providers||[]).filter(x=>x.enabled).map(x=>({id:x.id,label:x.label,enabled:true}));
+    const data=await api('/api/video/providers');providerList=(data.providers||[]).filter(x=>x.enabled).map(x=>({id:x.id,label:x.label,enabled:true,capabilities:x.capabilities}));
    }
    const enabled=providerList.filter(x=>x.enabled);
    if(!enabled.length)throw Error('未配置可用服务商，请先到设置 → API 服务配置');
@@ -1690,7 +1691,8 @@ async function quoteNow(){
   const prompt=q('#genPrompt').value.trim(),modelId=q('#genModel').value;
   if(!prompt)throw Error('请填写描述');
   if(mode==='image')return providerId==='comfyui'?api(quotePaths.comfyui,{modelId,prompt,size:q('#genSize').value,steps:Number(q('#genSteps').value)||20,projectId,reference:referenceSrc||undefined,denoise:0.65}):api(quotePaths.seedream,{modelId,prompt,size:q('#genSize').value,projectId});
-  return api('/api/video/quote',{providerId,modelId,prompt,duration:Number(q('#genDuration').value)||2,kind:'video',projectId});
+  const info=providerList.find(x=>x.id===providerId);
+  return api('/api/video/quote',{providerId,modelId,prompt,duration:Number(q('#genDuration').value)||2,kind:'video',projectId,image:info?.capabilities?.video?.imageToVideo&&referenceSrc?referenceSrc:undefined});
  }
  async function run(){
   if(busy)return;const button=q('#genRun');

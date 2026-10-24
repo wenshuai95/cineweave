@@ -41,6 +41,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now, onChang
         sourceId: input.sourceId == null ? null : String(input.sourceId),
         prompt: typeof input.prompt === 'string' ? input.prompt : '',
         remoteId: input.remoteId == null ? null : String(input.remoteId),
+        remoteKind: input.remoteKind == null ? null : String(input.remoteKind),
         status: 'queued',
         progress: 0,
         outputs: [],
@@ -78,6 +79,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now, onChang
       if (patch.message !== undefined) task.message = String(patch.message);
       if (patch.cost !== undefined) task.cost = patch.cost;
       if (patch.remoteId !== undefined) task.remoteId = patch.remoteId == null ? null : String(patch.remoteId);
+      if (patch.remoteKind !== undefined) task.remoteKind = patch.remoteKind == null ? null : String(patch.remoteKind);
       task.updatedAt = now();
       notify();
       return publicTask(task);
