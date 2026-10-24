@@ -6,7 +6,6 @@ import {translateToast} from './i18n/toast.mjs';
 import {inlineNodeText,writeInlineNodeText} from './inline-node-text.mjs';
 import {canvasRelations,wireRelationState,fitRelationView,snapshotCanvasView,relationTargets} from './canvas-focus.mjs';
 import {collectTaskRecords,taskCenterCounts,filterTaskRecords,queryTaskRecord} from './task-center.mjs';
-import {showTextSettings} from './workstation/text-settings.mjs';
 import {directorFrameSamples} from './workstation/director-vision.mjs';
 import {directorContext,directorSignature,prepareDirectorEdit} from './workstation/director-agent.mjs';
 import {openMediaNodePanel} from './media-node-panel.mjs';

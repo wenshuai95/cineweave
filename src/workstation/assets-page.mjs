@@ -5,9 +5,7 @@ import {removeMediaWithConsent} from './media-interactions.mjs';
 import {isStoryNodeCurrent,isAssetImageCurrent} from './story-canvas.mjs';
 import {IMAGE_VERSION_LIMIT,validateImageFile,addAssetImageVersions,selectAssetImage,removeAssetImageVersion} from './asset-images.mjs';
 import {assetReferenceImpact} from './asset-image-context.mjs';
-import {textStatus,textPost,showTextSettings,connectionLabel} from './text-settings.mjs';
 import {normalizeStory} from './story.mjs';
-import {applyAssetDesigns} from './asset-agent.mjs';
 
 export function normalizeAssetsOpenOptions(options={}){
  if(!options||typeof options!=='object')return {};
@@ -18,7 +16,7 @@ export function normalizeAssetsOpenOptions(options={}){
 export function createAssetsPage(root,ctx){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let contextualAssetId=null;
- let previewUrl=null,planningFilter='all',mode='planning',focusId=null,query='',style='',request=null,pending=null,note='',connection=null,previewClose=null,lastProjectId=null,previewDismissed=false,lastEdit=0,impactClose=null;const planningSelected=new Set();
+ let previewUrl=null,planningFilter='all',mode='planning',focusId=null,query='',previewClose=null,lastProjectId=null,lastEdit=0,impactClose=null;const planningSelected=new Set();
  const imageUrls=new Map(),imageLoads=new Map();let imageEpoch=0,active=false,imageImport=null,previewImageId=null;
  function revokeImageUrls(){imageEpoch++;for(const url of imageUrls.values())URL.revokeObjectURL(url);imageUrls.clear();imageLoads.clear();}
  function fillImageUrls(){
@@ -144,7 +142,6 @@ export function createAssetsPage(root,ctx){
   root.classList.toggle('ws-flow-no-detail',mode==='planning'&&!focusId);
   if(mode==='planning'){wirePlanning();fillImageUrls();}
   root.querySelectorAll('[data-asset-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.assetMode;if(mode==='planning')contextualAssetId=null;revoke();render();});
-  if(pending&&!previewDismissed)showDesignPreview();
   root.querySelector('#wsAssetImport').onclick=()=>{mode='media';render();root.querySelector('#wsAssetFile').click();};
   root.querySelector('#wsAssetFile').onchange=async e=>{const files=[...e.target.files];e.target.value='';if(files.length)await importFiles(files);};
   root.querySelectorAll('[data-preview]').forEach(b=>b.onclick=()=>previewAsset(b.dataset.preview));
@@ -155,7 +152,6 @@ export function createAssetsPage(root,ctx){
   root.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>ctx.locateCanvasNode(b.dataset.locate));
  }
  const kindLabel=k=>({character:'角色',scene:'场景',prop:'道具'})[k];
- const fingerprint=()=>JSON.stringify([ctx.project().id,ctx.project().workstation.script,ctx.project().workstation.story.shots,ctx.project().workstation.story.assets,ctx.project().workstation.writing?.brief,ctx.project().workstation.writing?.artDirection]);
  function canvasThumbnail(a){const project=ctx.project();const ids=new Set(project.edges.filter(e=>e.from===a.canvasNodeId).map(e=>e.to));return project.nodes.find(n=>n.type==='image'&&n.src&&(n.id===a.canvasNodeId||ids.has(n.id)))?.src;}
  function thumbnail(a){const v=a.imageVersions?.find(v=>v.id===a.selectedImageId)||a.imageVersions?.[0];return v?imageElement(v,a.name+'参考图','loading="lazy"'):canvasThumbnail(a)?`<img src="${esc(canvasThumbnail(a))}" alt="${esc(a.name)}参考图" loading="lazy">`:`<span>${{character:'人',scene:'景',prop:'物'}[a.kind]}</span><small>${kindLabel(a.kind)}设定</small>`;}
  function imageStatus(a){return a.imageVersions?.some(v=>v.id===a.selectedImageId)?'正式图已选':a.imageVersions?.length?`${a.imageVersions.length} 张候选`:'待导入图片';}
@@ -216,34 +212,11 @@ export function createAssetsPage(root,ctx){
   root.querySelector('#wsAssetSendOne')?.addEventListener('click',()=>ctx.sendStoryAssetsToCanvas([focusId]));
   root.querySelectorAll('[data-plan-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.planDelete;change(()=>{ws.story.assets=ws.story.assets.filter(a=>a.id!==id);ws.story.shots.forEach(s=>s.assetIds=s.assetIds.filter(x=>x!==id));});planningSelected.delete(id);focusId=null;render();});
  }
- async function loadConnection(){try{connection=await textStatus();const e=root.querySelector('#wsAssetConnection');if(e)e.textContent=connectionLabel(connection.config);}catch{}}
- async function designAssets(){
-  if(request)return;const originId=ctx.project().id;
-  if(!ctx.project().workstation.script.trim())return ctx.toast('请先在剧本节点填写或生成剧本');
-  await loadConnection();if(request||ctx.project().id!==originId||root.hidden)return;const ws=ctx.project().workstation;if(!connection?.config.configured){await showTextSettings(ctx,loadConnection);return;}
-  const r={projectId:ctx.project().id,signature:fingerprint(),controller:new AbortController()};request=r;pending=null;previewDismissed=false;note='资产助手正在阅读剧本与分镜，设计清单和提示词…';render();
-  try{const result=await textPost('generate',{kind:'assets',prompt:style||'根据剧本与分镜完整设计可制作的资产与图片提示词，保持美术风格和角色一致。',script:ws.script,shots:ws.story.shots,assets:ws.story.assets,brief:ws.writing?.brief||'',skill:'general'},{signal:r.controller.signal});if(request!==r||r.projectId!==ctx.project().id)return;pending={...r,result};note='设计完成，请预览并确认填入资产库';}
-  catch(e){if(request===r)note=e.name==='AbortError'?'已取消设计':e.message;}
-  finally{if(request===r){request=null;render();loadConnection();}}
- }
- function showDesignPreview(){
-  // Only one preview, and only on the visible assets page.
-  if(root.hidden)return;previewClose?.();
-  const p=pending,overlay=document.createElement('div');overlay.id='wsAssetDesignOverlay';overlay.className='ws-dialog-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','资产设计预览');
-  const stale=()=>p.projectId!==ctx.project().id||p.signature!==fingerprint();
-  overlay.innerHTML=`<section class="ws-dialog ws-asset-design-preview"><header><h2>资产设计预览 · ${p.result.assets.length} 项</h2><button id="wsAssetPreviewClose" aria-label="关闭资产设计预览">✕</button></header><p>${stale()?'剧本或资产已变化，请关闭后重新设计。':'确认后自动填入资产库，同名同类型资产更新设定和提示词，其余已有资产保留。采用前保存历史版本。'}</p><div class="ws-design-results">${p.result.assets.map(a=>`<article><header><b>${esc(a.name)}</b><span>${kindLabel(a.kind)} · ${a.shotIds.length} 镜</span></header><p>${esc(a.description)}</p><pre>${esc(a.prompt)}</pre>${a.negativePrompt?`<small>避免：${esc(a.negativePrompt)}</small>`:''}</article>`).join('')}</div><footer><button id="wsAssetPreviewDiscard">丢弃</button><button id="wsAssetPreviewApply" class="primary" ${stale()?'disabled':''}>确认并填入资产库</button></footer></section>`;
-  const close=()=>{document.removeEventListener('keydown',keys,true);overlay.remove();previewClose=null;};previewClose=close;
-  const keys=e=>{e.stopPropagation();if(e.key==='Escape'){previewDismissed=true;close();root.querySelector('#wsAssetResult')?.focus();return;}if(e.key==='Tab'){const buttons=[...overlay.querySelectorAll('button:not(:disabled)')];if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus();}else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus();}}};
-  document.addEventListener('keydown',keys,true);document.body.append(overlay);overlay.querySelector('#wsAssetPreviewClose').focus();
-  overlay.querySelector('#wsAssetPreviewClose').onclick=()=>{previewDismissed=true;close();root.querySelector('#wsAssetResult')?.focus();};
-  overlay.querySelector('#wsAssetPreviewDiscard').onclick=()=>{pending=null;close();note='已丢弃设计结果';render();};
-  overlay.querySelector('#wsAssetPreviewApply').onclick=async()=>{if(stale())return ctx.toast('剧本或资产已变化，请重新设计');try{const next=structuredClone(ctx.project().workstation);applyAssetDesigns(next,p.result.assets);ctx.checkpoint();ctx.project().workstation=next;ctx.commit();ctx.persist();focusId=next.story.assets.find(a=>a.name===p.result.assets[0].name&&a.kind===p.result.assets[0].kind)?.id;if(contextualAssetId)contextualAssetId=focusId;planningFilter='all';query='';pending=null;close();note='资产设定与提示词已填入，选择卡片导入本地图片';render();const projectId=ctx.project().id;let synced=true;try{if(await ctx.syncGeneratedToCanvas?.('assets')===false){synced=false;if(projectId===ctx.project().id)note='资产已保存，画布节点尚未更新；请整理画布后重试。';}}catch(e){synced=false;if(projectId===ctx.project().id)note='资产已保存，画布节点待更新：'+e.message;}if(projectId!==ctx.project().id)return;render();ctx.toast(synced?'资产设计已采用，可在详情中继续修改':note);}catch(e){ctx.toast(e.message);}};
- }
  function onShow(options){active=true;if(lastProjectId!==ctx.project().id){revokeImageUrls();previewImageId=null;planningSelected.clear();focusId=null;contextualAssetId=null;mode='planning';planningFilter='all';query='';note='';lastProjectId=ctx.project().id;}style=ctx.project().workstation.writing?.artDirection||'';if(pending&&pending.projectId!==ctx.project().id)pending=null;if(request&&request.projectId!==ctx.project().id){request.controller.abort();request=null;}
   const input=normalizeAssetsOpenOptions(options);if(input.mode){mode=input.mode;if(mode==='media')contextualAssetId=null;}
-  if(input.assetId){const asset=ctx.project().workstation.story.assets.find(a=>a.id===input.assetId);if(asset){if(focusId!==asset.id)previewImageId=null;focusId=asset.id;contextualAssetId=asset.id;mode='planning';planningFilter='all';query='';}else{focusId=null;contextualAssetId=null;note='这个资产已移除，请选择其他节点。';}}
+  if(input.assetId){const asset=ctx.project().workstation.story.assets.find(a=>a.id===input.assetId);if(asset){if(focusId!==asset.id)previewImageId=null;focusId=asset.id;contextualAssetId=asset.id;mode='planning';planningFilter='all';query='';}else{focusId=null;contextualAssetId=null;}}
   else if(options&&Object.hasOwn(input,'mode'))contextualAssetId=null;
-  render();loadConnection();}
+  render();}
 
  function onHide(){active=false;imageImport=null;revoke();revokeImageUrls();previewClose?.();impactClose?.();}
  return {onShow,open:onShow,onHide,importFiles};
