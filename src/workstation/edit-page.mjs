@@ -104,11 +104,11 @@ export function createEditPage(root,ctx){
  }
  function binHtml(){
   const items=libraryRows();
-  if(!items.length)return `<p class="ws-empty">${libraryQuery||libraryFilter!=='all'?'没有匹配的素材，可换个关键词或分类。':'从文件夹拖入视频、音频，或点击上方「导入」。导演台导出的白模视频会自动列在这里。'}</p>`;
-  return items.map(a=>`<div class="ws-bin-row" data-bin-key="${esc(a.key)}" title="拖到轨道，或点击右侧按钮加入">
+  if(!items.length)return `<p class="ws-empty">${libraryQuery||libraryFilter!=='all'?t('edit.noMatch'):t('edit.dropImport')}</p>`;
+  return items.map(a=>`<div class="ws-bin-row" data-bin-key="${esc(a.key)}" title="${t('edit.dragToTrack')}">
    <span class="ws-asset-icon ${a.kind}">${a.kind==='video'?'▷':'♫'}</span>
-   <span class="ws-bin-name" title="${esc(a.name)}"><b>${esc(a.name)}</b><small>${a.previz?'白模预演':a.source}${a.durationSec?' · '+a.durationSec.toFixed(1)+' 秒':''}</small></span>
-   <span class="ws-bin-actions"><button data-preview-material="${esc(a.key)}" aria-label="预览 ${esc(a.name)}">预览</button><button data-add-material="${esc(a.key)}" aria-label="将 ${esc(a.name)} 加入${a.kind==='video'?'视频':'音频'}轨道" title="加入${a.kind==='video'?' V1':' A1'}末尾">＋</button></span>
+   <span class="ws-bin-name" title="${esc(a.name)}"><b>${esc(a.name)}</b><small>${a.previz?t('edit.previz'):a.source}${a.durationSec?' · '+a.durationSec.toFixed(1)+' '+t('edit.secondsShort'):''}</small></span>
+   <span class="ws-bin-actions"><button data-preview-material="${esc(a.key)}" aria-label="${t('edit.preview')} ${esc(a.name)}">${t('edit.preview')}</button><button data-add-material="${esc(a.key)}" aria-label="${t('edit.addAria',{name:esc(a.name),kind:a.kind==='video'?t('edit.videoTrack'):t('edit.audioTrack')})}" title="${t('edit.addTitle',{track:a.kind==='video'?'V1':'A1'})}">＋</button></span>
   </div>`).join('');
  }
  function wireLibraryRows(){
@@ -204,21 +204,21 @@ export function createEditPage(root,ctx){
   if(!c){els.inspector.innerHTML=`<h3>${t('edit.clip')}</h3><p class="help-text">${t('edit.clickClip')}<br>${t('edit.addClip')}</p>`;return;}
   const asset=assetOf(c.assetId),src=sourceFrames(asset);
   els.inspector.innerHTML=`<h3>${t('edit.clipNamed',{name:esc(asset?.name||t('edit.missingAsset'))})}</h3>
-   ${!asset?'<p class="ws-warn">⚠ 素材已缺失（被删除或来自旧备份）。可删除此片段。</p>':''}
+   ${!asset?'<p class="ws-warn">'+t('edit.missingClip')+'</p>':''}
    <label class="field">${t('edit.timeDisplay')}<select id="wsPrUnit" aria-label="${t('edit.timeDisplay')}"><option value="seconds" ${timeUnit==='seconds'?'selected':''}>${t('edit.seconds')}</option><option value="timecode" ${timeUnit==='timecode'?'selected':''}>${t('edit.timecode')}</option><option value="frames" ${timeUnit==='frames'?'selected':''}>${t('edit.frames')}</option></select></label>
-   <label class="field">位置 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrStart" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.start,timeUnit,seq().fps)}"></label>
+   <label class="field">${t('edit.position')} / ${timeUnit==='seconds'?t('edit.seconds') : timeUnit==='frames'?t('edit.frames'):t('edit.timecode')}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrStart" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.start,timeUnit,seq().fps)}"></label>
    <div class="ws-field-row">
-    <label class="field">入点 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrIn" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.in,timeUnit,seq().fps)}"></label>
-    <label class="field">出点 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrOut" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.out,timeUnit,seq().fps)}"></label>
+    <label class="field">${t('edit.inPoint')} / ${timeUnit==='seconds'?t('edit.seconds') : timeUnit==='frames'?t('edit.frames'):t('edit.timecode')}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrIn" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.in,timeUnit,seq().fps)}"></label>
+    <label class="field">${t('edit.outPoint')} / ${timeUnit==='seconds'?t('edit.seconds') : timeUnit==='frames'?t('edit.frames'):t('edit.timecode')}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrOut" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.out,timeUnit,seq().fps)}"></label>
    </div>
-   <p class="help-text">时长 ${clipLength(c)} 帧 · ${(clipLength(c)/seq().fps).toFixed(2)} 秒${src?` · 素材共 ${src} 帧`:''}</p>
+   <p class="help-text">${t('edit.duration')} ${clipLength(c)} ${t('edit.frames')} · ${(clipLength(c)/seq().fps).toFixed(2)} ${t('edit.seconds')}${src?` · ${t('edit.sourceFrames',{count:src})}`:''}</p>
    <div class="ws-field-row">
-    <label class="field">音量<input type="number" id="wsPrVolume" min="0" max="2" step="0.05" value="${c.volume}"></label>
+    <label class="field">${t('edit.volume')}<input type="number" id="wsPrVolume" min="0" max="2" step="0.05" value="${c.volume}"></label>
     <label class="field ws-check-field"><input type="checkbox" id="wsPrMute" ${c.muted?'checked':''}>${t('edit.clipMute')}</label>
    </div>
    <div class="ws-field-row">
-    <button id="wsPrSplit" class="grow">✂ 拆分</button>
-    <button id="wsPrDelete" class="danger grow">删除</button>
+    <button id="wsPrSplit" class="grow">${t('edit.split')}</button>
+    <button id="wsPrDelete" class="danger grow">${t('edit.delete')}</button>
     <button id="wsPrRipple" class="grow" title="Delete and shift following clips">${t('edit.closeGap')}</button>
    </div>
    <p class="help-text">${t('edit.inspectorHelp')}</p>`;
