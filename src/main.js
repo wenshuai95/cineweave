@@ -1582,59 +1582,100 @@ async function exportModal(){
 }
 let aiToken=null;
 async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await api('/api/ai/text/status',undefined,{signal});aiToken=status.token;}const timeout=AbortSignal.timeout(180000),combined=signal?AbortSignal.any([signal,timeout]):timeout;let response;try{response=await fetch(path,{...(data?{method:'POST',headers:{'Content-Type':'application/json','X-Jingchang-Token':aiToken},body:JSON.stringify(data)}:{}),signal:combined});}catch(e){if(signal?.aborted)throw new DOMException('已取消','AbortError');if(timeout.aborted)throw Error(translateToast('本机服务响应超时，请先在任务中心核对生成记录，再手动重试'));throw Error(translateToast('本机服务连接中断，请重新打开软件后核对任务记录'));}const result=await response.json();if(!response.ok)throw Error(translateToast(result.error||'本地服务请求失败'));return result;}
-async function providerVideoModal(source){
- const project=p,projectId=p.id,sourceId=source?.id;
- nodeToolModal(source?.id,t('video.title'),t('video.subtitle'),`<div class="image-composer"><p class="help-text">${t('video.free')}</p><div class="composer-scroll"><label class="field">${t('video.prompt')}<textarea id="providerVideoPrompt" rows="4" maxlength="6000">${esc(typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source))}</textarea></label></div><div class="composer-settings image-settings"><label class="field grow">${t('video.provider')}<select id="providerVideoProvider"></select></label><label class="field grow">${t('video.model')}<select id="providerVideoModel"></select></label><label class="field">${t('video.duration')}<select id="providerVideoDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label></div><p id="providerVideoStatus" class="help-text"></p></div>`,`<button id="providerVideoCancel">${t('common.cancel')}</button><button id="providerVideoRun" class="primary" disabled>${t('video.generate')}</button>`);
- const panel=document.querySelector('#providerVideoPrompt')?.closest('.modal');if(!panel)return;const q=s=>panel.querySelector(s);
- const status=text=>{if(q('#providerVideoStatus'))q('#providerVideoStatus').textContent=text;};
- const live=()=>panel.isConnected&&p===project;
- const loadModels=async providerId=>{try{const data=await api('/api/video/models?providerId='+encodeURIComponent(providerId));if(!live())return;q('#providerVideoModel').innerHTML=(data.models||[]).filter(m=>m.kind==='video').map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');q('#providerVideoRun').disabled=!(data.models||[]).some(m=>m.kind==='video');}catch(e){status(e.message);}};
- q('#providerVideoCancel').onclick=()=>closeModal();
- try{
-  const data=await api('/api/video/providers');if(!live())return;
-  const providers=(data.providers||[]).filter(p=>p.enabled);
-  if(!providers.length)throw Error(t('video.disabled'));
-  q('#providerVideoProvider').innerHTML=providers.map(p=>`<option value="${esc(p.id)}">${esc(p.label)}</option>`).join('');
-  q('#providerVideoProvider').onchange=()=>loadModels(q('#providerVideoProvider').value);
-  await loadModels(providers[0].id);
-  status(t('video.free'));
- }catch(e){status(e.message);q('#providerVideoRun').disabled=true;return;}
- q('#providerVideoRun').onclick=async()=>{
-  if(!live())return;
-  const providerId=q('#providerVideoProvider').value,modelId=q('#providerVideoModel').value,prompt=q('#providerVideoPrompt').value.trim(),duration=Number(q('#providerVideoDuration').value)||2;
-  if(!prompt)return status(t('video.prompt'));
-  const button=q('#providerVideoRun');button.disabled=true;q('#providerVideoCancel').disabled=true;status(t('video.working'));
-  try{
-   const quote=await api('/api/video/quote',{providerId,modelId,prompt,duration,kind:'video',projectId});
-   const submitted=await api('/api/video/generate',{quoteId:quote.quoteId,projectId,sourceId});
-   const taskId=submitted.taskId;let task=null;
-   for(let i=0;i<240;i++){
-    await new Promise(r=>setTimeout(r,1000));if(!live())return;
-    task=await api(`/api/video/task/${encodeURIComponent(providerId)}/${encodeURIComponent(taskId)}`);
-    if(task.status==='succeeded')break;
-    if(task.status==='failed')throw Error(task.error?.message||task.message||'video failed');
-    if(task.message)status(task.message);
-   }
-   if(!task||task.status!=='succeeded')throw Error('video timeout');
-   const response=await fetch(`/api/video/task/${encodeURIComponent(providerId)}/${encodeURIComponent(taskId)}/file/0`);
-   if(!response.ok)throw Error('video download failed');
-   const src=await readDataURL(await response.blob());
-   if(!live())return;
-   checkpoint();const node=asset('video',{title:`${providerId} · ${prompt.slice(0,25)}`,text:`Provider: ${providerId}\nModel: ${modelId}\nDuration: ${duration}s`,src});p.nodes.push(node);setMode('board');filter='all';commit();select(node.id);fitBoard();closeModal();toast(t('video.added'));
-  }catch(e){status(e.message);}
-  finally{if(live()){button.disabled=false;q('#providerVideoCancel').disabled=false;}}
- };
-}
 
+async function generationPanel(source,mode='image'){
+ const project=p,projectId=p.id,sourceId=source?.id,projectTitle=p.name||'';
+ let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[];
+ nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','统一生成面板：参考 → 参数 → 费用 → 提交 → 结果。',`<div class="image-composer"><p class="help-text" id="genHelp"></p><div class="composer-scroll"><div class="field"><span>参考</span><div id="genRefs" class="help-text">正在读取参考…</div></div><label class="field">描述<textarea id="genPrompt" rows="5" maxlength="6000"></textarea></label><div class="composer-settings image-settings"><label class="field grow">服务商<select id="genProvider"></select></label><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genSizeField">尺寸<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="field" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
+ const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
+ const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const setStatus=text=>{if(q('#genStatus'))q('#genStatus').textContent=text;};
+ const live=()=>panel.isConnected&&p===project;
+ const resetQuote=()=>{quote=null;q('#genPrice').textContent='';q('#genRun').textContent='查看费用';};
+ q('#genPrompt').value=typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source);
+ q('#genHelp').textContent=mode==='image'?'使用本地 ComfyUI 或云端 Seedream 生成图片；提交后结果自动加入画布。':'使用 Provider 生成视频；Fake 免费，云端视频按实际计费。';
+ q('#genCancel').onclick=()=>closeModal();
+ const refs=p.nodes.filter(n=>n.type==='image'&&n.src&&n.id!==sourceId&&p.edges.some(e=>(e.from===sourceId&&e.to===n.id)||(e.to===sourceId&&e.from===n.id))).slice(0,6);
+ q('#genRefs').innerHTML=refs.length?refs.map(n=>`<img src="${escValue(n.src)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;margin:2px">`).join('')+' <span>连线参考；当前图片 Provider 以文生图为主</span>':'无连线参考。当前 Provider 以文字描述生成为主。';
+ q('#genSizeField').hidden=mode!=='image';q('#genDurationField').hidden=mode!=='video';q('#genStepsField').hidden=mode!=='image';
+ const prices={};const quotePaths={comfyui:'/api/comfy/quote',seedream:'/api/providers/seedream/quote'};
+ const submitPaths={comfyui:'/api/comfy/generate',seedream:'/api/providers/seedream/generate'};
+ const pollPath=(pid,id)=>pid==='comfyui'?`/api/comfy/task/${encodeURIComponent(id)}`:pid==='seedream'?`/api/providers/task/${encodeURIComponent(id)}`:`/api/video/task/${encodeURIComponent(pid)}/${encodeURIComponent(id)}`;
+ const filePath=(pid,id)=>pid==='comfyui'?`/api/comfy/task/${encodeURIComponent(id)}/file/0`:pid==='seedream'?`/api/providers/task/${encodeURIComponent(id)}/file/0`:`/api/video/task/${encodeURIComponent(pid)}/${encodeURIComponent(id)}/file/0`;
+ async function loadModels(){
+  const pid=q('#genProvider').value;providerId=pid;q('#genModel').innerHTML='<option>正在读取…</option>';q('#genRun').disabled=true;
+  try{
+   const data=pid==='comfyui'?await api('/api/comfy/models'):pid==='seedream'?await api('/api/providers/seedream/models'):await api('/api/video/models?providerId='+encodeURIComponent(pid));
+   models=(data.models||[]).filter(m=>mode==='image'?m.kind!=='video':m.kind==='video');
+   if(!models.length)throw Error('该服务商没有可用模型');
+   q('#genModel').innerHTML=models.map(m=>`<option value="${escValue(m.id)}">${escValue(m.name)}</option>`).join('');
+   q('#genRun').disabled=false;setStatus('就绪。第一步查看费用，第二步确认生成。');
+  }catch(e){q('#genModel').innerHTML='';setStatus(e.message);}
+ }
+ async function loadProviders(){
+  try{
+   if(mode==='image'){
+    const [comfy,cfg]=await Promise.all([api('/api/comfy/status'),api('/api/providers/config')]);
+    providerList=[{id:'comfyui',label:'ComfyUI（本地）',enabled:!!comfy.ok},{id:'seedream',label:'Seedream（云端）',enabled:!!cfg.config?.seedream?.configured}];
+   }else{
+    const data=await api('/api/video/providers');providerList=(data.providers||[]).filter(x=>x.enabled).map(x=>({id:x.id,label:x.label,enabled:true}));
+   }
+   const enabled=providerList.filter(x=>x.enabled);
+   if(!enabled.length)throw Error('未配置可用服务商，请先到设置 → API 服务配置');
+   q('#genProvider').innerHTML=enabled.map(x=>`<option value="${escValue(x.id)}">${escValue(x.label)}</option>`).join('');
+   q('#genProvider').onchange=()=>{resetQuote();loadModels();};
+   q('#genModel').onchange=resetQuote;q('#genSize').onchange=resetQuote;q('#genDuration').onchange=resetQuote;q('#genSteps').oninput=resetQuote;
+   await loadModels();
+  }catch(e){setStatus(e.message);q('#genRun').disabled=true;}
+ }
+ async function quoteNow(){
+  const prompt=q('#genPrompt').value.trim(),modelId=q('#genModel').value;
+  if(!prompt)throw Error('请填写描述');
+  if(mode==='image')return providerId==='comfyui'?api(quotePaths.comfyui,{modelId,prompt,size:q('#genSize').value,steps:Number(q('#genSteps').value)||20,projectId}):api(quotePaths.seedream,{modelId,prompt,size:q('#genSize').value,projectId});
+  return api('/api/video/quote',{providerId,modelId,prompt,duration:Number(q('#genDuration').value)||2,kind:'video',projectId});
+ }
+ async function run(){
+  if(busy)return;const button=q('#genRun');
+  try{
+   if(!quote){busy=true;button.disabled=true;setStatus('正在获取费用…');quote=await quoteNow();if(!live())return;q('#genPrice').textContent=quote.cost===0?'本地生成，不产生云端费用':quote.note||'按服务商实际计费';button.textContent='确认生成';setStatus('确认后将提交生成；提交后不可撤销。');busy=false;button.disabled=false;return;}
+   busy=true;button.disabled=true;q('#genCancel').disabled=true;setStatus('正在提交…');
+   const submitted=mode==='image'?await api(submitPaths[providerId],{quoteId:quote.quoteId,projectId,sourceId}):await api('/api/video/generate',{quoteId:quote.quoteId,projectId,sourceId});
+   const taskId=submitted.taskId;let task=null;setStatus('正在生成…');
+   for(let i=0;i<300;i++){
+    await new Promise(r=>setTimeout(r,2000));if(!live())return;
+    task=await api(pollPath(providerId,taskId));
+    if(task.status==='succeeded')break;
+    if(task.status==='failed')throw Error(task.error?.message||task.message||'生成失败');
+    if(task.message)setStatus(task.message);
+   }
+   if(!task||task.status!=='succeeded')throw Error('生成超时');
+   const response=await fetch(filePath(providerId,taskId));if(!response.ok)throw Error('结果读取失败');
+   const src=await readDataURL(await response.blob());if(!live())return;
+   if(mode==='image'){
+    const context=imageAssetContext(project,sourceId);
+    const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:q('#genPrompt').value.trim(),context,createNode:extra=>asset('image',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),...extra})});
+    if(plan.already){setStatus('该图片已在画布中');return;}
+    checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
+   }else{
+    checkpoint();const node=asset('video',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}`,src});p.nodes.push(node);
+   }
+   const resultNode=mode==='image'?p.nodes.find(n=>n.generatedTask===taskId):p.nodes.at(-1);
+   setMode('board');filter='all';commit();if(resultNode)select(resultNode.id);fitBoard();resultUrl=src;
+   q('#genResult').innerHTML=`<div class="help-text">已加入画布 · ${providerId} · ${escValue(q('#genModel').value)}</div>`;
+   setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;
+  }catch(e){setStatus(e.message);}
+  finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;}}
+ }
+ q('#genPrompt').oninput=resetQuote;
+ q('#genRun').onclick=run;
+ loadProviders();
+}
 
 async function aiImageModal(source,{promptOverride}={}){
  if(source&&typeof promptOverride==='string')source.imagePromptDraft=promptOverride;
- nodeToolModal(source?.id,t('imageChooser.title'),t('imageChooser.subtitle'),`<div class="image-composer"><p class="help-text">${t('imageChooser.subtitle')}</p><div class="composer-scroll"><button type="button" id="chooseComfy" class="key-button primary" style="width:100%;margin-bottom:8px">${t('imageChooser.comfy')}</button><p class="help-text">${t('imageChooser.comfyHint')}</p><button type="button" id="chooseSeedream" class="key-button" style="width:100%;margin-top:8px">${t('imageChooser.seedream')}</button><p class="help-text">${t('imageChooser.seedreamHint')}</p></div></div>`,`<button id="aiImageCancel">${t('common.cancel')}</button>`);
- const panel=document.querySelector('#chooseComfy')?.closest('.modal');if(!panel)return;
- panel.querySelector('#aiImageCancel').onclick=()=>closeModal();
- panel.querySelector('#chooseComfy').onclick=()=>{closeModal();comfyImageModal(source);};
- panel.querySelector('#chooseSeedream').onclick=()=>{closeModal();seedreamImageModal(source);};
+ return generationPanel(source,'image');
 }
+async function providerVideoModal(source){return generationPanel(source,'video');}
 
 async function comfyImageModal(source){
  const project=p,projectId=p.id,sourceId=source?.id;
