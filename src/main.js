@@ -642,6 +642,30 @@ function activateCanvasNode(id){
  else editCanvasNode(n.id);
 }
 function nodeVisible(n,f=filter){return f==='all'||(f==='media'?['image','video','audio'].includes(n.type):n.type===f)}
+
+function setNodeGeneration(nodeId,info){
+ if(!nodeId)return;
+ const node=p.nodes.find(n=>n.id===nodeId);if(!node)return;
+ if(info){node.generationProgress={...info,updatedAt:Date.now()};}else{delete node.generationProgress;}
+ const el=document.querySelector(`.node[data-id="${nodeId}"] .node-gen-progress`);
+ if(!el){renderBoard();return;}
+ if(!info){el.remove();return;}
+ el.classList.toggle('failed',info.status==='failed');
+ const label=el.querySelector('span'),pct=el.querySelector('b'),bar=el.querySelector('i');
+ if(label)label.textContent=info.label||'生成中';
+ if(pct)pct.textContent=info.status==='failed'?'失败':Math.round(Math.max(0,Math.min(1,Number(info.progress)||0))*100)+'%';
+ if(bar)bar.style.width=Math.round(Math.max(0,Math.min(1,Number(info.progress)||0))*100)+'%';
+}
+function updateNodeGenerationProgress(nodeId,progress,label){
+ const node=p.nodes.find(n=>n.id===nodeId);if(!node||!node.generationProgress)return;
+ node.generationProgress.progress=progress;if(label)node.generationProgress.label=label;
+ const el=document.querySelector(`.node[data-id="${nodeId}"] .node-gen-progress`);if(!el){renderBoard();return;}
+ const pct=el.querySelector('b'),bar=el.querySelector('i'),text=el.querySelector('span');
+ if(text&&label)text.textContent=label;
+ if(pct)pct.textContent=Math.round(Math.max(0,Math.min(1,progress))*100)+'%';
+ if(bar)bar.style.width=Math.round(Math.max(0,Math.min(1,progress))*100)+'%';
+}
+
 function renderBoard(){
  finishInlineNodeText();
  if(mode==='board')pruneBoardSelection();
@@ -651,7 +675,7 @@ function renderBoard(){
   return `<div class="board-group ${g.collapsed?'collapsed':''} ${g.shotBundle?'shot-bundle':''}" data-group="${esc(g.id)}" aria-label="画布分组：${esc(g.name)}"><button type="button" class="board-group-title" data-group-title="${esc(g.id)}" title="${esc(g.name)} · 拖动整体移动 · 双击重命名"><span>${esc(g.name)}</span><small>${shown.length} ${g.videoVersions?'版':g.shotBundle?'项':g.storyShots?'镜':'节点'}</small></button>${g.collapsed&&g.shotBundle?shotBundleCard(p,g):g.collapsed&&g.videoVersions?videoVersionCard(p,g):g.collapsed?`<div class="group-card-summary"><b>${shown.length} ${g.storyShots?'个分镜':'个节点'}</b><p title="${esc(preview)}">${esc(preview)}</p><small>保留全部内容与连线，按需打开节点</small></div><div class="group-card-actions"><button data-group-list="${esc(g.id)}">${g.storyShots?'分镜列表':'节点列表'}</button><button data-group-toggle="${esc(g.id)}">展开全部</button></div>`:`<button class="group-collapse" data-group-toggle="${esc(g.id)}" title="收成一张卡片">收起</button>`}</div>`;
  }).join('');
  $('#nodes').innerHTML=groupsHtml+p.nodes.filter(n=>nodeVisible(n)&&!collapsedGroupFor(p,n.id)).map(n=>{const o=p.objects.find(o=>o.id===n.objectId),context=getCanvasStoryContext(p,n.id),info=nodePresentation(p,n);let visual='';if(n.src)visual=n.type==='audio'?`<audio class="node-media" src="${n.src}" controls preload="metadata"></audio>`:n.type==='video'?`<video class="node-media" src="${n.src}" controls preload="metadata"></video>`:`<img class="node-media" src="${n.src}" alt="${esc(n.title)}" draggable="false">`;else if(n.type==='actor')visual=`<div class="node-visual actor"><div class="avatar-sculpt" style="--actor-color:${o?.color||'#91b7b0'}"></div></div>`;else if(n.type==='scene')visual='<div class="node-visual"><div class="scene-sculpt"><i class="scene-table"></i></div></div>';else if(n.type==='director')visual='<div class="director-visual">◈　◌　◈</div>';else if(n.type==='model')visual='<div class="director-visual">⬡</div>';
- return `<article class="node node-${esc(n.type)} ${n.src?'has-media':''} ${boardSelection.includes(n.id)||selected===n.id?'selected':''}" data-id="${esc(n.id)}" tabindex="0" aria-label="${esc(info.label+'：'+n.title)}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px"><div class="node-head"><span>${uiIcon(n.type)}</span><b class="grow" title="${esc(n.title)}">${esc(n.title)}</b><span class="node-type">${esc(info.label)}</span></div>${['image','video','audio'].includes(n.type)&&!n.src?`<div class="node-empty"><div class="node-empty-icon">${uiIcon(n.type)}</div><div class="node-empty-actions"><button data-empty-action="import">${uiIcon('upload')}上传</button><button data-empty-action="library">${uiIcon('library')}节点列表</button></div><p>${n.type==='image'?'生成参考图，或拖入图片':n.type==='video'?'连入图片、视频、音频，开始生成':'拖入配音、音乐或音效'}</p></div>`:info.empty?`<div class="node-empty"><b>${esc(info.hint)}</b><small>点击节点开始编辑</small></div>`:visual}<div class="node-text">${renderNodeText(n.text.slice(0,2400))}</div>${canvasNodeActions(context)}<div class="node-meta"><span>${esc(info.label)}</span><span>${esc(info.status)}</span></div><button class="port in" data-port="in" aria-label="为 ${esc(n.title)} 选择来源节点" title="点击选择来源节点，也可拖拽连线"></button><button class="port out" data-port="out" aria-label="从 ${esc(n.title)} 选择目标节点" title="点击选择目标节点，也可拖拽连线"></button></article>`}).join('');
+ return `<article class="node node-${esc(n.type)} ${n.src?'has-media':''} ${boardSelection.includes(n.id)||selected===n.id?'selected':''}" data-id="${esc(n.id)}" tabindex="0" aria-label="${esc(info.label+'：'+n.title)}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px"><div class="node-head"><span>${uiIcon(n.type)}</span><b class="grow" title="${esc(n.title)}">${esc(n.title)}</b><span class="node-type">${esc(info.label)}</span></div>${['image','video','audio'].includes(n.type)&&!n.src?`<div class="node-empty"><div class="node-empty-icon">${uiIcon(n.type)}</div><div class="node-empty-actions"><button data-empty-action="import">${uiIcon('upload')}上传</button><button data-empty-action="library">${uiIcon('library')}节点列表</button></div><p>${n.type==='image'?'生成参考图，或拖入图片':n.type==='video'?'连入图片、视频、音频，开始生成':'拖入配音、音乐或音效'}</p></div>`:info.empty?`<div class="node-empty"><b>${esc(info.hint)}</b><small>点击节点开始编辑</small></div>`:visual}<div class="node-text">${renderNodeText(n.text.slice(0,2400))}</div>${canvasNodeActions(context)}${n.generationProgress?`<div class="node-gen-progress ${n.generationProgress.status==='failed'?'failed':''}" data-gen-progress="${esc(n.id)}"><div><span>${esc(n.generationProgress.label||'生成中')}</span><b>${n.generationProgress.status==='failed'?'失败':Math.round(Math.max(0,Math.min(1,Number(n.generationProgress.progress)||0))*100)+'%'}</b></div><i style="width:${Math.round(Math.max(0,Math.min(1,Number(n.generationProgress.progress)||0))*100)}%"></i></div>`:''}<div class="node-meta"><span>${esc(info.label)}</span><span>${esc(info.status)}</span></div><button class="port in" data-port="in" aria-label="为 ${esc(n.title)} 选择来源节点" title="点击选择来源节点，也可拖拽连线"></button><button class="port out" data-port="out" aria-label="从 ${esc(n.title)} 选择目标节点" title="点击选择目标节点，也可拖拽连线"></button></article>`}).join('');
  boardTransform();requestAnimationFrame(drawEdges);
  $$('.node').forEach(el=>{
   nodeHeights.set(el.dataset.id,el.offsetHeight);
@@ -1643,14 +1667,13 @@ async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await 
 async function generationPanel(source,mode='image'){
  const project=p,projectId=p.id,sourceId=source?.id,projectTitle=p.name||'';
  let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[];
- nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','统一生成面板：参考 → 参数 → 费用 → 提交 → 结果。',`<div class="image-composer"><p class="help-text" id="genHelp"></p><div class="composer-scroll"><label class="field">参考图<select id="genReference"></select></label><div id="genRefs" class="help-text">正在读取参考…</div><div class="property-actions" style="margin-bottom:6px"><button type="button" id="genCapturePreviz" class="key-button">取导演台首帧</button></div><label class="field" id="genVideoRefField">参考视频<select id="genVideoReference"></select></label><p id="genVideoRefNote" class="help-text"></p><label class="field">描述<textarea id="genPrompt" rows="5" maxlength="6000"></textarea></label><div class="composer-settings image-settings"><label class="field grow">服务商<select id="genProvider"></select></label><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genSizeField">尺寸<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="field" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history" style="margin-top:10px"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
+ nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','',`<div class="gen-composer-v2"><div class="gen-preview">${source?.src?(source.type==='video'?`<video src="${esc(source.src)}" controls></video>`:`<img src="${esc(source.src)}" alt="">`):`<div class="gen-preview-empty"><span>${mode==='image'?'▧':'▷'}</span><p>${mode==='image'?'图片预览':'视频预览'}</p></div>`}</div><div class="gen-card"><div class="gen-chips"><label class="gen-chip">参考<select id="genReference"></select></label><label class="gen-chip">模型<select id="genProvider"></select></label><label class="gen-chip" id="genSizeField">画幅<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="gen-chip" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><button type="button" id="genCapturePreviz" class="gen-chip gen-chip-btn">取导演台首帧</button></div><div id="genRefs" class="gen-ref-strip">正在读取参考…</div><label class="field" id="genVideoRefField" hidden>参考视频<select id="genVideoReference"></select></label><p id="genVideoRefNote" class="help-text"></p><textarea id="genPrompt" class="gen-prompt" rows="4" maxlength="6000" placeholder="描述你想生成的画面；参考图、白模和已有素材会作为上下文"></textarea><div class="gen-subrow"><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
  const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
  const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const setStatus=text=>{if(q('#genStatus'))q('#genStatus').textContent=text;};
  const live=()=>panel.isConnected&&p===project;
  const resetQuote=()=>{quote=null;q('#genPrice').textContent='';q('#genRun').textContent='查看费用';};
  q('#genPrompt').value=typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source);
- q('#genHelp').textContent=mode==='image'?'使用本地 ComfyUI 或云端 Seedream 生成图片；提交后结果自动加入画布。':'使用 Provider 生成视频；Fake 免费，云端视频按实际计费。当前为白模首帧参考；整段白模视频参考需 Seedance 2.0/2.5 或 ComfyUI H3。';
  q('#genCancel').onclick=()=>closeModal();
  const refs=p.nodes.filter(n=>n.type==='image'&&n.src&&n.id!==sourceId&&p.edges.some(e=>(e.from===sourceId&&e.to===n.id)||(e.to===sourceId&&e.from===n.id))).slice(0,6);
  const defaultRef=refs[0]||(source?.type==='image'&&source.src?source:null);
@@ -1658,7 +1681,7 @@ async function generationPanel(source,mode='image'){
  const imageNodes=p.nodes.filter(n=>n.type==='image'&&n.src).slice(0,60);
  q('#genReference').innerHTML='<option value="">无参考</option>'+imageNodes.map(n=>`<option value="${escValue(n.id)}"${n.id===defaultRef?.id?' selected':''}>${escValue((n.title||'图片').slice(0,40))}</option>`).join('');
  q('#genReference').onchange=()=>{const selected=p.nodes.find(n=>n.id===q('#genReference').value);referenceSrc=selected?.src||null;referenceLabel=selected?'画布图片':'无参考';resetQuote();updateRefNote();};
-
+ q('#genCapturePreviz').onclick=()=>{try{if(!stage)throw Error('导演台尚未打开');const src=stage.screenshot(time,override);if(!src)throw Error('无法读取导演台画面');referenceSrc=src;referenceLabel='导演台首帧';q('#genReference').value='';resetQuote();updateRefNote();setStatus('已取导演台当前帧作为参考；不会自动保存到画布。');}catch(e){setStatus(e.message);}};
  q('#genVideoRefField').hidden=mode!=='video';
  const updateVideoRefAvailability=()=>{
   if(mode!=='video')return;
@@ -1669,8 +1692,7 @@ async function generationPanel(source,mode='image'){
   q('#genVideoRefNote').textContent=hasVideoRefProvider?'当前 Provider 支持整段参考视频。':'接口预留：当前 Provider 尚不支持整段参考视频；需 Seedance 2.5 或本地 MiniMax H3。';
  };
  updateVideoRefAvailability();
- q('#genCapturePreviz').onclick=()=>{try{if(!stage)throw Error('导演台尚未打开');const src=stage.screenshot(time,override);if(!src)throw Error('无法读取导演台画面');referenceSrc=src;referenceLabel='导演台首帧';q('#genReference').value='';resetQuote();updateRefNote();setStatus('已取导演台当前帧作为参考；不会自动保存到画布。');}catch(e){setStatus(e.message);}};
- const updateRefNote=()=>{const info=providerList.find(x=>x.id===providerId);const supports=mode==='image'?providerId==='comfyui':!!info?.capabilities?.video?.imageToVideo;q('#genRefs').innerHTML=referenceSrc?`<img src="${escValue(referenceSrc)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;margin:2px"> <span>${referenceLabel}已选；${supports?'当前 Provider 会使用它':'当前 Provider 不支持图片参考，仅使用文字描述'}。</span>`:'无参考。当前 Provider 以文字描述生成为主。';};
+ const updateRefNote=()=>{const info=providerList.find(x=>x.id===providerId);const supports=mode==='image'?providerId==='comfyui':!!info?.capabilities?.video?.imageToVideo;q('#genRefs').innerHTML=referenceSrc?`<img src="${escValue(referenceSrc)}" alt=""> <span>${referenceLabel}已选；${supports?'当前 Provider 会使用它':'当前 Provider 不支持图片参考，仅使用文字描述'}</span>`:'无参考。当前 Provider 以文字描述生成为主。';};
  updateRefNote();
  q('#genSizeField').hidden=mode!=='image';q('#genDurationField').hidden=mode!=='video';q('#genStepsField').hidden=mode!=='image';
  const prices={};const quotePaths={comfyui:'/api/comfy/quote',seedream:'/api/providers/seedream/quote'};
@@ -1749,18 +1771,19 @@ async function quoteNow(){
   return api('/api/video/quote',{providerId,modelId,prompt,duration:Number(q('#genDuration').value)||2,kind:'video',projectId,image:info?.capabilities?.video?.imageToVideo&&referenceSrc?referenceSrc:undefined,referenceVideo:info?.capabilities?.video?.videoReference&&videoNode?.src?videoNode.src:undefined});
  }
  async function run(){
-  if(busy)return;const button=q('#genRun');
+  if(busy)return;const button=q('#genRun');let submittedTask=false;
   try{
    if(!quote){busy=true;button.disabled=true;setStatus('正在获取费用…');quote=await quoteNow();if(!live())return;q('#genPrice').textContent=quote.cost===0?'本地生成，不产生云端费用':quote.note||'按服务商实际计费';button.textContent='确认生成';setStatus('确认后将提交生成；提交后不可撤销。');busy=false;button.disabled=false;return;}
    busy=true;button.disabled=true;q('#genCancel').disabled=true;setStatus('正在提交…');const startedAt=Date.now();
    const submitted=mode==='image'?await api(submitPaths[providerId],{quoteId:quote.quoteId,projectId,sourceId}):await api('/api/video/generate',{quoteId:quote.quoteId,projectId,sourceId});
-   const taskId=submitted.taskId;let task=null;setStatus('正在生成…');
+   submittedTask=true;const taskId=submitted.taskId;let task=null;setStatus('正在生成…');setNodeGeneration(sourceId,{status:'running',progress:0.04,label:'已提交 · 生成中'});
    for(let i=0;i<300;i++){
     await new Promise(r=>setTimeout(r,2000));if(!live())return;
     task=await api(pollPath(providerId,taskId));
     if(task.status==='succeeded')break;
     if(task.status==='failed')throw Error(task.error?.message||task.message||'生成失败');
     if(task.message)setStatus(task.message);
+    updateNodeGenerationProgress(sourceId,Number.isFinite(task.progress)?Math.max(0.05,Math.min(0.95,task.progress)):0.12,task.message||'生成中');
    }
    if(!task||task.status!=='succeeded')throw Error('生成超时');
    const response=await fetch(filePath(providerId,taskId));if(!response.ok)throw Error('结果读取失败');
@@ -1774,11 +1797,12 @@ async function quoteNow(){
     checkpoint();const node=asset('video',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}`,src,generatedTask:taskId});p.nodes.push(node);
    }
    const resultNode=mode==='image'?p.nodes.find(n=>n.generatedTask===taskId):p.nodes.at(-1);
+   if(sourceId)setNodeGeneration(sourceId,null);
    setMode('board');filter='all';commit();if(resultNode)select(resultNode.id);fitBoard();resultUrl=src;
    q('#genResult').innerHTML=`<div class="generation-result" style="display:flex;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1px solid #39393c;border-radius:8px">${mode==='image'?`<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px">`:`<video src="${src}" controls style="width:96px;height:64px;object-fit:cover;border-radius:6px"></video>`}<div><b>${providerId} · ${escValue(q('#genModel').value)}</b><div class="help-text">已加入画布 · ${quote?.cost===0?'本地免费':'按服务商实际计费'}</div><div class="help-text">任务 ${taskId.slice(0,8)}… · 耗时 ${((Date.now()-startedAt)/1000).toFixed(1)}s</div></div>${mode==='image'?`<div class="property-actions" style="margin-left:auto;flex-wrap:wrap"><button type="button" id="genCandidates">同源候选</button><button type="button" id="genAdoptVersion">加入资产版本</button><button type="button" id="genAdoptOfficial">设为正式图</button></div>`:`<div class="property-actions" style="margin-left:auto;flex-wrap:wrap"><button type="button" id="genSaveToLibrary">保存到素材库</button><button type="button" id="genSendToEdit">送入剪辑</button></div>`}</div>`;
    if(mode==='image'&&resultNode){q('#genCandidates').onclick=()=>openImageCandidates(sourceId,taskId);q('#genAdoptVersion').onclick=()=>openImageAdoption(resultNode,false);q('#genAdoptOfficial').onclick=()=>openImageAdoption(resultNode,true);}else if(mode==='video'&&q('#genSendToEdit')){q('#genSaveToLibrary').onclick=async()=>{if(!resultNode)return toast('结果尚未加入画布');try{await wsShell.saveCanvasNodeToLibrary(resultNode.id);toast('已保存到项目素材库');}catch(e){toast('保存失败：'+e.message);}};q('#genSendToEdit').onclick=()=>{if(!resultNode)return toast('结果尚未加入画布');closeModal();wsShell?.sendCanvasNodeToEdit(resultNode.id);};}
    setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;loadHistory();
-  }catch(e){setStatus(e.message);}
+  }catch(e){setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});setTimeout(()=>{if(p.nodes.some(n=>n.id===sourceId&&n.generationProgress?.status==='failed'))setNodeGeneration(sourceId,null);},8000);}}
   finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;}}
  }
  q('#genPrompt').oninput=resetQuote;
