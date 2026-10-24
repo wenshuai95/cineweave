@@ -33,7 +33,7 @@ export function installWorkstation(ctx){
  app.insertBefore(nav,footer);
 
  const toolbar=document.createElement('div');toolbar.className='ws-canvas-tools';toolbar.setAttribute('aria-label',t('workspace.toolAria'));
- toolbar.innerHTML='<button type="button" data-ws-tool="script">'+t('workspace.script')+'</button><button type="button" data-ws-tool="assets">'+t('workspace.assets')+'</button><button type="button" id="wsArrangeStory" title="Arrange script, shots and assets to canvas; does not call models">'+t('workspace.arrangeStory')+'</button>';
+ toolbar.innerHTML='<button type="button" data-ws-tool="assets">'+t('workspace.assets')+'</button><button type="button" id="wsArrangeStory" title="Arrange script, shots and assets to canvas; does not call models">'+t('workspace.arrangeStory')+'</button>';
  app.querySelector('.sidebar').prepend(toolbar);
  const dock=document.createElement('aside');dock.className='ws-canvas-dock';dock.hidden=true;dock.setAttribute('aria-label',t('workspace.dockAria'));
  dock.innerHTML=`<div class="ws-dock-grip" role="separator" tabindex="0" aria-label="调整创作工具宽度" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="1200" aria-valuenow="580"></div><header class="ws-dock-header"><strong id="wsDockTitle"></strong><span>${t('workspace.dockSubtitle')}</span><button type="button" id="wsDockExpand" aria-label="扩大创作工具" aria-pressed="false">${t('workspace.expand')}</button><button type="button" id="wsDockClose" aria-label="关闭创作工具，返回画布">${t('workspace.close')}</button></header>`;

@@ -195,7 +195,8 @@
     "restoreToast": "项目已恢复到全部项目",
     "archiveToast": "项目已移入回收站，可随时恢复",
     "start": "起点",
-    "onboarding": "配置向导"
+    "onboarding": "配置向导",
+    "scriptStart": "导入已有剧本"
   },
   "canvas": {
     "nodes": "节点列表",

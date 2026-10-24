@@ -195,7 +195,8 @@
     "restoreToast": "Project restored",
     "archiveToast": "Project moved to trash; restorable anytime",
     "start": "Starting point",
-    "onboarding": "Setup wizard"
+    "onboarding": "Setup wizard",
+    "scriptStart": "Import an existing script"
   },
   "canvas": {
     "nodes": "Node list",
