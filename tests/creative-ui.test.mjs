@@ -26,6 +26,7 @@ async function fixture(){
  // late completion, verifying the UI's independent cancellation barrier.
  const mocks=`const f=globalThis[${JSON.stringify(id)}];
  const esc=v=>String(v??'').replace(/[<>]/g,'');
+ const t=(key,args)=>key==='creative.referenceNode'?'参考节点：'+args.title:key;
  const writingSkills=[{id:'general',name:'通用编剧',description:'按要求创作'}];
  const normalizeWriting=r=>({brief:'',skill:'general',messages:[],...r});
  const boundedHistory=r=>r;
