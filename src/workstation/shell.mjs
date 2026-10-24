@@ -6,9 +6,6 @@ import './workflow-ui.css';
 import './canvas-tools.css';
 import {createMediaStore} from './media-store.mjs';
 import {importMediaFiles as readMediaFiles,probeMediaBlob,appendClip} from './media-import.mjs';
-import {createScriptPage} from './script-page.mjs';
-import {createCreativePage} from './creative-page.mjs';
-import {normalizeCreativeTasks} from './creative-agent.mjs';
 import {createAssetsPage} from './assets-page.mjs';
 import {createEditPage} from './edit-page.mjs';
 import {createDeliverPage} from './deliver-page.mjs';
@@ -17,7 +14,7 @@ import {t} from '../i18n/index.mjs';
 import {workflowState,recordWorkflowStep} from './workflow.mjs';
 
 const PAGES=[['canvas',t('nav.canvas'),'▦'],['edit',t('nav.edit'),'▤']];
-const TOOL_NAMES={assistant:'Creative Assistant',script:t('workspace.script'),assets:t('workspace.assets')};
+const TOOL_NAMES={assets:t('workspace.assets')};
 
 export function installWorkstation(ctx){
  const app=document.querySelector('.app');
@@ -40,7 +37,7 @@ export function installWorkstation(ctx){
  app.insertBefore(dock,footer);
  // 工具容器常驻在画布旁边；切换只隐藏，不销毁已有编辑状态。
  const sections={};
- for(const id of ['assistant','script','assets','edit']){
+ for(const id of ['assets','edit']){
   const section=document.createElement('section');
   section.className='ws-page';section.hidden=true;
   section.id='wsPage'+id[0].toUpperCase()+id.slice(1);
@@ -120,13 +117,9 @@ export function installWorkstation(ctx){
   goToPage:(id,options)=>setPage(id,options),
   openTool:(kind,options)=>openTool(kind,options),
   closeTool:()=>closeTool(),
-  openLegacyWriting:options=>openTool('script',options),
-  onCreativeTasksChanged:()=>{scheduleWorkflow();document.dispatchEvent(new CustomEvent('creative-tasks-changed'));},
   appendMediaClip:assetId=>appendClip(ctx.project(),assetId),
  };
  const pages={
-  assistant:createCreativePage(sections.assistant,pageCtx),
-  script:createScriptPage(sections.script,pageCtx),
   assets:createAssetsPage(sections.assets,pageCtx),
   edit:createEditPage(sections.edit,pageCtx),
   deliver:createDeliverPage(exportContent,{...pageCtx,embedded:true}),
@@ -308,11 +301,9 @@ export function installWorkstation(ctx){
   onCanvas:()=>current==='canvas'&&(!currentTool||dock.classList.contains('node-assistant-floating')),
   tool:()=>currentTool,
   setPage,openTool,closeTool,
-  refresh(){if(currentTool!=='assistant')pages.assistant.refresh();const p=pages[currentTool||current];if(p){if(p.refresh)p.refresh();else p.onShow();}if(exportDialog.open)pages.deliver.refresh();scheduleWorkflow();},
+  refresh(){const p=pages[currentTool||current];if(p){if(p.refresh)p.refresh();else p.onShow();}if(exportDialog.open)pages.deliver.refresh();scheduleWorkflow();},
   onProjectOpened(){
    const ws=ctx.project().workstation;
-   ws.creativeTasks=normalizeCreativeTasks(ws.creativeTasks,{interrupt:true});
-   pages.assistant.onProjectChanged();
    pages.edit.reset();
    applyCanvas();
    // Older projects start tracking from this opening; nothing is regenerated.
@@ -321,9 +312,7 @@ export function installWorkstation(ctx){
    if(ws.story.assets.length&&!ws.workflow.sourceForAssets)recordWorkflowStep(ws,'assets');
    ctx.persist();scheduleWorkflow();
   },
-  onProjectsView(){closeExport();pages.assistant.cancelAll('interrupted');closeTool({restoreFocus:false});pages[current]?.onHide?.();},
-  cancelCreativeTasks:reason=>pages.assistant.cancelAll(reason||'interrupted'),
-  openCreativeTask(id){openTool('assistant',{taskId:id});},
+  onProjectsView(){closeExport();closeTool({restoreFocus:false});pages[current]?.onHide?.();},
   sendCanvasNodeToEdit,replaceCanvasVersionInEdit,sendVideoVersionsToEdit,
   importMediaFiles,
  };
