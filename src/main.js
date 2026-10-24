@@ -1220,13 +1220,22 @@ function renderProperties(){
 function organizeNodeProperties(n){
  const root=$('#properties'),controls=new Map([...root.querySelectorAll('button[id]')].map(b=>[b.id,b]));
  const name=$('#nodeTitle').closest('label'),content=$('#nodeText').closest('label');
- const identity=document.createElement('div');identity.className='inspector-section node-identity';identity.append(name);const edit=document.createElement('button');edit.type='button';edit.className='key-button';edit.textContent=getCanvasStoryContext(p,n.id)?.kind==='shot'?t('node.editShot'):t('node.editContent');edit.onclick=()=>editCanvasNode(n.id);identity.append(edit);const disclosure=document.createElement('details');disclosure.className='node-content-disclosure';const summary=document.createElement('summary');summary.textContent=t('node.contentDisclosure');disclosure.append(summary,content);identity.append(disclosure);
+ const context=getCanvasStoryContext(p,n.id);
+ const primaryByType={image:'generateAiImage',video:'generateVideo',actor:'generateAiImage',scene:'generateAiImage',model:'modelToStage',director:'goDirector'};
+ let primaryId=primaryByType[n.type]||'';
+ const used=new Set();
+ const identity=document.createElement('div');identity.className='inspector-section node-identity node-inspector-hero';
+ identity.append(name);
+ if(primaryId&&controls.get(primaryId)){const primary=controls.get(primaryId);primary.classList.add('primary');primary.classList.add('node-primary-action');identity.append(primary);used.add(primaryId);}
+ const edit=document.createElement('button');edit.type='button';edit.className='key-button node-edit-action';edit.textContent=context?.kind==='shot'?t('node.editShot'):'编辑名称与说明';edit.onclick=()=>editCanvasNode(n.id);identity.append(edit);
+ const disclosure=document.createElement('details');disclosure.className='node-content-disclosure';const summary=document.createElement('summary');summary.textContent=t('node.contentDisclosure');disclosure.append(summary,content);identity.append(disclosure);
  const next=document.createDocumentFragment();next.append(identity);
- const group=(key,title,ids,open=false)=>{const buttons=ids.map(id=>controls.get(id)).filter(Boolean);if(!buttons.length)return;const holder=document.createElement('div');holder.innerHTML=propertyGroup('node-'+n.type,key,title,'',open);const detail=holder.firstElementChild;detail.querySelector('.property-group-body').append(...buttons);next.append(detail);};
- group('source',t('node.sourceGroup'),['manageStoryAsset','useAsScript'],true);
- group('video',t('node.videoGroup'),['generateVideo'],true);
- group('create',t('node.createGroup'),n.type==='image'?['imageToScene','imageToActor','goObject','generateAiImage']:n.type==='model'?['modelToStage']:n.type==='director'?['goDirector']:['generateAiImage','goObject'],true);
- group('files',t('node.filesGroup'),['replaceMedia','downloadMedia','downloadModel','sendToEdit','clearEdges']);
+ const group=(key,title,ids,open=false)=>{const buttons=ids.map(id=>controls.get(id)).filter(Boolean);if(!buttons.length)return;buttons.forEach(b=>used.add(b.id));const holder=document.createElement('div');holder.innerHTML=propertyGroup('node-'+n.type,key,title,'',open);const detail=holder.firstElementChild;detail.querySelector('.property-group-body').append(...buttons);next.append(detail);};
+ group('source',t('node.sourceGroup'),['manageStoryAsset','useAsScript'],false);
+ const moreIds=['generateVideo','generateAiImage','imageCandidates','goObject','sendToEdit','replaceMedia','downloadMedia','downloadModel','clearEdges'].filter(id=>!used.has(id));
+ const extra=[...controls.entries()].filter(([id,button])=>!used.has(id)&&!['duplicateNode','deleteNode'].includes(id)&&!moreIds.includes(id)).map(([,button])=>button);
+ const moreButtons=[...moreIds.map(id=>controls.get(id)).filter(Boolean),...extra];
+ if(moreButtons.length){const holder=document.createElement('div');holder.innerHTML=propertyGroup('node-'+n.type,'more','更多','',false);const detail=holder.firstElementChild;detail.querySelector('.property-group-body').append(...moreButtons);next.append(detail);}
  const footer=document.createElement('div');footer.className='property-footer';footer.append(controls.get('duplicateNode'),controls.get('deleteNode'));next.append(footer);
  root.replaceChildren(next);
 }

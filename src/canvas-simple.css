@@ -185,3 +185,11 @@ body[data-canvas-mode=board] .workspace-toolbar>div.stage-nav{display:flex;point
 .node-edit-fields{display:flex;flex-direction:column;gap:10px;min-width:0}
 .node-edit-fields .field{margin:0}
 @media(max-width:720px){.node-edit-visual{grid-template-columns:1fr}.node-edit-preview{max-height:180px}}
+
+/* Compact node inspector: one primary action, advanced items collapsed. */
+.node-inspector-hero{display:flex;flex-direction:column;gap:10px}
+.node-inspector-hero .node-primary-action{width:100%;min-height:38px;border-radius:10px}
+.node-inspector-hero .node-edit-action{width:100%}
+.node-content-disclosure{margin-top:2px}
+.node-content-disclosure summary{cursor:pointer;color:#a9a5b4;font-size:12px;padding:6px 0}
+#properties .property-footer{margin-top:12px}
