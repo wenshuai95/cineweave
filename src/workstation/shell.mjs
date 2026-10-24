@@ -99,7 +99,7 @@ export function installWorkstation(ctx){
    b.title=PAGES.find(p=>p[0]===id)[1]+(value?' · '+(id==='canvas'?'分镜资产已关联 ':'')+value:'')+(id==='canvas'&&state.pendingSync?' · '+state.pendingSync+' 项待同步':warning?' · 上游已变化，请检查':'');
   }
   for(const b of toolbar.querySelectorAll('[data-ws-tool]')){const kind=b.dataset.wsTool;const warning=kind==='assistant'?(state.shotsStale||state.assetsStale):kind==='script'?state.shotsStale:state.assetsStale;b.classList.toggle('ws-needs-review',warning);b.title=TOOL_NAMES[kind]+(warning?' · 上游已变化，请检查':'');}
-  for(const id of ['script','assets']){
+  for(const id of ['assets']){
    const root=sections[id];let notice=root.querySelector(':scope > .ws-workflow-notice');
    const step=id==='script'?'shots':'assets',visible=id===currentTool&&(id==='script'?state.shotsStale:state.assetsStale);
    if(!visible){notice?.remove();continue;}
