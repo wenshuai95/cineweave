@@ -1586,7 +1586,7 @@ async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await 
 async function generationPanel(source,mode='image'){
  const project=p,projectId=p.id,sourceId=source?.id,projectTitle=p.name||'';
  let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[];
- nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','统一生成面板：参考 → 参数 → 费用 → 提交 → 结果。',`<div class="image-composer"><p class="help-text" id="genHelp"></p><div class="composer-scroll"><div class="field"><span>参考</span><div id="genRefs" class="help-text">正在读取参考…</div></div><label class="field">描述<textarea id="genPrompt" rows="5" maxlength="6000"></textarea></label><div class="composer-settings image-settings"><label class="field grow">服务商<select id="genProvider"></select></label><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genSizeField">尺寸<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="field" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
+ nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','统一生成面板：参考 → 参数 → 费用 → 提交 → 结果。',`<div class="image-composer"><p class="help-text" id="genHelp"></p><div class="composer-scroll"><div class="field"><span>参考</span><div id="genRefs" class="help-text">正在读取参考…</div></div><label class="field">描述<textarea id="genPrompt" rows="5" maxlength="6000"></textarea></label><div class="composer-settings image-settings"><label class="field grow">服务商<select id="genProvider"></select></label><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genSizeField">尺寸<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="field" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history" style="margin-top:10px"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
  const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
  const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const setStatus=text=>{if(q('#genStatus'))q('#genStatus').textContent=text;};
@@ -1628,7 +1628,43 @@ async function generationPanel(source,mode='image'){
    await loadModels();
   }catch(e){setStatus(e.message);q('#genRun').disabled=true;}
  }
- async function quoteNow(){
+ 
+ async function loadHistory(){
+  try{
+   const [a,b,c]=await Promise.all([
+    api('/api/providers/tasks?projectId='+encodeURIComponent(projectId)),
+    api('/api/comfy/tasks?projectId='+encodeURIComponent(projectId)),
+    api('/api/video/tasks?projectId='+encodeURIComponent(projectId)),
+   ]);
+   const tasks=[
+    ...(a.tasks||[]).map(x=>({...x,providerId:'seedream'})),
+    ...(b.tasks||[]).map(x=>({...x,providerId:'comfyui'})),
+    ...(c.tasks||[]),
+   ].filter(t=>t.kind===mode&&t.status==='succeeded').sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)).slice(0,8);
+   if(!q('#genHistory'))return;
+   q('#genHistory').innerHTML=tasks.length?tasks.map(t=>`<div class="gen-history-row" style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #2d2c31"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escValue(t.providerId)} · ${escValue((t.prompt||'').slice(0,40))}</span><button type="button" data-gen-recover="${escValue(t.id)}" data-gen-provider="${escValue(t.providerId)}">加入画布</button></div>`).join(''):'暂无已完成的生成。';
+   q('#genHistory').querySelectorAll('[data-gen-recover]').forEach(button=>button.onclick=()=>recoverTask(button.dataset.genRecover,button.dataset.genProvider));
+  }catch(e){if(q('#genHistory'))q('#genHistory').textContent=e.message;}
+ }
+ async function recoverTask(taskId,pid){
+  try{
+   setStatus('正在恢复任务结果…');
+   const response=await fetch(filePath(pid,taskId));if(!response.ok)throw Error('结果读取失败');
+   const src=await readDataURL(await response.blob());if(!live())return;
+   if(mode==='image'){
+    const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:q('#genPrompt').value.trim(),context:imageAssetContext(project,sourceId),createNode:extra=>asset('image',{title:`${pid} · 恢复结果`,...extra})});
+    if(plan.already){setStatus('该结果已在画布中');return;}
+    checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
+    setMode('board');filter='all';commit();select(node.id);fitBoard();
+   }else{
+    if(p.nodes.some(n=>n.generatedTask===taskId)){setStatus('该视频已在画布中');return;}
+    checkpoint();const node=asset('video',{title:`${pid} · 恢复结果`,src,generatedTask:taskId});p.nodes.push(node);setMode('board');filter='all';commit();select(node.id);fitBoard();
+   }
+   setStatus('已恢复到画布。');
+  }catch(e){setStatus(e.message);}
+ }
+
+async function quoteNow(){
   const prompt=q('#genPrompt').value.trim(),modelId=q('#genModel').value;
   if(!prompt)throw Error('请填写描述');
   if(mode==='image')return providerId==='comfyui'?api(quotePaths.comfyui,{modelId,prompt,size:q('#genSize').value,steps:Number(q('#genSteps').value)||20,projectId}):api(quotePaths.seedream,{modelId,prompt,size:q('#genSize').value,projectId});
@@ -1657,18 +1693,19 @@ async function generationPanel(source,mode='image'){
     if(plan.already){setStatus('该图片已在画布中');return;}
     checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
    }else{
-    checkpoint();const node=asset('video',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}`,src});p.nodes.push(node);
+    checkpoint();const node=asset('video',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}`,src,generatedTask:taskId});p.nodes.push(node);
    }
    const resultNode=mode==='image'?p.nodes.find(n=>n.generatedTask===taskId):p.nodes.at(-1);
    setMode('board');filter='all';commit();if(resultNode)select(resultNode.id);fitBoard();resultUrl=src;
    q('#genResult').innerHTML=`<div class="generation-result" style="display:flex;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1px solid #39393c;border-radius:8px">${mode==='image'?`<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px">`:`<video src="${src}" controls style="width:96px;height:64px;object-fit:cover;border-radius:6px"></video>`}<div><b>${providerId} · ${escValue(q('#genModel').value)}</b><div class="help-text">已加入画布 · ${quote?.cost===0?'本地免费':'按服务商实际计费'}</div><div class="help-text">任务 ${taskId.slice(0,8)}…</div></div></div>`;
-   setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;
+   setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;loadHistory();
   }catch(e){setStatus(e.message);}
   finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;}}
  }
  q('#genPrompt').oninput=resetQuote;
  q('#genRun').onclick=run;
  loadProviders();
+ loadHistory();
 }
 
 async function aiImageModal(source,{promptOverride}={}){

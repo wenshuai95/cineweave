@@ -81,7 +81,7 @@ export async function handleAI(req,res,url){
   if(req.method==='GET'&&url.pathname==='/api/providers/seedream/models'){json(res,{models:await providerService.listModels()});return true;}
   if(req.method==='POST'&&url.pathname==='/api/providers/seedream/quote'){json(res,await providerService.quote(await body(req)));return true;}
   if(req.method==='POST'&&url.pathname==='/api/providers/seedream/generate'){const b=await body(req);const result=await providerService.submit(b);json(res,result);return true;}
-  if(req.method==='GET'&&url.pathname==='/api/providers/tasks'){json(res,{tasks:providerService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/providers/tasks'){await providerService.ready();json(res,{tasks:providerService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
   if(req.method==='GET'&&url.pathname.startsWith('/api/providers/task/')&&!url.pathname.includes('/file/')){
    await providerService.ready();const id=url.pathname.split('/').at(-1);json(res,await providerService.poll(id));return true;
   }
