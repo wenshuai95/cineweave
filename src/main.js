@@ -204,20 +204,20 @@ function versions(){return versionsController??=createVideoVersionUI({project:()
 function focusVersionGroup(id){let g=p.boardGroups?.find(g=>g.id===id);if(g&&hiddenByShotBundle(p,g))g=p.boardGroups.find(b=>b.shotBundle&&b.collapsed&&b.shotSourceId===g.sourceNodeId);const r=g&&groupCardRect(p,g);if(!r)return;select(null);const z=p.board.zoom;p.board.x=$('#board').clientWidth/2-(r.x+r.w/2)*z;p.board.y=$('#board').clientHeight/2-(r.y+r.h/2)*z;boardTransform();persist();}
 const shotChecklist=document.createElement('aside');
 shotChecklist.id='shotChecklist';shotChecklist.className='shot-checklist';shotChecklist.hidden=true;shotChecklist.setAttribute('aria-label','镜头生产清单');
-shotChecklist.innerHTML='<header class="shot-checklist-head"><div><b>镜头清单</b><small id="shotChecklistCount"></small></div><div class="shot-checklist-tools"><button type="button" id="shotChecklistReturn" class="ghost" hidden>返回原视角</button><button type="button" id="shotChecklistCollapse" class="ghost" aria-expanded="true" aria-controls="shotChecklistBody">收起</button><button type="button" id="shotChecklistClose" class="ghost" aria-label="关闭镜头清单">关闭 ✕</button></div></header><div id="shotChecklistBody" class="shot-checklist-body"></div>';
+shotChecklist.innerHTML='<header class="shot-checklist-head"><div><b>'+t('shots.title')+'</b><small id="shotChecklistCount"></small></div><div class="shot-checklist-tools"><button type="button" id="shotChecklistReturn" class="ghost" hidden>'+t('shots.returnView')+'</button><button type="button" id="shotChecklistCollapse" class="ghost" aria-expanded="true" aria-controls="shotChecklistBody">'+t('shots.collapse')+'</button><button type="button" id="shotChecklistClose" class="ghost" aria-label="Close shot list">'+t('shots.close')+'</button></div></header><div id="shotChecklistBody" class="shot-checklist-body"></div>';
 $('#board').append(shotChecklist);
 let shotListOpen=false,shotListCollapsed=false,shotListFocus=null,shotListReturnView=null;
 function renderShotChecklist(){
  if(!shotListOpen)return;
  shotChecklist.hidden=false;
  const shots=p.workstation?.story?.shots||[];
- $('#shotChecklistCount').textContent=shots.length?`${shots.length} 镜 · 只读汇总`:'还没有分镜';
+ $('#shotChecklistCount').textContent=shots.length?t('shots.count',{count:shots.length}):t('shots.empty');
  const expanded=new Set($$('#shotChecklistBody details[open]').map(el=>el.dataset.shotDetails));
  $('#shotChecklistBody').innerHTML=shotChecklistHtml(p);
  for(const el of $$('#shotChecklistBody details'))el.open=expanded.has(el.dataset.shotDetails);
  for(const item of $$('#shotChecklistBody [data-shot-item]')){const active=item.dataset.shotItem===shotListFocus;item.classList.toggle('active',active);if(active)item.setAttribute('aria-current','true');else item.removeAttribute('aria-current');}
  $('#shotChecklistBody').hidden=shotListCollapsed;
- const collapse=$('#shotChecklistCollapse');collapse.textContent=shotListCollapsed?'展开':'收起';collapse.setAttribute('aria-expanded',String(!shotListCollapsed));
+ const collapse=$('#shotChecklistCollapse');collapse.textContent=shotListCollapsed?t('shots.expand'):t('shots.collapse');collapse.setAttribute('aria-expanded',String(!shotListCollapsed));
  $('#shotChecklistReturn').hidden=!shotListReturnView;
  $('#shotListBtn').setAttribute('aria-expanded','true');
  return;
@@ -1509,7 +1509,7 @@ async function exportModal(){
  };
 }
 let aiToken=null;
-async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await api('/api/ai/text/status',undefined,{signal});aiToken=status.token;}const timeout=AbortSignal.timeout(180000),combined=signal?AbortSignal.any([signal,timeout]):timeout;let response;try{response=await fetch(path,{...(data?{method:'POST',headers:{'Content-Type':'application/json','X-Jingchang-Token':aiToken},body:JSON.stringify(data)}:{}),signal:combined});}catch(e){if(signal?.aborted)throw new DOMException('已取消','AbortError');if(timeout.aborted)throw Error('本机服务响应超时，请先在任务中心核对生成记录，再手动重试');throw Error('本机服务连接中断，请重新打开软件后核对任务记录');}const result=await response.json();if(!response.ok)throw Error(result.error||'本地服务请求失败');return result;}
+async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await api('/api/ai/text/status',undefined,{signal});aiToken=status.token;}const timeout=AbortSignal.timeout(180000),combined=signal?AbortSignal.any([signal,timeout]):timeout;let response;try{response=await fetch(path,{...(data?{method:'POST',headers:{'Content-Type':'application/json','X-Jingchang-Token':aiToken},body:JSON.stringify(data)}:{}),signal:combined});}catch(e){if(signal?.aborted)throw new DOMException('已取消','AbortError');if(timeout.aborted)throw Error(translateToast('本机服务响应超时，请先在任务中心核对生成记录，再手动重试'));throw Error(translateToast('本机服务连接中断，请重新打开软件后核对任务记录'));}const result=await response.json();if(!response.ok)throw Error(translateToast(result.error||'本地服务请求失败'));return result;}
 let videoGenerationController;
 function videoGeneration(){return videoGenerationController??=createVideoGeneration({project:()=>p,managerOpen:()=>managerOpen,api,modal:(title,subtitle,body,actions,nodeId)=>nodeId?nodeToolModal(nodeId,title,subtitle,body,actions):modal(title,subtitle,body,actions),readDataURL,toast,asset,checkpoint,commit,persist,onTasksChanged:()=>renderTaskCenter(),refresh:refreshNodeOverlays,taskLayout:()=>requestAnimationFrame(()=>{drawEdges();updateGroupFrames();refreshNodeOverlays();}),focusNode:id=>{setMode('board');filter='all';locateCanvasNode(id);},resultReady:(id,groupId)=>{if(wsShell?.onCanvas()){setMode('board');filter='all';if(groupId)focusVersionGroup(groupId);else locateCanvasNode(id);}}});}
 function videoGenerationModal(source){return videoGeneration().open(source);}

@@ -321,5 +321,27 @@
     "recording": "Recording… {percent}%",
     "exportFailed": "Export failed: {error}",
     "downloadedFull": "Video downloaded; canvas is full, so no video node was added."
+  },
+  "workspace": {
+    "script": "Script & storyboard",
+    "assets": "Project assets",
+    "arrangeStory": "Arrange to canvas",
+    "dockSubtitle": "Creation tools in canvas",
+    "expand": "Expand",
+    "close": "Close ✕",
+    "exportTitle": "Export video",
+    "exportClose": "Close export",
+    "pageAria": "Workbench pages",
+    "dockAria": "Canvas creation tools",
+    "toolAria": "Canvas creation tools"
+  },
+  "shots": {
+    "title": "Shot list",
+    "returnView": "Return to view",
+    "collapse": "Collapse",
+    "close": "Close ✕",
+    "count": "{count} shots · read-only summary",
+    "empty": "No shots yet",
+    "expand": "Expand"
   }
 }

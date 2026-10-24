@@ -13,10 +13,11 @@ import {createAssetsPage} from './assets-page.mjs';
 import {createEditPage} from './edit-page.mjs';
 import {createDeliverPage} from './deliver-page.mjs';
 import {uid} from '../model.mjs';
+import {t} from '../i18n/index.mjs';
 import {workflowState,recordWorkflowStep} from './workflow.mjs';
 
-const PAGES=[['canvas','画布','▦'],['edit','剪辑','▤']];
-const TOOL_NAMES={assistant:'创作助手',script:'文稿与分镜',assets:'项目素材'};
+const PAGES=[['canvas',t('nav.canvas'),'▦'],['edit',t('nav.edit'),'▤']];
+const TOOL_NAMES={assistant:'Creative Assistant',script:t('workspace.script'),assets:t('workspace.assets')};
 
 export function installWorkstation(ctx){
  const app=document.querySelector('.app');
@@ -25,17 +26,17 @@ export function installWorkstation(ctx){
 
  // 画布为主工作区；剧本与资产保留为按需打开的画布工具。
  const nav=document.createElement('nav');
- nav.className='ws-bottomnav';nav.setAttribute('aria-label','工作台页面');
- nav.innerHTML=PAGES.map(([id,name,icon])=>`<button type="button" data-ws-nav="${id}" aria-current="${id==='canvas'}" title="${name}页面"><i>${icon}</i><span>${name}</span></button>`).join('');
+ nav.className='ws-bottomnav';nav.setAttribute('aria-label',t('workspace.pageAria'));
+ nav.innerHTML=PAGES.map(([id,name,icon])=>`<button type="button" data-ws-nav="${id}" aria-current="${id==='canvas'}" title="${name}"><i>${icon}</i><span>${name}</span></button>`).join('');
  nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.onclick=()=>setPage(b.dataset.wsNav));
  const footer=app.querySelector('footer.statusbar');
  app.insertBefore(nav,footer);
 
- const toolbar=document.createElement('div');toolbar.className='ws-canvas-tools';toolbar.setAttribute('aria-label','创作画布工具');
- toolbar.innerHTML='<button type="button" data-ws-tool="script">文稿与分镜</button><button type="button" data-ws-tool="assets">项目素材</button><button type="button" id="wsArrangeStory" title="把剧本、分镜和资产关联到画布，不会自动调用模型">整理到画布</button>';
+ const toolbar=document.createElement('div');toolbar.className='ws-canvas-tools';toolbar.setAttribute('aria-label',t('workspace.toolAria'));
+ toolbar.innerHTML='<button type="button" data-ws-tool="script">'+t('workspace.script')+'</button><button type="button" data-ws-tool="assets">'+t('workspace.assets')+'</button><button type="button" id="wsArrangeStory" title="Arrange script, shots and assets to canvas; does not call models">'+t('workspace.arrangeStory')+'</button>';
  app.querySelector('.sidebar').prepend(toolbar);
- const dock=document.createElement('aside');dock.className='ws-canvas-dock';dock.hidden=true;dock.setAttribute('aria-label','画布创作工具');
- dock.innerHTML='<div class="ws-dock-grip" role="separator" tabindex="0" aria-label="调整创作工具宽度" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="1200" aria-valuenow="580"></div><header class="ws-dock-header"><strong id="wsDockTitle"></strong><span>画布中的创作工具</span><button type="button" id="wsDockExpand" aria-label="扩大创作工具" aria-pressed="false">扩大</button><button type="button" id="wsDockClose" aria-label="关闭创作工具，返回画布">关闭 ✕</button></header>';
+ const dock=document.createElement('aside');dock.className='ws-canvas-dock';dock.hidden=true;dock.setAttribute('aria-label',t('workspace.dockAria'));
+ dock.innerHTML=`<div class="ws-dock-grip" role="separator" tabindex="0" aria-label="调整创作工具宽度" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="1200" aria-valuenow="580"></div><header class="ws-dock-header"><strong id="wsDockTitle"></strong><span>${t('workspace.dockSubtitle')}</span><button type="button" id="wsDockExpand" aria-label="扩大创作工具" aria-pressed="false">${t('workspace.expand')}</button><button type="button" id="wsDockClose" aria-label="关闭创作工具，返回画布">${t('workspace.close')}</button></header>`;
  app.insertBefore(dock,footer);
  // 工具容器常驻在画布旁边；切换只隐藏，不销毁已有编辑状态。
  const sections={};
@@ -51,7 +52,7 @@ export function installWorkstation(ctx){
  // Export is an on-demand dialog owned by the rough-cut workspace.
  const exportDialog=document.createElement('dialog');
  exportDialog.className='ws-export-dialog';exportDialog.id='wsExportDialog';exportDialog.setAttribute('aria-labelledby','wsExportTitle');
- exportDialog.innerHTML='<header class="ws-export-heading"><div><h2 id="wsExportTitle">导出视频</h2><p>MP4 · H.264 / AAC</p></div><button type="button" id="wsExportClose" aria-label="关闭导出，返回剪辑">关闭</button></header><div id="wsExportContent"></div>';
+ exportDialog.innerHTML=`<header class="ws-export-heading"><div><h2 id="wsExportTitle">${t('workspace.exportTitle')}</h2><p>MP4 · H.264 / AAC</p></div><button type="button" id="wsExportClose" aria-label="关闭导出，返回剪辑">${t('workspace.exportClose')}</button></header><div id="wsExportContent"></div>`;
  app.append(exportDialog);
  const exportContent=exportDialog.querySelector('#wsExportContent');
  exportDialog.querySelector('#wsExportClose').onclick=()=>closeExport();

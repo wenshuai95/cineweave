@@ -321,5 +321,27 @@
     "recording": "正在录制… {percent}%",
     "exportFailed": "导出失败：{error}",
     "downloadedFull": "视频已下载；画布节点已满，未添加视频节点"
+  },
+  "workspace": {
+    "script": "文稿与分镜",
+    "assets": "项目素材",
+    "arrangeStory": "整理到画布",
+    "dockSubtitle": "画布中的创作工具",
+    "expand": "扩大",
+    "close": "关闭 ✕",
+    "exportTitle": "导出视频",
+    "exportClose": "关闭导出",
+    "pageAria": "工作台页面",
+    "dockAria": "画布创作工具",
+    "toolAria": "创作画布工具"
+  },
+  "shots": {
+    "title": "镜头清单",
+    "returnView": "返回原视角",
+    "collapse": "收起",
+    "close": "关闭 ✕",
+    "count": "{count} 镜 · 只读汇总",
+    "empty": "还没有分镜",
+    "expand": "展开"
   }
 }
