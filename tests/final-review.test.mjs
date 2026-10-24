@@ -5,6 +5,8 @@ import {appendDirectorVideo} from '../src/director-output.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {t,setLocale} from '../src/i18n/index.mjs';
+setLocale('zh-CN');
 import vm from 'node:vm';
 import {starterProject,validateProject,activeCamera,sampleObject,object} from '../src/model.mjs';
 import * as shotReference from '../src/shot-reference.mjs';
@@ -35,7 +37,7 @@ function fixture(count=1){
 function environment(p=fixture()){
  const elements=new Map(),messages=[],effects={checkpoints:0,commits:0,closed:0,downloads:0,renders:0};
  const $=key=>{if(!elements.has(key))elements.set(key,{value:'',checked:false,disabled:false,textContent:'',innerHTML:'',style:{},isConnected:true,addEventListener(){}});return elements.get(key)};
- const imageTasks={};const c={p,loadImageTaskStore:()=>imageTasks,saveImageTaskStore:()=>{},renderTaskCenter:()=>{},mergeImageTaskObservation,markTaskQueryError,planCanvasImageResult,imageAssetContext,activeDirectorId:null,selected:null,modeMemory:{board:null},recordingFormat,appendDirectorVideo,managerOpen:false,transitioning:false,mode:'board',filter:'all',time:2,override:null,exporting:false,localWork:0,assetCatalog:[{}],watchingImages:new Set(),AbortController,DOMException,Blob,
+ const imageTasks={};const c={p,t,getLocale:()=> 'zh-CN',setLocale,loadImageTaskStore:()=>imageTasks,saveImageTaskStore:()=>{},renderTaskCenter:()=>{},mergeImageTaskObservation,markTaskQueryError,planCanvasImageResult,imageAssetContext,activeDirectorId:null,selected:null,modeMemory:{board:null},recordingFormat,appendDirectorVideo,managerOpen:false,transitioning:false,mode:'board',filter:'all',time:2,override:null,exporting:false,localWork:0,assetCatalog:[{}],watchingImages:new Set(),AbortController,DOMException,Blob,
  $, $$:()=>[],document:{hidden:false,addEventListener(){},removeEventListener(){}},
  toast:m=>messages.push(m),checkpoint:()=>effects.checkpoints++,commit:()=>effects.commits++,closeModal:()=>effects.closed++,modal(){},stop(){},select(){},fitBoard(){},renderPreviewSelect(){},setTime:t=>c.time=t,setMode:m=>c.mode=m,
  esc:String,download:()=>effects.downloads++,classifyImportFile:()=>({ok:true,kind:'image',mime:'image/png'}),labels:{image:'图片'},
