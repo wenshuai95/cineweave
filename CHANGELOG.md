@@ -1,3 +1,8 @@
+## 1.22.0
+
+- 安装包包含 Sprint 1–6：Provider/i18n/Seedream Agent Plan/ComfyUI/Kling/Fake 视频
+- 修复打包缺少 providers 目录、服务端版本号与安装包不一致
+
 # Changelog
 
 ## v1.21.0 (2026-10-23)

@@ -26,7 +26,7 @@ app.on('second-instance',show);app.on('activate',show);
 async function startServer(){
  const data=join(app.getPath('userData'),'generated');mkdirSync(data,{recursive:true});
  const secrets=loadProviderSecrets();
- const env={...process.env,ELECTRON_RUN_AS_NODE:'1',PORT:String(PORT),JINGCHANG_DATA_DIR:data,DIRECTOR_CANVAS_INSTANCE:nonce};
+ const env={...process.env,ELECTRON_RUN_AS_NODE:'1',PORT:String(PORT),JINGCHANG_DATA_DIR:data,DIRECTOR_CANVAS_INSTANCE:nonce,APP_VERSION:app.getVersion()};
  // safeStorage 中的 Kling 密钥只在启动时注入进程环境，不写入数据目录明文。
  if(secrets.kling?.accessKey&&secrets.kling?.secretKey){env.KLING_ACCESS_KEY=secrets.kling.accessKey;env.KLING_SECRET_KEY=secrets.kling.secretKey;env.KLING_ENABLED=secrets.kling.enabled?'1':'0';}
  // Windows keeps the user's own PATH/Path untouched (no duplicate case-variant key); the worker
