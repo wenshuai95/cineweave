@@ -140,4 +140,13 @@
   - `README.txt`（Seedance/H3 参考用法与提示词建议）
 - 已实测示例项目 3 镜：6s / 3s / 3s，1280×720
 
-注意：MediaRecorder 导出个别静态镜头的容器帧率可能高于 24fps；服务端接入前应在导入阶段规范化为 24fps。
+导出后由本地 ffmpeg 自动规范化为 24fps；manifest 记录 `normalized: true` 与 `fps: 24`。已实测 3 镜全部为 24fps。
+
+## 七、24fps 规范化（2026-10-24）
+
+白模参考视频包逐镜导出后调用本地 `/api/workstation/normalize?fps=24`：
+
+- ffmpeg H.264、`fps=24`、`yuv420p`、faststart
+- 去除音轨
+- 失败时保留原视频并在 manifest 标记 `normalized: false`
+- 实测 3 镜输出均为 24fps

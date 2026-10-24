@@ -1,3 +1,10 @@
+## 1.24.5
+
+- 白模参考视频包自动规范化为 24fps（本地 ffmpeg）
+- manifest 记录 normalized/sourceFps
+- 实测 3 镜全部 24fps
+- v1.24.5 安装验证
+
 ## 1.24.4
 
 - 白模按镜头导出视频包：独立 MP4 + manifest + README

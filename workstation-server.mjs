@@ -429,7 +429,26 @@ export async function handleWorkstation(req,res,url){
   if(req.headers.origin&&req.headers.origin!==expected){json(res,{error:'仅允许本机软件同源访问'},403);return true;}
   const parts=url.pathname.split('/').filter(Boolean); // ['api','workstation',...]
   const tail=parts.slice(2);
-  if(req.method==='GET'&&url.pathname==='/api/workstation/health'){
+ 
+ if(req.method==='POST'&&url.pathname==='/api/workstation/normalize'){
+  if(req.headers.origin!==expected){json(res,{error:'仅允许本机软件同源访问'},403);return true;}
+  if(!String(req.headers['content-type']||'').startsWith('application/octet-stream')){json(res,{error:'上传内容类型无效'},400);return true;}
+  const tools=toolsAvailable();
+  if(!tools.ffmpeg){json(res,{error:'本机未找到 ffmpeg，无法规范化为 24fps'},503);return true;}
+  const fps=int(Number(url.searchParams.get('fps')||24),1,60)||24;
+  await ensureDirs();
+  const id=randomUUID(),input=join(dirs.tmp,id+'-input.mp4'),output=join(dirs.tmp,id+'-output.mp4');
+  try{
+   let received=0;
+   const limiter=new (await import('node:stream')).Transform({transform(chunk,_enc,cb){received+=chunk.length;if(received>MEDIA_MAX_BYTES){cb(Error('视频超过大小上限'));return;}cb(null,chunk);}});
+   await pipeline(req,limiter,createWriteStream(input,{mode:0o600}));
+   await runTool(FFMPEG,['-y','-i',input,'-an','-vf',`fps=${fps}`,'-c:v','libx264','-preset','veryfast','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart',output]);
+   const data=await readFile(output);
+   res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':data.length,'Cache-Control':'no-store'});res.end(data);return true;
+  }finally{await rm(input,{force:true}).catch(()=>{});await rm(output,{force:true}).catch(()=>{});}
+ }
+
+ if(req.method==='GET'&&url.pathname==='/api/workstation/health'){
    const tools=toolsAvailable();
    json(res,{app:'ai-video-workstation',version:VERSION,local:true,ffmpeg:tools.ffmpeg,ffprobe:tools.ffprobe,ffmpegPath:tools.ffmpeg?FFMPEG:null,
     limits:{mediaMaxBytes:MEDIA_MAX_BYTES,mediaMaxCount:MEDIA_MAX_COUNT,segmentsMax:SEGMENTS_MAX,totalFramesMax:TOTAL_FRAMES_MAX,fps:[...FPS_ALLOWED],heights:[...HEIGHT_ALLOWED]}});

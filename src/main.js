@@ -1586,6 +1586,13 @@ function aiModal(){
 }
 async function captureDepth(options={}){if(!stage){toast('三维渲染器不可用');return}stop();try{await stage.readyAssets()}catch(e){toast(e.message);return}if(p.nodes.length>=500)return toast('画布节点已达上限，请先移除不需要的节点');const src=stage.depthShot(time,override,options),o=override?p.objects.find(o=>o.id===override):activeCamera(p,time);checkpoint();const n=asset('image',{title:`${o?.name||'机位'} · 深度图 ${time.toFixed(2)}s${options.simplifiedCharacterIds?.length?' · 简化角色':''}`,text:`深度参考 · ${formatFor(o).width} × ${formatFor(o).height}\n近黑远白的线性深度图，可作为生成模型的深度控制参考（updream 式双锚点）。`,src});p.nodes.push(n);const d=p.nodes.find(n=>n.type==='director');if(d)p.edges.push({from:d.id,to:n.id});setMode('board');filter='all';commit();select(n.id);fitBoard();toast('深度图已加入画布，可选中后下载')}
 async function capture(options={}){if(!stage){toast('三维渲染器不可用');return}stop();try{await stage.readyAssets()}catch(e){toast(e.message);return}if(p.nodes.length>=500)return toast('画布节点已达上限，请先移除不需要的节点');const src=stage.screenshot(time,override,options),o=override?p.objects.find(o=>o.id===override):activeCamera(p,time);checkpoint();const n=asset('image',{title:`${o?.name||'机位'} · ${time.toFixed(2)}s${options.simplifiedCharacterIds?.length?' · 简化角色':''}`,text:`预演截图 · ${formatFor(o).width} × ${formatFor(o).height}\n用于构图、角色站位与场景参考。`,src});p.nodes.push(n);const d=p.nodes.find(n=>n.type==='director');if(d)p.edges.push({from:d.id,to:n.id});setMode('board');filter='all';commit();select(n.id);fitBoard();toast('截图已加入画布，可选中后下载')}
+
+async function normalizePrevizVideo(blob,fps=24){
+ const response=await fetch(`/api/workstation/normalize?fps=${fps}`,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:blob});
+ if(!response.ok){let message='规范化为 '+fps+'fps 失败';try{const data=await response.json();message=data.error||message;}catch{}throw Error(message);}
+ return response.blob();
+}
+
 async function exportModal(){
  const outputSourceId=p.nodes.find(n=>n.id===activeDirectorId&&n.type==='director')?.id||p.nodes.find(n=>n.id===(mode==='board'?selected:modeMemory.board?.selected)&&n.type==='director')?.id;
  const project=p;if(!assetCatalog.length){try{const response=await fetch('/assets/manifest.json');if(response.ok){const data=await response.json();assetCatalog=data.assets||data}}catch{}}
@@ -1605,13 +1612,15 @@ async function exportModal(){
   exporting=true;$$('.modal input,.modal select,.modal button').forEach(e=>e.disabled=true);
   $('#exportProgress').innerHTML='<div class="export-progress"><i style="width:0%"></i></div><p class="help-text" id="exportText">准备按镜头导出白模参考视频…</p>';
   try{
-   await stage.readyAssets();const entries=[],manifest={schema:'cineweave-previz-reference/1',projectName:p.name,fps:p.fps,duration:p.duration,format:{width:format.width,height:format.height},container,shots:[]};
+   await stage.readyAssets();const entries=[],manifest={schema:'cineweave-previz-reference/2',projectName:p.name,fps:24,sourceFps:p.fps,duration:p.duration,format:{width:format.width,height:format.height},container,shots:[]};
    for(let i=0;i<refs.length;i++){
     const ref=refs[i];if(p!==project)throw Error('工程已切换，已停止导出');
     $('#exportText').textContent=`正在导出镜头 ${i+1}/${refs.length}：${ref.cameraName}`;
-    const blob=await stage.exportVideo(p,v=>{$('.export-progress i').style.width=((i+v)/refs.length*100).toFixed(1)+'%';},new AbortController().signal,{start:ref.start,end:ref.end,cameraId:ref.cameraId,format,container,...options});
+    let blob=await stage.exportVideo(p,v=>{$('.export-progress i').style.width=((i+v)/refs.length*100).toFixed(1)+'%';},new AbortController().signal,{start:ref.start,end:ref.end,cameraId:ref.cameraId,format,container,...options});
+    let normalized=true;
+    try{$('#exportText').textContent=`正在规范化 ${i+1}/${refs.length} 为 24fps`;blob=await normalizePrevizVideo(blob,24);}catch(e){normalized=false;}
     const name=`${ref.fileStem}.${container}`;entries.push({name,data:new Uint8Array(await blob.arrayBuffer())});
-    manifest.shots.push({number:ref.number,file:name,camera:ref.cameraName,start:ref.start,end:ref.end,duration:Number((ref.end-ref.start).toFixed(3)),width:format.width,height:format.height,fps:p.fps});
+    manifest.shots.push({number:ref.number,file:name,camera:ref.cameraName,start:ref.start,end:ref.end,duration:Number((ref.end-ref.start).toFixed(3)),width:format.width,height:format.height,fps:normalized?24:null,normalized});
    }
    entries.push({name:'manifest.json',data:JSON.stringify(manifest,null,2)});
    entries.push({name:'README.txt',data:'白模参考视频包\n\n用途：作为 Seedance 2.0/2.5 或 ComfyUI MiniMax H3 的视频参考。\n提示词建议：参考<Video 1>的运镜、动作轨迹、人物站位与镜头节奏；只继承动态与构图，不继承白模材质、灰色场景、占位人物外观。\n\n每个文件对应一个镜头；manifest.json 含时间与机位信息。'});
