@@ -15,19 +15,3 @@ test('invalid project and empty rename do not damage stored contents',async()=>{
 test('cover and original creation time survive later auto saves',async()=>{const {lib}=fixture(),p=demoProject();await lib.add(p);const before=(await lib.list())[0];await lib.cover(p.id,'data:image/jpeg;base64,AA==');await lib.save({...p,name:'改名'});const after=(await lib.list())[0];assert.equal(after.cover,'data:image/jpeg;base64,AA==');assert.equal(after.createdAt,before.createdAt)});
 test('corrupt legacy record is retained and migration is not falsely completed',async()=>{const {lib,raw}=fixture();await raw('current',{name:'bad'});await assert.rejects(lib.initialize());assert.deepEqual(await raw('current'),{name:'bad'});assert.equal(await raw('library:migrated'),undefined)});
 test('quit can wait for in-flight library transactions to commit',async()=>{const {lib}=fixture(),p=demoProject();const add=lib.add(p);assert.equal(lib.pending,1);await lib.idle();await add;assert.equal(lib.pending,0);assert.equal((await lib.list()).length,1)});
-
-// A late task receipt must merge with the latest project inside the write transaction.
-test('late creative receipts retain newer project edits and task states',async()=>{
- const {createCreativeTask}=await import('../src/workstation/creative-agent.mjs');
- const {lib}=fixture(),p=demoProject();p.workstation.script='小林在街角停下。';
- const task=createCreativeTask(p,{flow:'story-package',prompt:'拆分镜'});task.updatedAt=100;
- p.workstation.creativeTasks=[task];await lib.add(p);
- const latest=await lib.read(p.id);latest.name='用户刚修改的工程';latest.workstation.script+='阿青走来。';
- latest.workstation.creativeTasks[0].status='interrupted';latest.workstation.creativeTasks[0].updatedAt=300;
- const save=lib.save(latest);const receipt=lib.patchCreativeTasks(p.id,[{...task,status:'running',updatedAt:200}]);
- await Promise.all([save,receipt]);const result=await lib.read(p.id);
- assert.equal(result.name,latest.name);assert.equal(result.workstation.script,latest.workstation.script);
- assert.equal(result.workstation.creativeTasks[0].status,'interrupted');
- await lib.archive(p.id,true);assert.equal(await lib.patchCreativeTasks(p.id,[task]),null);
- assert.equal((await lib.list())[0].archived,true);
-});

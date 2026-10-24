@@ -212,7 +212,7 @@ export function createAssetsPage(root,ctx){
   root.querySelector('#wsAssetSendOne')?.addEventListener('click',()=>ctx.sendStoryAssetsToCanvas([focusId]));
   root.querySelectorAll('[data-plan-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.planDelete;change(()=>{ws.story.assets=ws.story.assets.filter(a=>a.id!==id);ws.story.shots.forEach(s=>s.assetIds=s.assetIds.filter(x=>x!==id));});planningSelected.delete(id);focusId=null;render();});
  }
- function onShow(options){active=true;if(lastProjectId!==ctx.project().id){revokeImageUrls();previewImageId=null;planningSelected.clear();focusId=null;contextualAssetId=null;mode='planning';planningFilter='all';query='';note='';lastProjectId=ctx.project().id;}style=ctx.project().workstation.writing?.artDirection||'';if(pending&&pending.projectId!==ctx.project().id)pending=null;if(request&&request.projectId!==ctx.project().id){request.controller.abort();request=null;}
+ function onShow(options){active=true;if(lastProjectId!==ctx.project().id){revokeImageUrls();previewImageId=null;planningSelected.clear();focusId=null;contextualAssetId=null;mode='planning';planningFilter='all';query='';lastProjectId=ctx.project().id;}
   const input=normalizeAssetsOpenOptions(options);if(input.mode){mode=input.mode;if(mode==='media')contextualAssetId=null;}
   if(input.assetId){const asset=ctx.project().workstation.story.assets.find(a=>a.id===input.assetId);if(asset){if(focusId!==asset.id)previewImageId=null;focusId=asset.id;contextualAssetId=asset.id;mode='planning';planningFilter='all';query='';}else{focusId=null;contextualAssetId=null;}}
   else if(options&&Object.hasOwn(input,'mode'))contextualAssetId=null;
