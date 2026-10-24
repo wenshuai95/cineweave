@@ -1,4 +1,3 @@
-import {createDirectorPanel} from './director-panel.mjs';
 import {fitToolDock} from './dock-layout.mjs';
 import {videoVersionGroup,versionClips,replaceVersionClips,adoptVideoVersion} from '../video-versions.mjs';
 import './workstation.css';
@@ -111,7 +110,7 @@ export function installWorkstation(ctx){
   }
  }
  const pageCtx={
-  ...ctx,createDirectorPanel:()=>createDirectorPanel(pageCtx),mediaStore,importMediaFiles,linkLegacyCanvasMedia,importCanvasNodeToLibrary,sendCanvasNodeToEdit,openExport,
+  ...ctx,mediaStore,importMediaFiles,linkLegacyCanvasMedia,importCanvasNodeToLibrary,sendCanvasNodeToEdit,openExport,
   commit(...args){const result=ctx.commit(...args);scheduleWorkflow();return result;},
   persist(...args){const result=ctx.persist(...args);scheduleWorkflow();return result;},
   goToPage:(id,options)=>setPage(id,options),
