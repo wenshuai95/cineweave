@@ -49,7 +49,7 @@ export function openOnboarding({modal, closeModal, api, toast, onDone} = {}) {
     const button = document.querySelector('#obComfyStart');
     if (button) { button.disabled = true; button.textContent = t('onboarding.startingComfy'); }
     try {
-      comfyResult = await api('/api/comfy/start');
+      comfyResult = await api('/api/comfy/start', {});
       if (!comfyResult.ok) throw Error(comfyResult.error || t('onboarding.notDetected'));
       const models = await api('/api/comfy/models');
       comfyResult.models = (models.models || []).map(m => m.id);
@@ -94,7 +94,7 @@ export function openOnboarding({modal, closeModal, api, toast, onDone} = {}) {
     const status = comfyResult ? (comfyResult.ok
       ? `<p class="help-text" style="color:var(--success,#3ecf8e)">${t('onboarding.detected', {version: comfyResult.version || ''})}${comfyResult.models?.length ? ` · ${comfyResult.models.length} checkpoint(s): ${esc(comfyResult.models.slice(0, 3).join(', '))}` : ''}</p>`
       : `<p class="help-text" style="color:var(--danger,#ff6b6b)">${t('onboarding.notDetected')} ${esc(comfyResult.error || '')}</p>`) : '';
-    return `<section class="settings-section"><p>${t('onboarding.comfyHelp')}</p><label class="field">${t('onboarding.address')}<input id="obComfyUrl" value="${esc(comfyUrl)}" placeholder="http://127.0.0.1:8188"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="obComfyStart">${t('onboarding.startComfy')}</button><button id="obComfyDetect">${t('onboarding.detect')}</button><span class="help-text">${t('onboarding.comfyHint')}</span></div>${status}<p class="help-text">${t('onboarding.comfyStartHint')}</p></section>`;
+    return `<section class="settings-section"><p>${t('onboarding.comfyHelp')}</p><label class="field">${t('onboarding.address')}<input id="obComfyUrl" value="${esc(comfyUrl)}" placeholder="http://127.0.0.1:8188"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="obComfyStart">${t('onboarding.startComfy')}</button><button id="obComfyDetect">${t('onboarding.detect')}</button><span class="help-text">${t('onboarding.comfyHint')}</span></div>${status}${!comfyResult?.ok ? `<p class="help-text">${t('onboarding.comfyStartHint')}</p>` : ''}</section>`;
   }
   function imageBody() {
     const configured = imageStatus?.config?.seedream;
