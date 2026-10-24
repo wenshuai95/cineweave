@@ -370,3 +370,23 @@ test('video service exposes kling disabled by default', () => {
   assert.ok(kling);
   assert.equal(kling.enabled, false);
 });
+
+
+test('kling config persists masked keys to a 0600 file and reloads', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'cineweave-kling-'));
+  try {
+    const service = createVideoService({env: {}, folder});
+    const saved = await service.configureKling({accessKey: 'ak-1234', secretKey: 'sk-5678', enabled: true});
+    assert.equal(saved.configured, true);
+    assert.equal(saved.enabled, true);
+    assert.equal(saved.accessKeyHint, '1234');
+    const mode = (await stat(join(folder, 'kling.json'))).mode & 0o777;
+    assert.equal(mode, 0o600);
+    const reloaded = createVideoService({env: {}, folder});
+    await reloaded.ready();
+    assert.equal(reloaded.klingStatus().configured, true);
+    assert.ok(reloaded.descriptors().find(provider => provider.id === 'kling').enabled);
+  } finally {
+    await rm(folder, {recursive: true, force: true});
+  }
+});

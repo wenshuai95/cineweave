@@ -106,5 +106,7 @@
 
 ## 密钥安全
 
-- 当前服务端密钥保存在本机数据目录（0600）或环境变量
-- Electron `safeStorage` 加密迁移留到打包阶段；不会把密钥写进工程或日志
+- Kling 设置页支持 AccessKey / SecretKey / 启用开关
+- 桌面版通过 Electron `safeStorage` 加密保存到 `provider-secrets.bin`；启动时解密注入服务环境变量，运行中保存会同步到本地服务（内存，不落明文）
+- 浏览器开发模式无 Electron 桥，退回本机 `kling.json`（0600）
+- 密钥不会写进工程或日志

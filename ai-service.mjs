@@ -17,7 +17,7 @@ const exec=promisify(execFile),token=randomUUID(),quotes=new Map(),jobs=new Map(
 const folder=process.env.JINGCHANG_DATA_DIR?pathToFileURL(resolve(process.env.JINGCHANG_DATA_DIR)+sep):new URL('./.local/',import.meta.url),cli=process.env.OIIOII_CLI||(process.platform==='win32'?join(homedir(),'.local','bin','oiioii.exe'):join(homedir(),'.local/bin/oiioii')),cliIsScript=/\.(cjs|mjs|js)$/i.test(cli);
 const providerService=createProviderService({folder:fileURLToPath(folder)});
 const comfyService=createComfyService();
-const providerVideoService=createVideoService();
+const providerVideoService=createVideoService({folder:fileURLToPath(folder)});
 const json=(res,data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data))};
 async function run(args,timeout=90000){try{const {stdout}=await exec(...(cliIsScript?[process.execPath,[cli,...args]]:[cli,args]),{env:{...process.env,OIIOII_LOG_DISABLED:'1',OIIOII_TELEMETRY_DISABLED:'1'},timeout,maxBuffer:12*1024*1024,shell:false,windowsHide:true});const data=JSON.parse(stdout);if(!data.ok)throw Error(data.error?.message||'oiioii 请求失败');return data.data;}catch(e){if(e.code==='ENOENT')throw Error('未找到 oiioii CLI，请安装官方 CLI 或设置 OIIOII_CLI');let message;try{message=JSON.parse(e.stdout).error?.message}catch{}throw Error(message||'oiioii 请求失败，请检查本机 CLI 授权或网络');}}
 async function body(req,limit=15*1024*1024){const chunks=[];let bytes=0;for await(const part of req){const chunk=Buffer.isBuffer(part)?part:Buffer.from(part);bytes+=chunk.length;if(bytes>limit)throw Error('请求过大');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');}
@@ -61,6 +61,8 @@ export async function handleAI(req,res,url){
    config=next;configRevision++;connection={state:'untested'};
    json(res,{config:publicConfig()});return true;
   }
+  if(req.method==='GET'&&url.pathname==='/api/video/kling/config'){await providerVideoService.ready();json(res,{config:providerVideoService.klingStatus()});return true;}
+  if(req.method==='POST'&&url.pathname==='/api/video/kling/config'){json(res,{config:await providerVideoService.configureKling(await body(req))});return true;}
   if(req.method==='GET'&&url.pathname==='/api/video/providers'){json(res,{providers:providerVideoService.descriptors()});return true;}
   if(req.method==='GET'&&url.pathname==='/api/video/models'){json(res,{models:await providerVideoService.models(url.searchParams.get('providerId')||'fake')});return true;}
   if(req.method==='GET'&&url.pathname==='/api/video/health'){json(res,await providerVideoService.health(url.searchParams.get('providerId')||'fake'));return true;}

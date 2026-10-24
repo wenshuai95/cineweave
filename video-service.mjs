@@ -3,12 +3,16 @@ import {createSeedanceProvider, ARK_BASE_URL, ARK_PLAN_BASE_URL} from './provide
 import {createKlingProvider, KLING_BASE_URL} from './providers/kling.mjs';
 import {createTaskStore} from './providers/task-store.mjs';
 import {describeProvider, ProviderError} from './providers/contracts.mjs';
+import {mkdir, readFile, writeFile, chmod, rename} from 'node:fs/promises';
+import {join} from 'node:path';
+import {randomUUID} from 'node:crypto';
 
 /**
  * 视频生成统一服务：Fake 默认可用；Seedance 由 feature flag 开启。
  * 真实视频调用会按方舟计费，默认关闭。
  */
-export function createVideoService({env = process.env, fetchImpl = fetch} = {}) {
+export function createVideoService({env = process.env, fetchImpl = fetch, folder = null} = {}) {
+  const configFile = folder ? join(folder, 'kling.json') : null;
   const store = createTaskStore();
   const fake = createFakeProvider({store});
   const seedanceEnabled = env.ARK_SEEDANCE_ENABLED === '1';
@@ -29,6 +33,30 @@ export function createVideoService({env = process.env, fetchImpl = fetch} = {}) 
   });
   const providers = new Map([['fake', fake], ['seedance', seedance], ['kling', kling]]);
   const quotes = new Map();
+  let klingState = {
+    accessKey: env.KLING_ACCESS_KEY || '',
+    secretKey: env.KLING_SECRET_KEY || '',
+    enabled: env.KLING_ENABLED === '1' || Boolean((env.KLING_ACCESS_KEY || '') && (env.KLING_SECRET_KEY || '') && env.KLING_ENABLED !== '0'),
+  };
+  let readyPromise = null;
+  const makeKling = () => createKlingProvider({accessKey: klingState.accessKey, secretKey: klingState.secretKey, baseUrl: env.KLING_BASE_URL || KLING_BASE_URL, enabled: klingState.enabled, store, fetchImpl});
+  const rebuildKling = () => { providers.set('kling', makeKling()); };
+  const klingStatus = () => ({configured: Boolean(klingState.accessKey && klingState.secretKey), enabled: Boolean(klingState.enabled), accessKeyHint: klingState.accessKey ? klingState.accessKey.slice(-4) : '', baseUrl: env.KLING_BASE_URL || KLING_BASE_URL});
+  const ready = async () => {
+    if (readyPromise) return readyPromise;
+    readyPromise = (async () => {
+      if (!configFile || (klingState.accessKey && klingState.secretKey)) return klingStatus();
+      try {
+        const saved = JSON.parse(await readFile(configFile, 'utf8'));
+        if (typeof saved.accessKey === 'string' && typeof saved.secretKey === 'string') {
+          klingState = {accessKey: saved.accessKey, secretKey: saved.secretKey, enabled: saved.enabled !== false};
+          rebuildKling();
+        }
+      } catch {}
+      return klingStatus();
+    })();
+    return readyPromise;
+  };
 
   const providerOf = id => {
     const provider = providers.get(id);
@@ -37,10 +65,29 @@ export function createVideoService({env = process.env, fetchImpl = fetch} = {}) 
   };
 
   return {
+    ready,
+    klingStatus,
+    async configureKling(input = {}) {
+      const accessKey = typeof input.accessKey === 'string' && input.accessKey.trim() ? input.accessKey.trim() : klingState.accessKey;
+      const secretKey = typeof input.secretKey === 'string' && input.secretKey.trim() ? input.secretKey.trim() : klingState.secretKey;
+      if ((accessKey && !secretKey) || (!accessKey && secretKey)) throw new ProviderError('INVALID_INPUT', 'Kling AccessKey 与 SecretKey 必须同时填写');
+      if (!accessKey || !secretKey) throw new ProviderError('INVALID_INPUT', '请填写 Kling AccessKey 与 SecretKey');
+      klingState = {accessKey, secretKey, enabled: input.enabled !== false};
+      rebuildKling();
+      if (configFile && input.persist !== false) {
+        await mkdir(folder, {recursive: true, mode: 0o700});
+        const temp = join(folder, 'kling.' + randomUUID() + '.tmp');
+        await writeFile(temp, JSON.stringify({accessKey, secretKey, enabled: klingState.enabled}), {mode: 0o600});
+        await chmod(temp, 0o600);
+        await rename(temp, configFile);
+      }
+      return klingStatus();
+    },
     descriptors() { return [...providers.values()].map(describeProvider); },
-    async models(providerId) { return providerOf(providerId).listModels(); },
-    async health(providerId) { return providerOf(providerId).health(); },
+    async models(providerId) { await ready(); return providerOf(providerId).listModels(); },
+    async health(providerId) { await ready(); return providerOf(providerId).health(); },
     async quote(input = {}) {
+      await ready();
       const providerId = input.providerId || 'fake';
       const provider = providerOf(providerId);
       if (!provider.enabled) throw new ProviderError('FEATURE_DISABLED', 'Seedance 视频尚未开启（feature flag 关闭）');
@@ -49,6 +96,7 @@ export function createVideoService({env = process.env, fetchImpl = fetch} = {}) 
       return quote;
     },
     async submit(input = {}) {
+      await ready();
       const quote = quotes.get(input.quoteId);
       if (!quote || quote.expiresAt < Date.now()) throw new ProviderError('QUOTE_EXPIRED', '报价已过期，请重新获取');
       const provider = providerOf(quote.providerId);

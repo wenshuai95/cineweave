@@ -12,7 +12,8 @@
 - Kling 视频骨架：JWT 鉴权、任务提交/轮询/下载，默认 feature flag 关闭
 - 任务中心新增 Provider 视频任务列表（Fake/Seedance/Kling）
 - 默认关闭，不产生任何 Kling 费用
-- safeStorage 加密迁移留到打包阶段
+- Kling 设置页：Key/启用开关，Electron safeStorage 加密；浏览器模式 0600 回退
+- safeStorage 运行时桥接已接入；打包后需在 Electron 环境做一次最终验收
 
 ## Unreleased · Sprint 5
 

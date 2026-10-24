@@ -1,7 +1,7 @@
-const {app,BrowserWindow,Menu,dialog,shell,ipcMain,clipboard}=require('electron');
+const {app,BrowserWindow,Menu,dialog,shell,ipcMain,clipboard,safeStorage}=require('electron');
 const {spawn}=require('node:child_process');
 const {join}=require('node:path');
-const {mkdirSync}=require('node:fs');
+const {mkdirSync,readFileSync,writeFileSync,chmodSync,existsSync}=require('node:fs');
 const {randomUUID}=require('node:crypto');
 const isMac=process.platform==='darwin';
 // v1.3.0 独立应用身份：与原「超级无敌导演画布」并存，不共用端口与数据目录。
@@ -12,11 +12,23 @@ app.setPath('userData',process.env.DIRECTOR_CANVAS_TEST_DATA||join(app.getPath('
 app.setAppUserModelId('cn.aivideoworkstation.desktop');
 const single=app.requestSingleInstanceLock();if(!single){app.quit();}
 let win,worker,quitting=false,savePending=false,timeout,nonce=randomUUID();
+const SECRETS_FILE=()=>join(app.getPath('userData'),'provider-secrets.bin');
+function loadProviderSecrets(){
+ try{if(!existsSync(SECRETS_FILE()))return {};const raw=readFileSync(SECRETS_FILE());const text=safeStorage.isEncryptionAvailable()?safeStorage.decryptString(raw):raw.toString('utf8');const data=JSON.parse(text);return data&&typeof data==='object'?data:{};}catch{return {};}
+}
+function saveProviderSecrets(data){
+ const text=JSON.stringify(data||{});const raw=safeStorage.isEncryptionAvailable()?safeStorage.encryptString(text):Buffer.from(text,'utf8');const file=SECRETS_FILE();mkdirSync(join(app.getPath('userData')),{recursive:true,mode:0o700});writeFileSync(file,raw,{mode:0o600});chmodSync(file,0o600);
+}
+function providerSecretsStatus(){const s=loadProviderSecrets();const k=s.kling||{};return {kling:{configured:!!(k.accessKey&&k.secretKey),enabled:!!k.enabled,accessKeyHint:k.accessKey?String(k.accessKey).slice(-4):''},storage:safeStorage.isEncryptionAvailable()?'safeStorage':'file'};}
+
 const show=()=>{if(win){win.show();if(win.isMinimized())win.restore();win.focus();}};
 app.on('second-instance',show);app.on('activate',show);
 async function startServer(){
  const data=join(app.getPath('userData'),'generated');mkdirSync(data,{recursive:true});
+ const secrets=loadProviderSecrets();
  const env={...process.env,ELECTRON_RUN_AS_NODE:'1',PORT:String(PORT),JINGCHANG_DATA_DIR:data,DIRECTOR_CANVAS_INSTANCE:nonce};
+ // safeStorage 中的 Kling 密钥只在启动时注入进程环境，不写入数据目录明文。
+ if(secrets.kling?.accessKey&&secrets.kling?.secretKey){env.KLING_ACCESS_KEY=secrets.kling.accessKey;env.KLING_SECRET_KEY=secrets.kling.secretKey;env.KLING_ENABLED=secrets.kling.enabled?'1':'0';}
  // Windows keeps the user's own PATH/Path untouched (no duplicate case-variant key); the worker
  // resolves binaries via absolute paths. macOS prepends Homebrew for the CLI toolchain.
  if(process.platform!=='win32')env.PATH=`/opt/homebrew/bin:/usr/local/bin:${process.env.PATH||'/usr/bin:/bin'}`;
@@ -41,6 +53,25 @@ ipcMain.on('director-saved',(event,result)=>{
  if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/'||!savePending)return;
  clearTimeout(timeout);savePending=false;
  if(result?.ok){quitting=true;app.quit();}else dialog.showMessageBox(win,{type:'warning',message:'暂时无法退出',detail:String(result?.message||'工程保存失败，请先导出备份。').slice(0,500),buttons:['返回工程']});
+});
+ipcMain.handle('provider-secrets-status',(event)=>{if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/')throw Error('unauthorized');return providerSecretsStatus();});
+ipcMain.handle('provider-secrets-save',async(event,payload)=>{
+ if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/')throw Error('unauthorized');
+ const current=loadProviderSecrets(),next={...current};
+ for(const provider of ['kling']){
+  const incoming=payload?.[provider];
+  if(!incoming||typeof incoming!=='object')continue;
+  const accessKey=typeof incoming.accessKey==='string'?incoming.accessKey.trim():'';const secretKey=typeof incoming.secretKey==='string'?incoming.secretKey.trim():'';
+  if((accessKey&&(accessKey.length>4096||/[\r\n]/.test(accessKey)))||(secretKey&&(secretKey.length>4096||/[\r\n]/.test(secretKey))))throw Error('invalid provider secret');
+  const old=current[provider]||{};
+  next[provider]={accessKey:accessKey||old.accessKey||'',secretKey:secretKey||old.secretKey||'',enabled:incoming.enabled!==false};
+ }
+ saveProviderSecrets(next);
+ try{
+  const status=await fetch(BASE+'/api/ai/text/status',{signal:AbortSignal.timeout(2000)}).then(r=>r.json());
+  if(status?.token&&next.kling){await fetch(BASE+'/api/video/kling/config',{method:'POST',headers:{'Content-Type':'application/json','X-Jingchang-Token':status.token},body:JSON.stringify({accessKey:next.kling.accessKey,secretKey:next.kling.secretKey,enabled:next.kling.enabled,persist:false}),signal:AbortSignal.timeout(5000)});}
+ }catch{}
+ return providerSecretsStatus();
 });
 // Only accept the application's own canvas clipboard packet from this trusted window.
 ipcMain.handle('director-copy-nodes',(event,text)=>{
