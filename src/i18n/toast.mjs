@@ -2,6 +2,19 @@
 import {getLocale} from './index.mjs';
 
 const EN = {
+  '请拖到 V1 / A1 轨道上松开': 'Drop on the V1 / A1 track.',
+  '视频轨只能放视频素材': 'The video track only accepts video.',
+  '音轨只能放音频素材': 'The audio track only accepts audio.',
+  '当前剧本和分镜已存为版本': 'Current script and storyboard saved as a version.',
+  '请先填写或生成剧本': 'Write or generate a script first.',
+  '已取消本次请求': 'This request was cancelled.',
+  '已采用候选结果并更新画布': 'Candidate adopted and canvas updated.',
+  '已恢复': 'Restored',
+  '已保存版本': 'Version saved',
+  '没有待恢复的任务': 'No task to restore.',
+  '任务已完成，请切回原工程后恢复任务以加入画布': 'Task finished. Return to the original project to add it to the canvas.',
+  '已导入': 'Imported',
+
   '火山方舟账户余额不足或已欠费，请先充值后再生成': 'Volcengine Ark account is overdue or out of balance. Top up before generating.',
   'Seedream API Key 无效或无权限': 'Seedream API key is invalid or unauthorized.',
   '当前账号未开通该 Seedream 模型，请到火山方舟控制台开通': 'This Seedream model is not enabled for the account. Enable it in the Ark console.',
@@ -68,6 +81,14 @@ const EN = {
 };
 
 const PATTERNS = [
+  [/^已导入 (\d+) 个素材(?:，.*)?$/, m => `Imported ${m[1]} media item(s).`],
+  [/^已把「(.+)」放到(V1|A1)$/, m => `Placed “${m[1]}” on ${m[2]}.`],
+  [/^已将 (\d+) 个模型加入导演台.*$/, m => `Added ${m[1]} models to the Director.`],
+  [/^已把 (\d+) 个节点编组.*$/, m => `Grouped ${m[1]} nodes.`],
+  [/^已恢复「(.+)」；恢复前内容已自动保存。$/, m => `Restored “${m[1]}”; the previous content was saved.`],
+  [/^已选中 (\d+) 字；.*$/, m => `Selected ${m[1]} characters.`],
+  [/^已导入 (\d+) 个素材，点.*$/, m => `Imported ${m[1]} media items; use + or drag to a track.`],
+
   [/^已保存到本机$/, () => 'Saved locally'],
   [/^已将 (\d+) 个模型加入导演台，并在画布创建预演节点；可撤销$/, m => `Added ${m[1]} models to the director and created a previz node; undo is available.`],
   [/^已把 (\d+) 个节点编组/, m => `Grouped ${m[1]} nodes`],
