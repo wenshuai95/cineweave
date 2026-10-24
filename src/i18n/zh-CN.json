@@ -26,7 +26,10 @@
     "languageHint": "默认英文，可随时切换中文。",
     "providers": "服务商",
     "storage": "存储",
-    "general": "常规"
+    "general": "常规",
+    "save": "保存与界面",
+    "interface": "界面",
+    "help": "使用帮助"
   },
   "language": {
     "en": "English",
@@ -64,5 +67,14 @@
     "invalidInput": "请检查输入后重试。",
     "notImplemented": "该功能尚未开放。",
     "paymentRequired": "账户余额不足或已欠费，请先充值后再试。"
+  },
+  "topbar": {
+    "projects": "项目库",
+    "project": "工程",
+    "tasks": "任务",
+    "save": "保存",
+    "settings": "设置",
+    "export": "导出预演 ↗",
+    "help": "使用指南与快捷键"
   }
 }

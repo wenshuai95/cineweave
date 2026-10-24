@@ -23,10 +23,13 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
-    "languageHint": "English is the default. Switch to Chinese at any time.",
+    "languageHint": "English is the default. You can switch to Chinese at any time.",
     "providers": "Providers",
     "storage": "Storage",
-    "general": "General"
+    "general": "General",
+    "save": "Save & interface",
+    "interface": "Interface",
+    "help": "Help"
   },
   "language": {
     "en": "English",
@@ -64,5 +67,14 @@
     "invalidInput": "Please check the input and try again.",
     "notImplemented": "This feature is not available yet.",
     "paymentRequired": "Payment is required. Please top up your Volcengine account and try again."
+  },
+  "topbar": {
+    "projects": "Projects",
+    "project": "Project",
+    "tasks": "Tasks",
+    "save": "Save",
+    "settings": "Settings",
+    "export": "Export Preview ↗",
+    "help": "Help & shortcuts"
   }
 }
