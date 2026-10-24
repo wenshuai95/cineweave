@@ -81,3 +81,15 @@
 - 轮询：`GET /history/{prompt_id}`；下载：`GET /view?filename=...`
 - 路由：`/api/comfy/status|models|config|quote|generate|tasks|task/:id|task/:id/file/:index`
 - 仅允许本机/局域网地址；无云端费用；不占用 Seedream 额度
+
+
+## 视频 Provider（Sprint 5）
+
+- 统一能力：`textToVideo / imageToVideo / firstLastFrame / durations / resolutions`
+- **Fake**：默认启用，免费，生成 2 秒占位 MP4，用于 UI/任务链路回归
+- **Seedance**：默认 feature flag 关闭（`ARK_SEEDANCE_ENABLED=1` 才启用）；使用方舟视频任务接口，按量计费
+  - `POST /contents/generations/tasks`
+  - `GET /contents/generations/tasks/{id}`
+  - `DELETE /contents/generations/tasks/{id}`
+- 路由：`/api/video/providers|models|health|quote|generate|tasks|task/:provider/:id|task/:provider/:id/file/:index`
+- 画布视频节点：Provider → 模型 → 提示词/时长 → 生成 → 加入画布

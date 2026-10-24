@@ -4,6 +4,7 @@ import {generateWriting} from './text-writing.mjs';
 import {createLocalModelStore} from './model3d-service.mjs';
 import {createProviderService} from './provider-service.mjs';
 import {createComfyService} from './comfy-service.mjs';
+import {createVideoService} from './video-service.mjs';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {randomUUID} from 'node:crypto';
@@ -16,6 +17,7 @@ const exec=promisify(execFile),token=randomUUID(),quotes=new Map(),jobs=new Map(
 const folder=process.env.JINGCHANG_DATA_DIR?pathToFileURL(resolve(process.env.JINGCHANG_DATA_DIR)+sep):new URL('./.local/',import.meta.url),cli=process.env.OIIOII_CLI||(process.platform==='win32'?join(homedir(),'.local','bin','oiioii.exe'):join(homedir(),'.local/bin/oiioii')),cliIsScript=/\.(cjs|mjs|js)$/i.test(cli);
 const providerService=createProviderService({folder:fileURLToPath(folder)});
 const comfyService=createComfyService();
+const providerVideoService=createVideoService();
 const json=(res,data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data))};
 async function run(args,timeout=90000){try{const {stdout}=await exec(...(cliIsScript?[process.execPath,[cli,...args]]:[cli,args]),{env:{...process.env,OIIOII_LOG_DISABLED:'1',OIIOII_TELEMETRY_DISABLED:'1'},timeout,maxBuffer:12*1024*1024,shell:false,windowsHide:true});const data=JSON.parse(stdout);if(!data.ok)throw Error(data.error?.message||'oiioii 请求失败');return data.data;}catch(e){if(e.code==='ENOENT')throw Error('未找到 oiioii CLI，请安装官方 CLI 或设置 OIIOII_CLI');let message;try{message=JSON.parse(e.stdout).error?.message}catch{}throw Error(message||'oiioii 请求失败，请检查本机 CLI 授权或网络');}}
 async function body(req,limit=15*1024*1024){const chunks=[];let bytes=0;for await(const part of req){const chunk=Buffer.isBuffer(part)?part:Buffer.from(part);bytes+=chunk.length;if(bytes>limit)throw Error('请求过大');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');}
@@ -33,7 +35,7 @@ async function restore(){if(!restoreJobsPromise)restoreJobsPromise=(async()=>{tr
 async function saveJobs(){const data=JSON.stringify([...jobs.values()]);jobsSaving=jobsSaving.catch(()=>{}).then(async()=>{await mkdir(folder,{recursive:true,mode:0o700});const temp=new URL('jobs.'+randomUUID()+'.tmp',folder);await writeFile(temp,data,{mode:0o600});await rename(temp,new URL('jobs.json',folder));});await jobsSaving;}
 const cleanJob=j=>({id:j.id,status:j.status,message:j.message,imageUrl:j.imagePath?'/api/oiioii/image/'+j.id:undefined});
 export async function handleAI(req,res,url){
- if(!url.pathname.startsWith('/api/ai/')&&!url.pathname.startsWith('/api/oiioii/')&&!url.pathname.startsWith('/api/model3d/')&&url.pathname!=='/api/providers'&&!url.pathname.startsWith('/api/providers/')&&!url.pathname.startsWith('/api/comfy/'))return false;
+ if(!url.pathname.startsWith('/api/ai/')&&!url.pathname.startsWith('/api/oiioii/')&&!url.pathname.startsWith('/api/model3d/')&&url.pathname!=='/api/providers'&&!url.pathname.startsWith('/api/providers/')&&!url.pathname.startsWith('/api/comfy/')&&!url.pathname.startsWith('/api/video/'))return false;
  try{
   await configReady;await restore();const expected='http://'+req.headers.host;
   if(req.headers.origin&&req.headers.origin!==expected){json(res,{error:'仅允许本机软件同源访问'},403);return true;}
@@ -58,6 +60,18 @@ export async function handleAI(req,res,url){
    await storeConfig(next,keep);remembered=keep;
    config=next;configRevision++;connection={state:'untested'};
    json(res,{config:publicConfig()});return true;
+  }
+  if(req.method==='GET'&&url.pathname==='/api/video/providers'){json(res,{providers:providerVideoService.descriptors()});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/video/models'){json(res,{models:await providerVideoService.models(url.searchParams.get('providerId')||'fake')});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/video/health'){json(res,await providerVideoService.health(url.searchParams.get('providerId')||'fake'));return true;}
+  if(req.method==='POST'&&url.pathname==='/api/video/quote'){json(res,await providerVideoService.quote(await body(req)));return true;}
+  if(req.method==='POST'&&url.pathname==='/api/video/generate'){json(res,await providerVideoService.submit(await body(req)));return true;}
+  if(req.method==='GET'&&url.pathname==='/api/video/tasks'){json(res,{tasks:providerVideoService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
+  if(req.method==='GET'&&url.pathname.startsWith('/api/video/task/')&&!url.pathname.includes('/file/')){
+   const parts=url.pathname.split('/'),taskId=parts.at(-1),providerId=parts.at(-2);json(res,await providerVideoService.poll(providerId,taskId));return true;
+  }
+  if(req.method==='GET'&&url.pathname.startsWith('/api/video/task/')){
+   const parts=url.pathname.split('/'),index=Number(parts.at(-1)),taskId=parts.at(-3),providerId=parts.at(-4);const file=await providerVideoService.download(providerId,taskId,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
   }
   if(req.method==='GET'&&url.pathname==='/api/comfy/status'){json(res,await comfyService.health());return true;}
   if(req.method==='GET'&&url.pathname==='/api/comfy/models'){json(res,{models:await comfyService.models()});return true;}

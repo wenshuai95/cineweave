@@ -597,5 +597,18 @@
     "free": "Local generation, no cloud cost.",
     "already": "This image is already on the canvas.",
     "added": "ComfyUI image added to canvas."
+  },
+  "video": {
+    "title": "Generate video (provider)",
+    "subtitle": "Fake is free for testing; Seedance requires the feature flag and Ark billing.",
+    "provider": "Provider",
+    "model": "Model",
+    "prompt": "Video description",
+    "duration": "Duration (s)",
+    "generate": "Generate video",
+    "working": "Generating video…",
+    "free": "Fake provider: free, placeholder output.",
+    "added": "Video added to canvas.",
+    "disabled": "This provider is disabled."
   }
 }

@@ -7,6 +7,13 @@
 - 离线 CC0 资产单独发布（GitHub Release `assets-cc0.zip`）
 - 清理个人路径与本地配置，仓库不含 API Key / oiioii CLI
 
+## Unreleased · Sprint 5
+
+- 视频 Provider 抽象：Fake 视频全链路 + Seedance 骨架（feature flag 默认关闭）
+- 统一 `/api/video` 路由与任务下载
+- 画布「Video」入口：Provider/模型/时长/提示词生成并加入画布
+- Fake 视频 UI 全链路验证；Seedance 默认不产生费用
+
 ## Unreleased · Sprint 4
 
 - ComfyUI 本地生图：探测、checkpoint 列表、SDXL 工作流、轮询、下载

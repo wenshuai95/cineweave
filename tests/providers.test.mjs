@@ -7,6 +7,8 @@ import {createFakeProvider} from '../providers/fake.mjs';
 import {createSeedreamProvider} from '../providers/seedream.mjs';
 import {createProviderService} from '../provider-service.mjs';
 import {createComfyProvider} from '../providers/comfyui.mjs';
+import {createSeedanceProvider} from '../providers/seedance.mjs';
+import {createVideoService} from '../video-service.mjs';
 import {mkdtemp, rm, readFile, stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -276,4 +278,55 @@ test('comfyui adapter reports unreachable local service', async () => {
   const health = await provider.health();
   assert.equal(health.ok, false);
   assert.match(health.error, /ECONNREFUSED|不可访问/);
+});
+
+
+test('seedance video is feature-flagged and can be exercised with a mock API', async () => {
+  const disabled = createSeedanceProvider({apiKey: 'k', enabled: false});
+  await assert.rejects(() => disabled.quote({prompt: 'x'}), error => error.code === 'FEATURE_DISABLED');
+
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).includes('/contents/generations/tasks') && options.method === 'POST') {
+      return new Response(JSON.stringify({id: 'task-1'}), {status: 200});
+    }
+    if (String(url).includes('/contents/generations/tasks/task-1')) {
+      return new Response(JSON.stringify({status: 'succeeded', content: {video_url: 'https://example.com/v.mp4'}, duration: 5}), {status: 200});
+    }
+    if (String(url).startsWith('https://example.com/v.mp4')) {
+      return new Response(Buffer.from('video-bytes'), {status: 200, headers: {'Content-Type': 'video/mp4'}});
+    }
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createSeedanceProvider({apiKey: 'k', enabled: true, fetchImpl});
+  const quote = await provider.quote({prompt: 'rain', duration: 5, resolution: '720p'});
+  const submitted = await provider.submit({quoteId: quote.quoteId});
+  assert.ok(submitted.taskId);
+  const done = await provider.poll(submitted.taskId);
+  assert.equal(done.status, 'succeeded');
+  assert.equal(done.outputs[0].url, 'https://example.com/v.mp4');
+  const file = await provider.download(submitted.taskId);
+  assert.equal(file.mime, 'video/mp4');
+  assert.equal(file.data.toString(), 'video-bytes');
+  const createCall = calls.find(call => call.options.method === 'POST');
+  const body = JSON.parse(createCall.options.body);
+  assert.equal(body.duration, 5);
+  assert.equal(body.content[0].text, 'rain');
+});
+
+test('video service quotes and runs fake video without network', async () => {
+  const service = createVideoService({env: {}});
+  const providers = service.descriptors();
+  assert.ok(providers.some(provider => provider.id === 'fake'));
+  assert.ok(providers.some(provider => provider.id === 'seedance' && provider.enabled === false));
+  const quote = await service.quote({providerId: 'fake', modelId: 'fake-video', prompt: 'video test', duration: 2});
+  assert.equal(quote.cost, 0);
+  const submitted = await service.submit({quoteId: quote.quoteId});
+  await new Promise(resolve => setTimeout(resolve, 60));
+  const done = await service.poll('fake', submitted.taskId);
+  assert.equal(done.status, 'succeeded');
+  assert.equal(done.outputs[0].kind, 'video');
+  const file = await service.download('fake', submitted.taskId, 0);
+  assert.equal(file.mime, 'video/mp4');
 });

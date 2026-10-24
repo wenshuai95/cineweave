@@ -597,5 +597,18 @@
     "free": "本地生成，不产生云端费用。",
     "already": "该图片已在画布中。",
     "added": "ComfyUI 图片已加入画布。"
+  },
+  "video": {
+    "title": "生成视频（Provider）",
+    "subtitle": "Fake 免费测试；Seedance 需要开启 feature flag 并按方舟计费。",
+    "provider": "服务商",
+    "model": "模型",
+    "prompt": "视频描述",
+    "duration": "时长（秒）",
+    "generate": "生成视频",
+    "working": "正在生成视频…",
+    "free": "Fake Provider：免费，输出为占位视频。",
+    "added": "视频已加入画布。",
+    "disabled": "该服务商未开启。"
   }
 }
