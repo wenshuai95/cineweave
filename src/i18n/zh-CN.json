@@ -354,7 +354,21 @@
     "close": "关闭 ✕",
     "count": "{count} 镜 · 只读汇总",
     "empty": "还没有分镜",
-    "expand": "展开"
+    "expand": "展开",
+    "assets": "资产",
+    "visual": "画面",
+    "cut": "剪辑",
+    "review": "复核",
+    "edit": "编辑",
+    "locate": "定位{title}",
+    "editAria": "编辑{title}的分镜表",
+    "statusDetails": "状态详情",
+    "emptyTitle": "还没有分镜",
+    "emptyText": "先把故事整理成分镜，或在文稿里写下第一个镜头。镜头清单只读取现有数据，不会伪造进度。",
+    "openWriting": "打开文稿与分镜",
+    "writeStory": "写下故事",
+    "videos": "{count} 个视频",
+    "noVideos": "暂无视频"
   },
   "reference": {
     "refTitle": "按镜头导出参考包",

@@ -354,7 +354,21 @@
     "close": "Close ✕",
     "count": "{count} shots · read-only summary",
     "empty": "No shots yet",
-    "expand": "Expand"
+    "expand": "Expand",
+    "assets": "Assets",
+    "visual": "Visuals",
+    "cut": "Edit",
+    "review": "Review",
+    "edit": "Edit",
+    "locate": "Locate {title}",
+    "editAria": "Edit {title} storyboard",
+    "statusDetails": "Status details",
+    "emptyTitle": "No shots yet",
+    "emptyText": "Turn the story into shots first, or write the first shot in Script. Shot list only reads existing data and never invents progress.",
+    "openWriting": "Open script & storyboard",
+    "writeStory": "Write a story",
+    "videos": "{count} videos",
+    "noVideos": "No videos"
   },
   "reference": {
     "refTitle": "Export shot reference pack",
