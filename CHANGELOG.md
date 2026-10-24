@@ -1,3 +1,9 @@
+## 1.22.1
+
+- 修复：画布图片节点“生成图片”不再调用 OiiOii CLI
+- 图片节点统一为 AI 生图选择器：ComfyUI 本地 / Seedream 云端
+- 视频生成入口统一为 Provider 视频；OiiOii `/api/oiioii` 已停用（410）
+
 ## 1.22.0
 
 - 安装包包含 Sprint 1–6：Provider/i18n/Seedream Agent Plan/ComfyUI/Kling/Fake 视频

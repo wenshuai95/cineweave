@@ -39,6 +39,7 @@ export async function handleAI(req,res,url){
  try{
   await configReady;await restore();const expected='http://'+req.headers.host;
   if(req.headers.origin&&req.headers.origin!==expected){json(res,{error:'仅允许本机软件同源访问'},403);return true;}
+  if(url.pathname.startsWith('/api/oiioii/')){json(res,{error:'OiiOii CLI 已移除；请使用 ComfyUI、Seedream 或 Provider 视频'},410);return true;}
   if(req.method==='POST'&&(req.headers['x-jingchang-token']!==token||!String(req.headers['content-type']).startsWith('application/json'))){json(res,{error:'请求验证失败，请刷新软件'},403);return true;}
   if(req.method==='GET'&&url.pathname==='/api/ai/text/status'){json(res,{token,config:publicConfig()});return true;}
   if(req.method==='POST'&&url.pathname==='/api/ai/text/generate'){

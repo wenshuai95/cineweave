@@ -623,5 +623,13 @@
     "free": "Fake provider: free, placeholder output.",
     "added": "Video added to canvas.",
     "disabled": "This provider is disabled."
+  },
+  "imageChooser": {
+    "title": "AI image",
+    "subtitle": "Choose local ComfyUI or cloud Seedream. OiiOii CLI is no longer used.",
+    "comfy": "ComfyUI (local, free)",
+    "comfyHint": "SDXL on this computer; no cloud cost.",
+    "seedream": "Seedream (cloud)",
+    "seedreamHint": "Uses Ark / Agent Plan quota; a quote is shown first."
   }
 }

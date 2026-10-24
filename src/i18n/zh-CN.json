@@ -623,5 +623,13 @@
     "free": "Fake Provider：免费，输出为占位视频。",
     "added": "视频已加入画布。",
     "disabled": "该服务商未开启。"
+  },
+  "imageChooser": {
+    "title": "AI 生图",
+    "subtitle": "选择本地 ComfyUI 或云端 Seedream；不再使用 OiiOii CLI。",
+    "comfy": "ComfyUI（本地，免费）",
+    "comfyHint": "使用本机 SDXL，不产生云端费用。",
+    "seedream": "Seedream（云端）",
+    "seedreamHint": "使用方舟 / Agent Plan 额度，生成前显示报价。"
   }
 }
