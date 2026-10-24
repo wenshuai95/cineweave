@@ -47,13 +47,15 @@
 
 ## Seedream（Sprint 2）
 
-- 基础地址：`https://ark.cn-beijing.volces.com/api/v3`
+- **Agent Plan 模式（推荐，套餐内额度）**：Base URL `https://ark.cn-beijing.volces.com/api/plan/v3`，模型 `doubao-seedream-5.0-flash` / `doubao-seedream-5.0-pro`，使用 Agent Plan 专属 Key
+- **方舟按量模式**：Base URL `https://ark.cn-beijing.volces.com/api/v3`，动态模型列表，需要方舟余额
 - 已实现：模型列表、报价、同步生成、任务查询、下载、健康检查
 - 接口：`/api/providers/seedream/models`、`/quote`、`/generate`、`/api/providers/task/:id/file/:index`
 - 配置：`POST /api/providers/config`，密钥存本机 `providers.json`（0600），页面不回传明文
 - 错误码：`UNAUTHORIZED / MODEL_NOT_OPEN / RATE_LIMITED / PAYMENT_REQUIRED / NETWORK / UPSTREAM`
 - 账户欠费会返回 `PAYMENT_REQUIRED`，需要先充值
-- 真实测试预算 ¥50，只测 flash；本地 ComfyUI 用于免费回归
+- 真实测试：Agent Plan 模式已验证可出图并入画布；方舟按量模式需余额
+- 本地 ComfyUI 用于免费回归
 
 ## 新增一个厂商
 

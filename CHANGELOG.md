@@ -9,6 +9,9 @@
 
 ## Unreleased · Sprint 2
 
+- 支持 Agent Plan 模式：`/api/plan/v3` + `doubao-seedream-5.0-flash/pro`，套餐内额度直接生图
+- 修复 Seedream provider 传入 `planMode` 时 base URL 仍走 `/api/v3` 的问题
+
 - Seedream（即梦/方舟）图片适配器：模型、报价、生成、下载、错误码
 - Provider 服务：密钥本机 0600 存储、配置接口、任务记录
 - 软件内「Seedream 生图」：画布节点入口、模型/尺寸、报价确认、结果入画布

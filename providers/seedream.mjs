@@ -3,7 +3,13 @@ import {ProviderError} from './contracts.mjs';
 import {createTaskStore} from './task-store.mjs';
 
 export const SEEDREAM_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3';
+export const SEEDREAM_PLAN_BASE_URL = 'https://ark.cn-beijing.volces.com/api/plan/v3';
 export const SEEDREAM_DEFAULT_MODEL = 'doubao-seedream-5-0-flash-260915';
+export const SEEDREAM_PLAN_DEFAULT_MODEL = 'doubao-seedream-5.0-flash';
+export const SEEDREAM_PLAN_MODELS = Object.freeze([
+  {id: 'doubao-seedream-5.0-flash', name: 'Seedream 5.0 Flash（Agent Plan）', kind: 'image', default: true},
+  {id: 'doubao-seedream-5.0-pro', name: 'Seedream 5.0 Pro（Agent Plan）', kind: 'image', default: false},
+]);
 export const SEEDREAM_SIZES = ['1024x1024', '1536x1024', '1024x1536'];
 export const SEEDREAM_ASPECTS = ['1:1', '4:3', '3:4', '16:9', '9:16'];
 
@@ -20,14 +26,17 @@ const mimeFromUrl = url => {
 /** Seedream（即梦 / 火山方舟）图片适配器。 */
 export function createSeedreamProvider({
   apiKey = '',
-  baseUrl = SEEDREAM_BASE_URL,
+  baseUrl = '',
   fetchImpl = fetch,
   enabled = Boolean(apiKey),
   store = createTaskStore(),
-  defaultModel = SEEDREAM_DEFAULT_MODEL,
+  defaultModel,
+  planMode = false,
+  planModels = SEEDREAM_PLAN_MODELS,
   now = Date.now,
 } = {}) {
-  const base = String(baseUrl || SEEDREAM_BASE_URL).replace(/\/+$/, '');
+  const base = String(baseUrl || (planMode ? SEEDREAM_PLAN_BASE_URL : SEEDREAM_BASE_URL)).replace(/\/+$/, '');
+  const defaultModelId = defaultModel || (planMode ? SEEDREAM_PLAN_DEFAULT_MODEL : SEEDREAM_DEFAULT_MODEL);
   let key = String(apiKey || '');
   const quotes = new Map();
 
@@ -78,6 +87,7 @@ export function createSeedreamProvider({
     },
     async listModels() {
       requireKey();
+      if (planMode) return planModels.map(model => ({...model, default: model.id === defaultModelId}));
       const data = await request('/models', {method: 'GET'});
       return (Array.isArray(data.data) ? data.data : [])
         .filter(model => /seedream/i.test(String(model.id || '')))
@@ -86,7 +96,7 @@ export function createSeedreamProvider({
           name: String(model.name || model.id),
           kind: 'image',
           status: model.status || null,
-          default: String(model.id) === defaultModel,
+          default: String(model.id) === defaultModelId,
         }));
     },
     async quote(input = {}) {

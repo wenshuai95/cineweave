@@ -193,8 +193,10 @@ test('provider service persists a masked config and uses it for models', async (
     const service = createProviderService({folder, env: {}, fetchImpl});
     await service.ready();
     assert.equal(service.status().seedream.configured, false);
-    await service.configure({apiKey: 'secret-key', model: 'doubao-seedream-5-0-flash-260915'});
+    assert.equal(service.status().seedream.mode, 'agent-plan');
+    await service.configure({apiKey: 'secret-key', mode: 'ark', model: 'doubao-seedream-5-0-flash-260915'});
     assert.equal(service.status().seedream.configured, true);
+    assert.equal(service.status().seedream.mode, 'ark');
     assert.equal(JSON.stringify(service.status()).includes('secret-key'), false);
     const raw = await readFile(join(folder, 'providers.json'), 'utf8');
     assert.match(raw, /secret-key/);
@@ -207,4 +209,26 @@ test('provider service persists a masked config and uses it for models', async (
   } finally {
     await rm(folder, {recursive: true, force: true});
   }
+});
+
+
+test('seedream Agent Plan mode uses plan base URL and static model list', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).endsWith('/images/generations')) {
+      return new Response(JSON.stringify({data: [{url: 'https://example.com/plan.jpg', size: '1024x1024'}]}), {status: 200});
+    }
+    if (String(url).startsWith('https://example.com/')) return new Response(Buffer.from('img'), {status: 200, headers: {'Content-Type': 'image/jpeg'}});
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createSeedreamProvider({apiKey: 'plan-key', planMode: true, fetchImpl});
+  const models = await provider.listModels();
+  assert.deepEqual(models.map(model => model.id), ['doubao-seedream-5.0-flash', 'doubao-seedream-5.0-pro']);
+  const quote = await provider.quote({modelId: 'doubao-seedream-5.0-flash', prompt: 'x', size: '1024x1024'});
+  const submitted = await provider.submit({quoteId: quote.quoteId});
+  assert.equal(submitted.task.status, 'succeeded');
+  assert.ok(calls.some(call => call.url === 'https://ark.cn-beijing.volces.com/api/plan/v3/images/generations'));
+  const file = await provider.download(submitted.taskId);
+  assert.equal(file.mime, 'image/jpeg');
 });
