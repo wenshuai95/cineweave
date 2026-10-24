@@ -1682,7 +1682,8 @@ async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await 
 async function generationPanel(source,mode='image'){
  const project=p,projectId=p.id,sourceId=source?.id,projectTitle=p.name||'';
  let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[],stopRequested=false;
- nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','',`<div class="gen-composer-v2"><div class="gen-preview">${source?.src?(source.type==='video'?`<video src="${esc(source.src)}" controls></video>`:`<img src="${esc(source.src)}" alt="">`):`<div class="gen-preview-empty"><span>${mode==='image'?'▧':'▷'}</span><p>${mode==='image'?'图片预览':'视频预览'}</p></div>`}</div><div class="gen-card"><div class="gen-chips"><label class="gen-chip">参考<select id="genReference"></select></label><label class="gen-chip">模型<select id="genProvider"></select></label><label class="gen-chip" id="genSizeField">画幅<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="gen-chip" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><button type="button" id="genCapturePreviz" class="gen-chip gen-chip-btn">取导演台首帧</button></div><div id="genRefs" class="gen-ref-strip">正在读取参考…</div><label class="field" id="genVideoRefField" hidden>参考视频<select id="genVideoReference"></select></label><p id="genVideoRefNote" class="help-text"></p><textarea id="genPrompt" class="gen-prompt" rows="4" maxlength="6000" placeholder="描述你想生成的画面；参考图、白模和已有素材会作为上下文"></textarea><div class="gen-subrow"><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
+ nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','',`<div class="gen-composer-v2"><div class="gen-preview">${source?.src?(source.type==='video'?`<video src="${esc(source.src)}" controls></video>`:`<img src="${esc(source.src)}" alt="">`):`<div class="gen-preview-empty"><span>${mode==='image'?'▧':'▷'}</span><p>${mode==='image'?'图片预览':'视频预览'}</p></div>`}</div><div class="gen-card"><div class="gen-chips"><label class="gen-chip">参考<select id="genReference"></select></label><label class="gen-chip">模型<select id="genProvider"></select></label><label class="gen-chip" id="genSizeField">画幅<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="gen-chip" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><button type="button" id="genMore" class="gen-chip gen-chip-btn">更多</button></div><div class="gen-chips gen-chips-advanced" id="genAdvancedChips" hidden><label class="gen-chip">构图<select id="genShotSize"><option value="">自动</option><option value="远景">远景</option><option value="全景">全景</option><option value="中景">中景</option><option value="近景">近景</option><option value="特写">特写</option><option value="俯拍">俯拍</option><option value="低角度">低角度</option></select></label><label class="gen-chip">配色<select id="genPalette"><option value="">自动</option><option value="自然真实">自然</option><option value="暖色">暖色</option><option value="冷色">冷色</option><option value="低饱和">低饱和</option><option value="黑白">黑白</option></select></label><label class="gen-chip">风格<select id="genStyle"><option value="">自动</option><option value="电影写实">电影写实</option><option value="胶片质感">胶片</option><option value="概念设计">概念设计</option><option value="插画">插画</option><option value="广告质感">广告质感</option></select></label><button type="button" id="genCapturePreviz" class="gen-chip gen-chip-btn">取导演台首帧</button></div>
+<div id="genRefs" class="gen-ref-strip">正在读取参考…</div><label class="field" id="genVideoRefField" hidden>参考视频<select id="genVideoReference"></select></label><p id="genVideoRefNote" class="help-text"></p><textarea id="genPrompt" class="gen-prompt" rows="4" maxlength="6000" placeholder="描述你想生成的画面；参考图、白模和已有素材会作为上下文"></textarea><div class="gen-subrow"><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
  const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
  const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const setStatus=text=>{if(q('#genStatus'))q('#genStatus').textContent=text;};
@@ -1696,6 +1697,7 @@ async function generationPanel(source,mode='image'){
  const imageNodes=p.nodes.filter(n=>n.type==='image'&&n.src).slice(0,60);
  q('#genReference').innerHTML='<option value="">无参考</option>'+imageNodes.map(n=>`<option value="${escValue(n.id)}"${n.id===defaultRef?.id?' selected':''}>${escValue((n.title||'图片').slice(0,40))}</option>`).join('');
  q('#genReference').onchange=()=>{const selected=p.nodes.find(n=>n.id===q('#genReference').value);referenceSrc=selected?.src||null;referenceLabel=selected?'画布图片':'无参考';resetQuote();updateRefNote();};
+ q('#genMore').onclick=()=>{const panel=q('#genAdvancedChips');panel.hidden=!panel.hidden;q('#genMore').textContent=panel.hidden?'更多':'收起';};
  q('#genCapturePreviz').onclick=()=>{try{if(!stage)throw Error('导演台尚未打开');const src=stage.screenshot(time,override);if(!src)throw Error('无法读取导演台画面');referenceSrc=src;referenceLabel='导演台首帧';q('#genReference').value='';resetQuote();updateRefNote();setStatus('已取导演台当前帧作为参考；不会自动保存到画布。');}catch(e){setStatus(e.message);}};
  q('#genVideoRefField').hidden=mode!=='video';
  const updateVideoRefAvailability=()=>{
@@ -1737,7 +1739,7 @@ async function generationPanel(source,mode='image'){
    q('#genProvider').innerHTML=enabled.map(x=>`<option value="${escValue(x.id)}">${escValue(x.label)}</option>`).join('');
    updateVideoRefAvailability();
    q('#genProvider').onchange=()=>{resetQuote();loadModels();};
-   q('#genModel').onchange=resetQuote;q('#genSize').onchange=resetQuote;q('#genDuration').onchange=resetQuote;q('#genSteps').oninput=resetQuote;
+   q('#genModel').onchange=resetQuote;q('#genSize').onchange=resetQuote;q('#genDuration').onchange=resetQuote;q('#genSteps').oninput=resetQuote;for(const id of ['genShotSize','genPalette','genStyle'])q('#'+id).onchange=resetQuote;
    await loadModels();
   }catch(e){setStatus(e.message);q('#genRun').disabled=true;}
  }
@@ -1765,7 +1767,7 @@ async function generationPanel(source,mode='image'){
    const response=await fetch(filePath(pid,taskId));if(!response.ok)throw Error('结果读取失败');
    const src=await readDataURL(await response.blob());if(!live())return;
    if(mode==='image'){
-    const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:q('#genPrompt').value.trim(),context:imageAssetContext(project,sourceId),createNode:extra=>asset('image',{title:`${pid} · 恢复结果`,...extra})});
+    const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:composePrompt(),context:imageAssetContext(project,sourceId),createNode:extra=>asset('image',{title:`${pid} · 恢复结果`,...extra})});
     if(plan.already){setStatus('该结果已在画布中');return;}
     checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
     setMode('board');filter='all';commit();select(node.id);fitBoard();
@@ -1777,8 +1779,18 @@ async function generationPanel(source,mode='image'){
   }catch(e){setStatus(e.message);}
  }
 
+function composePrompt(){
+ const base=q('#genPrompt').value.trim();
+ const parts=[];
+ const shot=q('#genShotSize')?.value,palette=q('#genPalette')?.value,style=q('#genStyle')?.value;
+ if(shot)parts.push('构图：'+shot);
+ if(palette)parts.push('配色：'+palette);
+ if(style)parts.push('风格：'+style);
+ return (base+(parts.length?'。'+parts.join('；'):'')).slice(0,6000);
+}
+
 async function quoteNow(){
-  const prompt=q('#genPrompt').value.trim(),modelId=q('#genModel').value;
+  const prompt=composePrompt(),modelId=q('#genModel').value;
   if(!prompt)throw Error('请填写描述');
   if(mode==='image')return providerId==='comfyui'?api(quotePaths.comfyui,{modelId,prompt,size:q('#genSize').value,steps:Number(q('#genSteps').value)||20,projectId,reference:referenceSrc||undefined,denoise:0.65}):api(quotePaths.seedream,{modelId,prompt,size:q('#genSize').value,projectId});
   const info=providerList.find(x=>x.id===providerId);
@@ -1806,11 +1818,11 @@ async function quoteNow(){
    const src=await readDataURL(await response.blob());if(!live())return;
    if(mode==='image'){
     const context=imageAssetContext(project,sourceId);
-    const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:q('#genPrompt').value.trim(),context,createNode:extra=>asset('image',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),...extra})});
+    const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:composePrompt(),context,createNode:extra=>asset('image',{title:`${providerId} · `+composePrompt().slice(0,24),...extra})});
     if(plan.already){setStatus('该图片已在画布中');return;}
     checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
    }else{
-    checkpoint();const node=asset('video',{title:`${providerId} · `+q('#genPrompt').value.trim().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}`,src,generatedTask:taskId});p.nodes.push(node);
+    checkpoint();const node=asset('video',{title:`${providerId} · `+composePrompt().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}\n${composePrompt()}`,src,generatedTask:taskId});p.nodes.push(node);
    }
    const resultNode=mode==='image'?p.nodes.find(n=>n.generatedTask===taskId):p.nodes.at(-1);
    if(sourceId)setNodeGeneration(sourceId,null);
