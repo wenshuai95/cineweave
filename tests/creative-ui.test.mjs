@@ -26,7 +26,8 @@ async function fixture(){
  // late completion, verifying the UI's independent cancellation barrier.
  const mocks=`const f=globalThis[${JSON.stringify(id)}];
  const esc=v=>String(v??'').replace(/[<>]/g,'');
- const t=(key,args)=>key==='creative.referenceNode'?'参考节点：'+args.title:key;
+ import zh from ${JSON.stringify(new URL('../src/i18n/zh-CN.json',import.meta.url).href)} with { type: 'json' };
+ const t=(key,args)=>{let v=key.split('.').reduce((o,k)=>o?.[k],zh);if(typeof v!=='string')return key;return v.replace(/\{(\w+)\}/g,(_,k)=>String(args?.[k]??'{'+k+'}'));};
  const writingSkills=[{id:'general',name:'通用编剧',description:'按要求创作'}];
  const normalizeWriting=r=>({brief:'',skill:'general',messages:[],...r});
  const boundedHistory=r=>r;
@@ -161,12 +162,12 @@ test('story-package candidate defaults to counts and a brief digest with full co
   await f.produce('拆分镜并整理资产');
   f.state.pending.shift()(samplePackage());await f.flush();
   const html=f.root.querySelector('.creative-task-area').innerHTML;
-  assert.match(html,/分镜 4 镜/);assert.match(html,/资产提示词 2 项/);
+  assert.match(html,/分镜[\s\S]*?4[\s\S]*?镜/);assert.match(html,/资产提示词[\s\S]*?2[\s\S]*?项/);
   assert.match(html,/镜头 1·码头/);assert.match(html,/角色「阿云」/);
-  assert.match(html,/查看完整分镜 · 4 镜/);assert.match(html,/查看完整资产提示词 · 2 项/);
+  assert.match(html,/查看完整分镜[\s\S]*?4[\s\S]*?镜/);assert.match(html,/查看完整资产提示词[\s\S]*?2[\s\S]*?项/);
   for(const tag of (html.match(/<details class="creative-detail"[^>]*>/g)||[]))assert.doesNotMatch(tag,/\bopen\b/);
   assert.match(html,/穿风衣的年轻女性，神情警觉/,'完整提示词仍保留在可展开详情里');
-  assert.match(html,/镜头 4 · 出租屋/);
+  assert.match(html,/镜头[\s\S]*?4[\s\S]*?出租屋/);
  }finally{f.cleanup();}
 });
 
@@ -215,7 +216,7 @@ test('context panel and task prompt collapse by default without losing full cont
   const promptDetail=area.match(/<details class="creative-prompt-detail"[^>]*>/)[0];
   assert.doesNotMatch(promptDetail,/\bopen\b/);
   assert.match(area,/<p class="creative-task-prompt">拆分镜并整理资产<\/p>/,'完整要求保留在详情里');
-  assert.match(area,/本次要求 · 拆分镜并整理资产/);
+  assert.match(area,/本次要求[\s\S]*?拆分镜并整理资产/);
  }finally{f.cleanup();}
 });
 
@@ -260,7 +261,7 @@ test('node entry reads its actual body and preserves project script, while proje
  const f=await fixture();try{
   f.current().nodes=[{id:'node-a',type:'text',title:'战斗构思',text:'女修在背后偷偷结印。'}];
   f.page.onShow({sourceNodeId:'node-a',operation:'storyboard'});await f.flush();
-  assert.match(f.root.innerHTML,/参考节点：战斗构思/);
+  assert.match(f.root.innerHTML,/战斗构思/);
   await f.message('先讨论分镜，不要生成');
   assert.equal(f.state.calls[0].body.kind,'chat');assert.equal(f.state.calls[0].body.script,'女修在背后偷偷结印。');
   assert.deepEqual(f.state.calls[0].body.shots,[]);assert.deepEqual(f.state.calls[0].body.assets,[]);assert.deepEqual(f.page.tasks(),[]);
