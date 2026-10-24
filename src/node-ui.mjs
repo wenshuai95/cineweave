@@ -2,7 +2,7 @@ import {videoVersionGroup} from './video-versions.mjs';
 import {getCanvasStoryContext} from './workstation/canvas-source.mjs';
 
 const names={text:'文本',image:'图片',video:'视频',audio:'音频',actor:'角色',scene:'场景',model:'3D 模型',director:'导演台'};
-const hints={text:'记录想法、台词或创作提示词',image:'从文件夹拖入图片，或使用已有生图工具',video:'选择图片或白模参考，通过 Provider 生成视频',audio:'拖入配音、音效或音乐，先整理台词也可以',actor:'补充外观、服装与固定识别点',scene:'描述空间、材质、光线与氛围',director:'当前工程共享场景；连入模型后进入导演台预演',model:'连接导演台，即可摆放和预演'};
+const hints={text:'记录剧本、台词、镜头说明或参考信息',image:'从文件夹拖入图片，或使用已有生图工具',video:'选择图片或白模参考，通过 Provider 生成视频',audio:'拖入配音、音效或音乐，先整理台词也可以',actor:'补充外观、服装与固定识别点',scene:'描述空间、材质、光线与氛围',director:'当前工程共享场景；连入模型后进入导演台预演',model:'连接导演台，即可摆放和预演'};
 export function nodePresentation(project,node){
  const context=getCanvasStoryContext(project,node.id);
  const kind=context?.kind;
@@ -11,7 +11,7 @@ export function nodePresentation(project,node){
  const imageState=node.type==='image'?(node.storyImageRef?(imageOfficial?'正式图':'旧正式图'):node.imageResultContext?(node.assetImageVersionId?'已加入资产版本':'资产候选图'):node.src?'已有素材':'待导入'):null;
  return {
   label:({script:'项目剧本',shot:'文学分镜',asset:'资产提示词',image:'资产正式图片'})[kind]||names[node.type]||'节点',
-  status:kind==='script'?(node.text?.trim()?'已编写':'待创作'):kind==='shot'?'已规划':kind==='asset'?'提示词':node.type==='model'?(node.objectId?'已接入':'待接入'):node.type==='director'?'共享场景入口':node.type==='image'?imageState:node.src?'已有素材':['image','video','audio'].includes(node.type)?'待导入':node.text?.trim()?'已记录':'待完善',
+  status:kind==='script'?(node.text?.trim()?'已导入':'待导入'):kind==='shot'?'已规划':kind==='asset'?'提示词':node.type==='model'?(node.objectId?'已接入':'待接入'):node.type==='director'?'共享场景入口':node.type==='image'?imageState:node.src?'已有素材':['image','video','audio'].includes(node.type)?'待导入':node.text?.trim()?'已记录':'待完善',
   hint:hints[node.type]||'选中节点，继续创作',
   empty:!node.src&&!node.text?.trim()&&!['model','director'].includes(node.type),
  };
@@ -20,11 +20,11 @@ export function nodeQuickActions(project,node){
  const context=getCanvasStoryContext(project,node.id);
  const imageAsset=node.type==='image'&&node.storyImageRef?(project.workstation?.story?.assets||[]).find(asset=>asset.id===node.storyImageRef.assetId):null;
  const imageOfficial=!!(node.storyImageRef&&imageAsset?.selectedImageId===node.storyImageRef.versionId);
- if(context?.kind==='script')return [{id:'content',label:'编辑正文',primary:true},{id:'assistant',label:'AI 创作'},{id:'storyboard',label:'设计分镜'},{id:'assets',label:'提取资产'}];
+ if(context?.kind==='script')return [{id:'content',label:'编辑正文',primary:true}];
  if(context?.kind==='shot')return [{id:'edit',label:'编辑分镜',primary:true}];
  if(context&&!(node.type==='image'&&node.src))return [{id:'edit',label:'图片与版本',primary:true},{id:'content',label:context.kind==='asset'?'编辑提示词':'编辑说明'}];
  const edit={id:'content',label:'编辑内容',primary:true};
- if(node.type==='text')return [edit,{id:'assistant',label:'AI 创作'},{id:'promote',label:'用作项目剧本'},{id:'templates',label:'创作用途'}];
+ if(node.type==='text')return [edit,{id:'promote',label:'用作项目剧本'},{id:'templates',label:'节点模板'}];
  if(['actor','scene'].includes(node.type))return [edit,{id:'image',label:'生成参考图'},{id:'templates',label:'设定模板'}];
  if(node.type==='image'){
   if(node.src){

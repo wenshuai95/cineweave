@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {nodePresentation,nodeQuickActions} from '../src/node-ui.mjs';
 import {starterProject,validateProject} from '../src/model.mjs';
 import {ensureScriptNode} from '../src/workstation/canvas-source.mjs';
-test('script source keeps its planning actions and is not presented as an ordinary note',()=>{
+test('script source is a manual reference with only content editing',()=>{
  const p=starterProject();p.workstation=validateProject(p).workstation;
  const n=ensureScriptNode(p),before=JSON.stringify(p);
  assert.equal(nodePresentation(p,n).label,'项目剧本');
- assert.ok(nodeQuickActions(p,n).some(a=>a.id==='storyboard'));
+ assert.deepEqual(nodeQuickActions(p,n).map(a=>a.id),['content']);
  assert.ok(!nodeQuickActions(p,n).some(a=>a.id==='promote'));
  assert.equal(JSON.stringify(p),before);
 });
