@@ -56,6 +56,19 @@
 - 安装路径：`/Applications/造梦工坊.app`
 - 健康检查：`/api/health` 返回 `version: 1.27.0`
 
+### DMG 交付与验证
+
+- 产物：`../work/造梦工坊-v1.27.0-AppleSilicon.dmg`（相对仓库根目录；本机构建路径，不进入 git）
+- 大小：199 MB（arm64）
+- SHA-256：`879afc192f25c69d9ff7821b4ccc52d6326448d881ac79c87cc4efc4a4079416`（同目录 `.sha256` 文件）
+- 镜像内容：`造梦工坊.app`、`Applications` 快捷方式、`安装与使用说明.txt`
+- 验证步骤与结果：
+  1. `hdiutil verify <dmg>`：checksum VALID
+  2. `hdiutil attach -readonly -nobrowse -mountpoint <临时目录> <dmg>`：挂载成功
+  3. `codesign --verify --deep --strict <挂载>/造梦工坊.app`：通过
+  4. 从挂载目录启动 App（临时数据目录 + 临时端口 41977）：`/api/health` 返回 `version: 1.27.0`；验证后退出并 `hdiutil detach`
+- 构建后同时生成 `../work/造梦工坊-v1.27.0-安装说明.txt`，可直接随 DMG 分发
+
 ### 1440 / 1024 布局
 
 - 1440×900 实机 Electron：六阶段导航、画布、生成面板、3D 右侧属性栏均无横向溢出；`docScrollW = 1440`
