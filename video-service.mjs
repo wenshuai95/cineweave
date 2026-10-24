@@ -1,7 +1,7 @@
 import {createFakeProvider} from './providers/fake.mjs';
 import {createSeedanceProvider, ARK_BASE_URL, ARK_PLAN_BASE_URL} from './providers/seedance.mjs';
 import {createKlingProvider, KLING_BASE_URL} from './providers/kling.mjs';
-import {createTaskStore} from './providers/task-store.mjs';
+import {createPersistentTaskStore} from './providers/persistent-task-store.mjs';
 import {describeProvider, ProviderError} from './providers/contracts.mjs';
 import {mkdir, readFile, writeFile, chmod, rename} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -13,7 +13,7 @@ import {randomUUID} from 'node:crypto';
  */
 export function createVideoService({env = process.env, fetchImpl = fetch, folder = null} = {}) {
   const configFile = folder ? join(folder, 'kling.json') : null;
-  const store = createTaskStore();
+  const store = createPersistentTaskStore({file: folder ? join(folder, 'video-tasks.json') : null});
   const fake = createFakeProvider({store});
   const seedanceEnabled = env.ARK_SEEDANCE_ENABLED === '1';
   const seedance = createSeedanceProvider({
@@ -65,7 +65,8 @@ export function createVideoService({env = process.env, fetchImpl = fetch, folder
   };
 
   return {
-    ready,
+    ready: async () => { await ready(); await store.ready; return klingStatus(); },
+    readyKling: ready,
     klingStatus,
     async configureKling(input = {}) {
       const accessKey = typeof input.accessKey === 'string' && input.accessKey.trim() ? input.accessKey.trim() : klingState.accessKey;

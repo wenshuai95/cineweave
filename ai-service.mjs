@@ -57,23 +57,23 @@ export async function handleAI(req,res,url){
   if(req.method==='GET'&&url.pathname==='/api/video/health'){json(res,await providerVideoService.health(url.searchParams.get('providerId')||'fake'));return true;}
   if(req.method==='POST'&&url.pathname==='/api/video/quote'){json(res,await providerVideoService.quote(await body(req)));return true;}
   if(req.method==='POST'&&url.pathname==='/api/video/generate'){json(res,await providerVideoService.submit(await body(req)));return true;}
-  if(req.method==='GET'&&url.pathname==='/api/video/tasks'){json(res,{tasks:providerVideoService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/video/tasks'){await providerVideoService.ready();json(res,{tasks:providerVideoService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
   if(req.method==='GET'&&url.pathname.startsWith('/api/video/task/')&&!url.pathname.includes('/file/')){
-   const parts=url.pathname.split('/'),taskId=parts.at(-1),providerId=parts.at(-2);json(res,await providerVideoService.poll(providerId,taskId));return true;
+   const parts=url.pathname.split('/'),taskId=parts.at(-1),providerId=parts.at(-2);await providerVideoService.ready();json(res,await providerVideoService.poll(providerId,taskId));return true;
   }
   if(req.method==='GET'&&url.pathname.startsWith('/api/video/task/')){
-   const parts=url.pathname.split('/'),index=Number(parts.at(-1)),taskId=parts.at(-3),providerId=parts.at(-4);const file=await providerVideoService.download(providerId,taskId,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
+   const parts=url.pathname.split('/'),index=Number(parts.at(-1)),taskId=parts.at(-3),providerId=parts.at(-4);await providerVideoService.ready();const file=await providerVideoService.download(providerId,taskId,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
   }
   if(req.method==='GET'&&url.pathname==='/api/comfy/status'){json(res,await comfyService.health());return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/start'){json(res,await comfyService.start());return true;}
   if(req.method==='GET'&&url.pathname==='/api/comfy/models'){json(res,{models:await comfyService.models()});return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/config'){json(res,{status:comfyService.configure((await body(req)).baseUrl)});return true;}
-  if(req.method==='GET'&&url.pathname==='/api/comfy/tasks'){json(res,{tasks:comfyService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
+  if(req.method==='GET'&&url.pathname==='/api/comfy/tasks'){await comfyService.ready();json(res,{tasks:comfyService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/quote'){json(res,await comfyService.quote(await body(req)));return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/generate'){json(res,await comfyService.submit(await body(req)));return true;}
-  if(req.method==='GET'&&url.pathname.startsWith('/api/comfy/task/')&&!url.pathname.includes('/file/')){json(res,await comfyService.poll(url.pathname.split('/').at(-1)));return true;}
+  if(req.method==='GET'&&url.pathname.startsWith('/api/comfy/task/')&&!url.pathname.includes('/file/')){await comfyService.ready();json(res,await comfyService.poll(url.pathname.split('/').at(-1)));return true;}
   if(req.method==='GET'&&url.pathname.startsWith('/api/comfy/task/')){
-   const parts=url.pathname.split('/'),index=Number(parts.at(-1)),id=parts.at(-3);const file=await comfyService.download(id,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
+   const parts=url.pathname.split('/'),index=Number(parts.at(-1)),id=parts.at(-3);await comfyService.ready();const file=await comfyService.download(id,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
   }
   if(req.method==='GET'&&url.pathname==='/api/providers'){await providerService.ready();json(res,{providers:[providerService.descriptor()],config:providerService.status(),tasks:providerService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
   if(req.method==='GET'&&url.pathname==='/api/providers/config'){await providerService.ready();json(res,{config:providerService.status()});return true;}
@@ -83,7 +83,7 @@ export async function handleAI(req,res,url){
   if(req.method==='POST'&&url.pathname==='/api/providers/seedream/generate'){const b=await body(req);const result=await providerService.submit(b);json(res,result);return true;}
   if(req.method==='GET'&&url.pathname==='/api/providers/tasks'){json(res,{tasks:providerService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
   if(req.method==='GET'&&url.pathname.startsWith('/api/providers/task/')&&!url.pathname.includes('/file/')){
-   const id=url.pathname.split('/').at(-1);json(res,await providerService.poll(id));return true;
+   await providerService.ready();const id=url.pathname.split('/').at(-1);json(res,await providerService.poll(id));return true;
   }
   if(req.method==='GET'&&url.pathname.startsWith('/api/providers/task/')){
    const parts=url.pathname.split('/'),index=Number(parts.at(-1)),id=parts.at(-3);const file=await providerService.download(id,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;

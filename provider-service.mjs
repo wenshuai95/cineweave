@@ -1,5 +1,5 @@
 import {createSeedreamProvider, SEEDREAM_DEFAULT_MODEL, SEEDREAM_PLAN_DEFAULT_MODEL, SEEDREAM_PLAN_BASE_URL} from './providers/seedream.mjs';
-import {createTaskStore} from './providers/task-store.mjs';
+import {createPersistentTaskStore} from './providers/persistent-task-store.mjs';
 import {describeProvider} from './providers/contracts.mjs';
 import {mkdir, readFile, writeFile, chmod, rename} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
@@ -10,7 +10,7 @@ import {join} from 'node:path';
  * 密钥只存在本机数据目录（0600）或环境变量，不进入工程/日志。
  */
 export function createProviderService({folder, env = process.env, fetchImpl = fetch} = {}) {
-  const store = createTaskStore();
+  const store = createPersistentTaskStore({file: join(folder, 'provider-tasks.json')});
   const configFile = join(folder, 'providers.json');
   let config = {
     key: env.ARK_PLAN_KEY || env.ARK_API_KEY || '',
@@ -58,6 +58,7 @@ export function createProviderService({folder, env = process.env, fetchImpl = fe
           provider = makeProvider();
         }
       } catch {}
+      await store.ready;
       return publicStatus();
     })();
     return loaded;

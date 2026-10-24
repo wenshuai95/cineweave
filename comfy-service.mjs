@@ -1,5 +1,5 @@
 import {createComfyProvider, COMFYUI_BASE_URL} from './providers/comfyui.mjs';
-import {createTaskStore} from './providers/task-store.mjs';
+import {createPersistentTaskStore} from './providers/persistent-task-store.mjs';
 import {describeProvider} from './providers/contracts.mjs';
 import {resolveComfyLaunch, spawnComfy} from './comfy-launcher.mjs';
 import {join} from 'node:path';
@@ -17,12 +17,13 @@ export function normalizeComfyUrl(value) {
 
 /** 本地 ComfyUI 服务：单用户、无云端计费。 */
 export function createComfyService({baseUrl = process.env.COMFYUI_URL || COMFYUI_BASE_URL, fetchImpl = fetch, folder = null} = {}) {
-  const store = createTaskStore();
+  const store = createPersistentTaskStore({file: join(folder || '.', 'comfy-tasks.json')});
   let current = normalizeComfyUrl(baseUrl);
   let provider = createComfyProvider({baseUrl: current, store, fetchImpl});
   const rebuild = () => { provider = createComfyProvider({baseUrl: current, store, fetchImpl}); };
   let starting = null;
   return {
+    ready: () => store.ready,
     status() { return {baseUrl: current, providerId: 'comfyui', configured: true}; },
     descriptor() { return describeProvider(provider); },
     async health() { return {...(await provider.health()), baseUrl: current}; },

@@ -15,7 +15,8 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
  * 统一任务存储（Sprint 1 先内存实现，后续再接 jobs 持久化）。
  * 任务字段保持厂商无关，UI/任务中心只读这些字段。
  */
-export function createTaskStore({idFactory = randomUUID, now = Date.now} = {}) {
+export function createTaskStore({idFactory = randomUUID, now = Date.now, onChange = null} = {}) {
+  const notify = () => { try { onChange?.(); } catch {} };
   const tasks = new Map();
 
   const touch = (task, patch = {}) => {
@@ -52,6 +53,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now} = {}) {
         finishedAt: null,
       };
       tasks.set(id, task);
+      notify();
       return publicTask(task);
     },
     get(id) {
@@ -77,6 +79,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now} = {}) {
       if (patch.cost !== undefined) task.cost = patch.cost;
       if (patch.remoteId !== undefined) task.remoteId = patch.remoteId == null ? null : String(patch.remoteId);
       task.updatedAt = now();
+      notify();
       return publicTask(task);
     },
     list(filter = {}) {
@@ -100,6 +103,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now} = {}) {
         if (!row || typeof row.id !== 'string' || !TASK_STATUSES.includes(row.status)) continue;
         tasks.set(row.id, {...row, outputs: Array.isArray(row.outputs) ? row.outputs.map(output => ({...output})) : []});
       }
+      notify();
     },
   };
 
