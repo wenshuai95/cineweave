@@ -1672,7 +1672,7 @@ async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await 
 
 async function generationPanel(source,mode='image'){
  const project=p,projectId=p.id,sourceId=source?.id,projectTitle=p.name||'';
- let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[];
+ let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[],stopRequested=false;
  nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','',`<div class="gen-composer-v2"><div class="gen-preview">${source?.src?(source.type==='video'?`<video src="${esc(source.src)}" controls></video>`:`<img src="${esc(source.src)}" alt="">`):`<div class="gen-preview-empty"><span>${mode==='image'?'▧':'▷'}</span><p>${mode==='image'?'图片预览':'视频预览'}</p></div>`}</div><div class="gen-card"><div class="gen-chips"><label class="gen-chip">参考<select id="genReference"></select></label><label class="gen-chip">模型<select id="genProvider"></select></label><label class="gen-chip" id="genSizeField">画幅<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="gen-chip" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><button type="button" id="genCapturePreviz" class="gen-chip gen-chip-btn">取导演台首帧</button></div><div id="genRefs" class="gen-ref-strip">正在读取参考…</div><label class="field" id="genVideoRefField" hidden>参考视频<select id="genVideoReference"></select></label><p id="genVideoRefNote" class="help-text"></p><textarea id="genPrompt" class="gen-prompt" rows="4" maxlength="6000" placeholder="描述你想生成的画面；参考图、白模和已有素材会作为上下文"></textarea><div class="gen-subrow"><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
  const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
  const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1680,7 +1680,7 @@ async function generationPanel(source,mode='image'){
  const live=()=>panel.isConnected&&p===project;
  const resetQuote=()=>{quote=null;q('#genPrice').textContent='';q('#genRun').textContent='查看费用';};
  q('#genPrompt').value=typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source);
- q('#genCancel').onclick=()=>closeModal();
+ q('#genCancel').onclick=()=>{if(busy&&stopRequested!==null&&q('#genCancel').textContent==='停止等待'){stopRequested=true;q('#genCancel').disabled=true;setStatus('正在停止等待；后台任务可能继续，可在最近生成中恢复。');return;}closeModal();};
  const refs=p.nodes.filter(n=>n.type==='image'&&n.src&&n.id!==sourceId&&p.edges.some(e=>(e.from===sourceId&&e.to===n.id)||(e.to===sourceId&&e.from===n.id))).slice(0,6);
  const defaultRef=refs[0]||(source?.type==='image'&&source.src?source:null);
  let referenceSrc=defaultRef?.src||null,referenceLabel=defaultRef?'画布图片':'无参考';
@@ -1782,9 +1782,10 @@ async function quoteNow(){
    if(!quote){busy=true;button.disabled=true;setStatus('正在获取费用…');quote=await quoteNow();if(!live())return;q('#genPrice').textContent=quote.cost===0?'本地生成，不产生云端费用':quote.note||'按服务商实际计费';button.textContent='确认生成';setStatus('确认后将提交生成；提交后不可撤销。');busy=false;button.disabled=false;return;}
    busy=true;button.disabled=true;q('#genCancel').disabled=true;setStatus('正在提交…');const startedAt=Date.now();
    const submitted=mode==='image'?await api(submitPaths[providerId],{quoteId:quote.quoteId,projectId,sourceId}):await api('/api/video/generate',{quoteId:quote.quoteId,projectId,sourceId});
-   submittedTask=true;const taskId=submitted.taskId;let task=null;setStatus('正在生成…');setNodeGeneration(sourceId,{status:'running',progress:0.04,label:'已提交 · 生成中'});
+   submittedTask=true;stopRequested=false;q('#genCancel').textContent='停止等待';q('#genCancel').disabled=false;const taskId=submitted.taskId;let task=null;setStatus('正在生成…');setNodeGeneration(sourceId,{status:'running',progress:0.04,label:'已提交 · 生成中'});
    for(let i=0;i<300;i++){
     await new Promise(r=>setTimeout(r,2000));if(!live())return;
+    if(stopRequested)throw new DOMException('已停止等待','AbortError');
     task=await api(pollPath(providerId,taskId));
     if(task.status==='succeeded')break;
     if(task.status==='failed')throw Error(task.error?.message||task.message||'生成失败');
@@ -1808,8 +1809,9 @@ async function quoteNow(){
    q('#genResult').innerHTML=`<div class="generation-result" style="display:flex;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1px solid #39393c;border-radius:8px">${mode==='image'?`<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px">`:`<video src="${src}" controls style="width:96px;height:64px;object-fit:cover;border-radius:6px"></video>`}<div><b>${providerId} · ${escValue(q('#genModel').value)}</b><div class="help-text">已加入画布 · ${quote?.cost===0?'本地免费':'按服务商实际计费'}</div><div class="help-text">任务 ${taskId.slice(0,8)}… · 耗时 ${((Date.now()-startedAt)/1000).toFixed(1)}s</div></div>${mode==='image'?`<div class="property-actions" style="margin-left:auto;flex-wrap:wrap"><button type="button" id="genCandidates">同源候选</button><button type="button" id="genAdoptVersion">加入资产版本</button><button type="button" id="genAdoptOfficial">设为正式图</button></div>`:`<div class="property-actions" style="margin-left:auto;flex-wrap:wrap"><button type="button" id="genSaveToLibrary">保存到素材库</button><button type="button" id="genSendToEdit">送入剪辑</button></div>`}</div>`;
    if(mode==='image'&&resultNode){q('#genCandidates').onclick=()=>openImageCandidates(sourceId,taskId);q('#genAdoptVersion').onclick=()=>openImageAdoption(resultNode,false);q('#genAdoptOfficial').onclick=()=>openImageAdoption(resultNode,true);}else if(mode==='video'&&q('#genSendToEdit')){q('#genSaveToLibrary').onclick=async()=>{if(!resultNode)return toast('结果尚未加入画布');try{await wsShell.saveCanvasNodeToLibrary(resultNode.id);toast('已保存到项目素材库');}catch(e){toast('保存失败：'+e.message);}};q('#genSendToEdit').onclick=()=>{if(!resultNode)return toast('结果尚未加入画布');closeModal();wsShell?.sendCanvasNodeToEdit(resultNode.id);};}
    setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;loadHistory();
-  }catch(e){setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});setTimeout(()=>{if(p.nodes.some(n=>n.id===sourceId&&n.generationProgress?.status==='failed'))setNodeGeneration(sourceId,null);},8000);}}
-  finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;}}
+  }catch(e){if(e.name==='AbortError'&&submittedTask){setStatus('已停止等待；任务可能在后台继续，可在最近生成中恢复。');if(sourceId)setNodeGeneration(sourceId,null);}
+  else{setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});setTimeout(()=>{if(p.nodes.some(n=>n.id===sourceId&&n.generationProgress?.status==='failed'))setNodeGeneration(sourceId,null);},8000);}}}
+  finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;q('#genCancel').textContent='取消';}}
  }
  q('#genPrompt').oninput=resetQuote;
  q('#genRun').onclick=run;
