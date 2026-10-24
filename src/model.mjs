@@ -180,7 +180,7 @@ export function validateProject(p) {
 
  for(const k of o.keys)if(!finite(k.t)||k.t<0||k.t>p.duration||!vec(k.position)||!vec(k.target)||!finite(k.rotation)||!finite(k.scale)||k.scale<=0||!finite(k.fov)||k.fov<10||k.fov>120||!Object.hasOwn(poses,k.pose)||!['smooth','linear','hold'].includes(k.ease))fail('关键帧');
  }
- const nids=new Set();for(const n of p.nodes){if(!n||!validId(n.id)||nids.has(n.id)||!['text','actor','scene','director','image','video','audio','model'].includes(n.type)||typeof n.title!=='string'||typeof n.text!=='string'||!finite(n.x)||!finite(n.y)||!finite(n.w)||n.w<100||n.w>1000)fail('画布节点');if(n.src&&!/^data:(image\/(png|jpeg|webp|gif)|video\/(webm|mp4)|audio\/(mpeg|mp3|wav|x-wav|ogg|mp4|webm));base64,[A-Za-z0-9+/\r\n]*={0,2}$/i.test(n.src))fail('仅支持内嵌图片、视频与音频');if(n.type==='model'&&(!/^data:model\/gltf-binary;base64,[A-Za-z0-9+/]*={0,2}$/.test(n.modelSrc||'')||!finite(n.modelSize)||n.modelSize<.1||n.modelSize>100||!['scene','human','animal','creature'].includes(n.modelKind)))fail('生成模型节点');nids.add(n.id);}
+ const nids=new Set();for(const n of p.nodes){if(!n||!validId(n.id)||nids.has(n.id)||!['text','actor','scene','director','image','video','audio','model'].includes(n.type)||typeof n.title!=='string'||typeof n.text!=='string'||!finite(n.x)||!finite(n.y)||!finite(n.w)||n.w<100||n.w>1000)fail('画布节点');if(n.src&&!/^data:(image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)|video\/(mp4|webm|quicktime|ogg)|audio\/(mpeg|mp3|wav|x-wav|ogg|mp4|webm|aac|x-m4a|m4a));base64,[A-Za-z0-9+/\r\n]*={0,2}$/i.test(n.src))fail('仅支持内嵌图片、视频与音频');if(n.type==='model'&&(!/^data:model\/gltf-binary;base64,[A-Za-z0-9+/]*={0,2}$/.test(n.modelSrc||'')||!finite(n.modelSize)||n.modelSize<.1||n.modelSize>100||!['scene','human','animal','creature'].includes(n.modelKind)))fail('生成模型节点');nids.add(n.id);}
  let scriptSourceCount=0;
  for(const n of p.nodes){
   if(n.videoDraft!==undefined)n.videoDraft=sanitizeVideoDraft(n.videoDraft);
@@ -215,6 +215,6 @@ export function validateProject(p) {
  p.workstation=validateWorkstation(p.workstation);
  return p;
 }
-export async function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('jingchang-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+export async function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('jingchang-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('项目数据库被另一个窗口占用；请关闭其他造梦工坊窗口后点击保存重试'));});}
 export async function saveProject(p){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction('projects','readwrite');tx.objectStore('projects').put(p,'current');tx.oncomplete=()=>{db.close();res()};tx.onerror=()=>{db.close();rej(tx.error)};});}
 export async function loadProject(){const db=await openDB();return new Promise((res,rej)=>{const r=db.transaction('projects').objectStore('projects').get('current');r.onsuccess=()=>{db.close();res(r.result)};r.onerror=()=>{db.close();rej(r.error)};});}

@@ -398,3 +398,11 @@ body[data-canvas-mode=board] .modal.gen-bottom-dock{width:min(840px,calc(100vw -
  .gen-bottom-dock .gen-ref-tokens{font-size:10px;gap:3px}
  .gen-bottom-dock .gen-ref-tokens button{min-height:20px;padding:1px 5px;font-size:10px}
 }
+
+/* Phase 5: one workspace/stage entry in the topbar; no persistent page nav. */
+.topbar .workspace-switch{height:30px;padding:0 10px;border:1px solid #3a3941;border-radius:8px;background:#222227;color:#d8d5df;font-size:12px;line-height:1;cursor:pointer;white-space:nowrap}
+.topbar .workspace-switch:hover{background:#2e2d35;border-color:#54515c;color:#fff}
+body[data-ws-page=edit] .topbar .workspace-switch{background:#2a2530;border-color:#5a4c3b;color:#f0e6d8}
+body[data-canvas-mode=board] .workspace-toolbar .workspace-title,body[data-canvas-mode=board] .workspace-toolbar .breadcrumb{display:none}
+body[data-canvas-mode=board] .workspace-toolbar #stageBreadcrumb{display:none}
+.ws-bottomnav{display:none!important}

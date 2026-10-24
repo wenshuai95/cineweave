@@ -19,11 +19,11 @@ test('generation composer is docked to the bottom for selected image/video nodes
   assert.match(css,/backdrop-filter:none/);
 });
 
-test('the six-stage pill is replaced by a compact breadcrumb entry', () => {
-  assert.match(main,/id="stageBreadcrumb"/);
-  assert.match(main,/id="stageBreadcrumbLabel"/);
+test('navigation is one compact workspace/stage switch', () => {
+  assert.match(main,/id="workspaceSwitch"/);
+  assert.doesNotMatch(main,/id="stageBreadcrumb"/);
   assert.doesNotMatch(main,/class="stage-nav"/);
-  assert.match(main,/showContextMenu\(\$\('#contextMenu'\),\{x:r\.left,y:r\.bottom\+6,title:'创作阶段'/);
+  assert.match(main,/STAGE_ITEMS\.map/);
 });
 
 test('docked composer still closes on blank canvas, Esc, selection changes and keeps Phase 2 references', () => {

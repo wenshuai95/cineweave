@@ -1,4 +1,4 @@
-# CineWeave · 造梦工坊（v1.28.0）
+# CineWeave · 造梦工坊（v1.28.1）
 
 一个本地优先的 AI 视频创作工作台：为**已有剧本/分镜**的创作者提供画布、镜头表、资产管理、3D 白模预演、图片/视频生成与粗剪，全部在同一个工程里完成。
 
@@ -22,13 +22,13 @@
 
 ## 安装（Apple Silicon）
 
-发布产物：`造梦工坊-v1.28.0-AppleSilicon.dmg`（macOS arm64，macOS 13+）。
+发布产物：`造梦工坊-v1.28.1-AppleSilicon.dmg`（macOS arm64，macOS 13+）。
 
 1. 打开 DMG，将「造梦工坊.app」拖入 Applications（应用程序）文件夹；
 2. 首次打开如提示“无法验证开发者”，在“系统设置 → 隐私与安全性”中仍要打开；
 3. 本包为本机临时签名，未做 Apple Developer ID 签名与公证，请只从可信来源获取安装包。
 
-工程数据保存在 `~/Library/Application Support/AIWorkstation`，升级/重装不会删除；重要工程请从“项目库 → 导出”备份 JSON。详细步骤与 DMG 校验值见 [v1.28.0 验收记录](docs/RELEASE-ACCEPTANCE-1.28.0.md)，随包使用说明见 `desktop/安装与使用说明.txt`。
+工程数据保存在 `~/Library/Application Support/AIWorkstation`，升级/重装不会删除；重要工程请从“项目库 → 导出”备份 JSON。详细步骤与 DMG 校验值见 [v1.28.1 验收记录](docs/RELEASE-ACCEPTANCE-1.28.1.md)，随包使用说明见 `desktop/安装与使用说明.txt`。
 
 H3 只保留本地接口与缺失项检测，**不自动下载、不安装模型**；未安装 H3 不影响现有生成流程。Seedance 2.5 多素材参考需在方舟配置 API Key 并显式开启；本地视频/音频参考 URL 托管尚未打通，会在生成前明确提示。
 
@@ -125,7 +125,8 @@ server.mjs         本地静态服务与 API 入口
 
 ## 版本
 
-- v1.28.0：当前版本（即梦同构画布、多素材参考、底部生成卡、Seedance 2.5 Provider），验收见 [RELEASE-ACCEPTANCE-1.28.0.md](docs/RELEASE-ACCEPTANCE-1.28.0.md)
+- v1.28.1：当前版本（唯一导航 + 保存失败重试修复），验收见 [RELEASE-ACCEPTANCE-1.28.1.md](docs/RELEASE-ACCEPTANCE-1.28.1.md)
+- v1.28.0：即梦同构画布、多素材参考、底部生成卡、Seedance 2.5 Provider，验收见 [RELEASE-ACCEPTANCE-1.28.0.md](docs/RELEASE-ACCEPTANCE-1.28.0.md)
 - v1.27.0：生成历史、失败恢复、键盘与紧凑 UI 收尾，验收见 [RELEASE-ACCEPTANCE-1.27.0.md](docs/RELEASE-ACCEPTANCE-1.27.0.md)
 - 更新日志：[CHANGELOG.md](CHANGELOG.md)
 - v1.25.4 历史验收：[RELEASE-ACCEPTANCE-1.25.4.md](docs/RELEASE-ACCEPTANCE-1.25.4.md)

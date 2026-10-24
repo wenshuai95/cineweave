@@ -20,13 +20,9 @@ export function installWorkstation(ctx){
  if(!app)throw Error('未找到应用根节点，无法安装工作台');
  const mediaStore=createMediaStore();
 
- // 画布为主工作区；剧本与资产保留为按需打开的画布工具。
- const nav=document.createElement('nav');
- nav.className='ws-bottomnav';nav.setAttribute('aria-label',t('workspace.pageAria'));
- nav.innerHTML=PAGES.map(([id,name,icon])=>`<button type="button" data-ws-nav="${id}" aria-current="${id==='canvas'}" title="${name}"><i>${icon}</i><span>${name}</span></button>`).join('');
- nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.onclick=()=>setPage(b.dataset.wsNav));
+ // 画布为主工作区；页面切换统一由顶部「工作区 / 阶段」下拉进入。
+ const nav=null;
  const footer=app.querySelector('footer.statusbar');
- app.insertBefore(nav,footer);
 
  const toolbar=document.createElement('div');toolbar.className='ws-canvas-tools';toolbar.setAttribute('aria-label',t('workspace.toolAria'));
  toolbar.innerHTML='<button type="button" data-ws-tool="assets">'+t('workspace.assets')+'</button><button type="button" id="wsArrangeStory" title="Arrange script, shots and assets to canvas; does not call models">'+t('workspace.arrangeStory')+'</button>';
@@ -54,7 +50,7 @@ export function installWorkstation(ctx){
  exportDialog.querySelector('#wsExportClose').onclick=()=>closeExport();
  exportDialog.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();closeExport();}});
  exportDialog.addEventListener('cancel',e=>{e.preventDefault();closeExport();});
- exportDialog.addEventListener('close',()=>{pages.deliver.onHide?.();const button=current==='edit'?document.querySelector('#wsEdExport'):nav.querySelector('[aria-current="true"]');button?.focus({preventScroll:true});});
+ exportDialog.addEventListener('close',()=>{pages.deliver.onHide?.();const button=current==='edit'?document.querySelector('#wsEdExport'):document.querySelector('#workspaceSwitch');button?.focus({preventScroll:true});});
  function closeExport(){if(exportDialog.open)exportDialog.close();}
  function openExport(destination='file'){
   if(current!=='edit')setPage('edit');
@@ -89,7 +85,7 @@ export function installWorkstation(ctx){
   const project=ctx.project();if(!project?.workstation)return;
   const state=workflowState(project);
   const counts={script:state.shots?`${state.shots} 镜`:(state.scriptChars?'有文稿':''),assets:state.assets?`${state.assets} 项`:'',canvas:state.synced?`${state.synced}/${state.total}`:'',edit:state.clips?`${state.clips} 段`:'',deliver:state.deliveries?`${state.deliveries} 次`:''};
-  for(const b of nav.querySelectorAll('[data-ws-nav]')){
+  for(const b of (nav?.querySelectorAll('[data-ws-nav]')||[])){
    const id=b.dataset.wsNav;let count=b.querySelector('small');
    if(!count){count=document.createElement('small');b.append(count);}
    const value=counts[id];if(count.textContent!==value)count.textContent=value;
@@ -160,8 +156,8 @@ export function installWorkstation(ctx){
   if(!PAGES.some(([key])=>key===id))return;
   if(id===current){if(id==='canvas')closeTool({restoreFocus:false});return;}
   closeExport();closeTool({restoreFocus:false});pages[current]?.onHide?.();current=id;
-  document.body.dataset.wsPage=id;if(id!=='canvas')ctx.onCanvasHidden?.();
-  nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav===id)));
+  document.body.dataset.wsPage=id;if(id!=='canvas')ctx.onCanvasHidden?.();ctx.onPageChanged?.(id);
+  nav?.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav===id)));
   for(const [key,section] of Object.entries(sections))section.hidden=key!==id;
   toolbar.hidden=id!=='canvas';
   if(id!=='canvas')pages[id].onShow();else ctx.onCanvasShown?.();
@@ -289,8 +285,8 @@ export function installWorkstation(ctx){
   closeExport();
   closeTool({restoreFocus:false});pages[current]?.onHide?.();
   current='canvas';
-  document.body.dataset.wsPage='canvas';
-  nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav==='canvas')));
+  document.body.dataset.wsPage='canvas';ctx.onPageChanged?.('canvas');
+  nav?.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav==='canvas')));
   for(const section of Object.values(sections))section.hidden=true;toolbar.hidden=false;
  }
 
