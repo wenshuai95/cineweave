@@ -93,3 +93,18 @@
   - `DELETE /contents/generations/tasks/{id}`
 - 路由：`/api/video/providers|models|health|quote|generate|tasks|task/:provider/:id|task/:provider/:id/file/:index`
 - 画布视频节点：Provider → 模型 → 提示词/时长 → 生成 → 加入画布
+
+
+## Kling（Sprint 6 骨架，默认关闭）
+
+- Base URL：`https://api-beijing.klingai.com`
+- 鉴权：AccessKey / SecretKey 生成 HS256 JWT（`iss=ak`, `exp=+30min`）
+- 接口：`POST /v1/videos/text2video`、`GET /v1/videos/text2video/{task_id}`
+- 启用：`KLING_ENABLED=1`，并设置 `KLING_ACCESS_KEY`、`KLING_SECRET_KEY`
+- 默认关闭，不发送请求、不产生费用
+- 任务中心新增 Provider 视频任务列表（Fake / Seedance / Kling 共用）
+
+## 密钥安全
+
+- 当前服务端密钥保存在本机数据目录（0600）或环境变量
+- Electron `safeStorage` 加密迁移留到打包阶段；不会把密钥写进工程或日志

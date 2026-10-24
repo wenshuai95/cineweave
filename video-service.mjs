@@ -1,5 +1,6 @@
 import {createFakeProvider} from './providers/fake.mjs';
 import {createSeedanceProvider, ARK_BASE_URL, ARK_PLAN_BASE_URL} from './providers/seedance.mjs';
+import {createKlingProvider, KLING_BASE_URL} from './providers/kling.mjs';
 import {createTaskStore} from './providers/task-store.mjs';
 import {describeProvider, ProviderError} from './providers/contracts.mjs';
 
@@ -18,7 +19,15 @@ export function createVideoService({env = process.env, fetchImpl = fetch} = {}) 
     store,
     fetchImpl,
   });
-  const providers = new Map([['fake', fake], ['seedance', seedance]]);
+  const kling = createKlingProvider({
+    accessKey: env.KLING_ACCESS_KEY || '',
+    secretKey: env.KLING_SECRET_KEY || '',
+    baseUrl: env.KLING_BASE_URL || KLING_BASE_URL,
+    enabled: env.KLING_ENABLED === '1',
+    store,
+    fetchImpl,
+  });
+  const providers = new Map([['fake', fake], ['seedance', seedance], ['kling', kling]]);
   const quotes = new Map();
 
   const providerOf = id => {

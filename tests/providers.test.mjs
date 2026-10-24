@@ -9,6 +9,7 @@ import {createProviderService} from '../provider-service.mjs';
 import {createComfyProvider} from '../providers/comfyui.mjs';
 import {createSeedanceProvider} from '../providers/seedance.mjs';
 import {createVideoService} from '../video-service.mjs';
+import {createKlingProvider, createKlingJwt} from '../providers/kling.mjs';
 import {mkdtemp, rm, readFile, stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -329,4 +330,43 @@ test('video service quotes and runs fake video without network', async () => {
   assert.equal(done.outputs[0].kind, 'video');
   const file = await service.download('fake', submitted.taskId, 0);
   assert.equal(file.mime, 'video/mp4');
+});
+
+
+test('kling video is feature-flagged and uses a signed JWT when enabled', async () => {
+  const disabled = createKlingProvider({accessKey: 'ak', secretKey: 'sk', enabled: false});
+  await assert.rejects(() => disabled.quote({prompt: 'x'}), error => error.code === 'FEATURE_DISABLED');
+
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).endsWith('/v1/videos/text2video') && options.method === 'POST') {
+      return new Response(JSON.stringify({code: 0, data: {task_id: 'k1'}}), {status: 200});
+    }
+    if (String(url).includes('/v1/videos/text2video/k1')) {
+      return new Response(JSON.stringify({code: 0, data: {task_status: 'succeed', task_result: {videos: [{url: 'https://example.com/k.mp4', duration: '5'}]}}}), {status: 200});
+    }
+    if (String(url).startsWith('https://example.com/k.mp4')) {
+      return new Response(Buffer.from('kling-bytes'), {status: 200, headers: {'Content-Type': 'video/mp4'}});
+    }
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createKlingProvider({accessKey: 'ak', secretKey: 'sk', enabled: true, fetchImpl});
+  assert.match(createKlingJwt('ak', 'sk'), /^[\w-]+\.[\w-]+\.[\w-]+$/);
+  const quote = await provider.quote({prompt: 'rain', duration: 5, aspect: '16:9'});
+  const submitted = await provider.submit({quoteId: quote.quoteId});
+  const done = await provider.poll(submitted.taskId);
+  assert.equal(done.status, 'succeeded');
+  assert.equal(done.outputs[0].url, 'https://example.com/k.mp4');
+  const file = await provider.download(submitted.taskId);
+  assert.equal(file.data.toString(), 'kling-bytes');
+  const createCall = calls.find(call => call.options.method === 'POST');
+  assert.match(createCall.options.headers.Authorization, /^Bearer [\w-]+\.[\w-]+\.[\w-]+$/);
+});
+
+test('video service exposes kling disabled by default', () => {
+  const service = createVideoService({env: {}});
+  const kling = service.descriptors().find(provider => provider.id === 'kling');
+  assert.ok(kling);
+  assert.equal(kling.enabled, false);
 });

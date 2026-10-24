@@ -1783,8 +1783,13 @@ function saveCreativeTasks(projectId,records){
 
 async function modelTasksModal(){
  const projectId=p.id;taskCenterSelected=null;taskCenterFilter='all';
- modal(t('task.title'),t('task.subtitle'),`<div id="unifiedTasks" data-project="${esc(projectId)}"></div><p id="taskCenterStatus" class="help-text" role="status"></p>`);
- renderTaskCenter();await videoGeneration().syncBoard(true);renderTaskCenter();
+ modal(t('task.title'),t('task.subtitle'),`<div id="unifiedTasks" data-project="${esc(projectId)}"></div><p id="taskCenterStatus" class="help-text" role="status"></p><section id="providerVideoTasksSection" class="settings-section" hidden><h3>${t('task.providerTasks')}</h3><div id="providerVideoTasks"></div></section>`);
+ renderTaskCenter();await videoGeneration().syncBoard(true);renderTaskCenter();renderProviderVideoTasks(projectId);
+}
+async function renderProviderVideoTasks(projectId){
+ const section=$('#providerVideoTasksSection'),body=$('#providerVideoTasks');if(!section||!body)return;
+ try{const data=await api('/api/video/tasks?projectId='+encodeURIComponent(projectId));if(!body.isConnected)return;const tasks=data.tasks||[];section.hidden=!tasks.length;body.innerHTML=tasks.map(task=>`<div class="task-row" style="cursor:default"><span><b>${esc(task.providerId)} · ${esc(task.modelId)}</b><small>${esc(task.prompt||'').slice(0,80)}</small></span><span class="task-label">${esc(task.status)}</span></div>`).join('')||`<p class="help-text">${t('task.providerEmpty')}</p>`;}
+ catch(e){if(body.isConnected)body.innerHTML=`<p class="help-text">${esc(e.message)}</p>`;}
 }
 function enterGeneratedModel(node){
  try{checkpoint();const o=modelNodeToStage(p,node);p.objects.filter(x=>x.type!=='camera').forEach(x=>x.solo=false);o.hidden=false;focusAfterLoad=o.id;setMode('stage');commit(true);select(o.id);stage?.frameSelection();toast('模型已加入导演台，可摆放、旋转、缩放和打走位关键帧');}catch(e){toast(e.message)}

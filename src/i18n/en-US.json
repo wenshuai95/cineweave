@@ -100,7 +100,12 @@
     "none": "No tasks in this filter.",
     "collapse": "Collapse",
     "queryIncomplete": "Query incomplete: {error}; last known status kept.",
-    "progress": "Actual export progress"
+    "progress": "Actual export progress",
+    "providerTasks": "Provider video tasks",
+    "providerEmpty": "No provider video tasks for this project.",
+    "providerStatus": "Status",
+    "providerModel": "Model",
+    "providerRefresh": "Refresh"
   },
   "error": {
     "network": "Network error. Check your connection and try again.",

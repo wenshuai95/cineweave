@@ -100,7 +100,12 @@
     "none": "这一类暂时没有任务。",
     "collapse": "收起",
     "queryIncomplete": "查询未完成：{error}；上次平台状态保留。",
-    "progress": "实际导出进度"
+    "progress": "实际导出进度",
+    "providerTasks": "Provider 视频任务",
+    "providerEmpty": "当前工程还没有 Provider 视频任务。",
+    "providerStatus": "状态",
+    "providerModel": "模型",
+    "providerRefresh": "刷新"
   },
   "error": {
     "network": "网络异常，请检查连接后重试。",

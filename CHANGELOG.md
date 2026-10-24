@@ -7,6 +7,13 @@
 - 离线 CC0 资产单独发布（GitHub Release `assets-cc0.zip`）
 - 清理个人路径与本地配置，仓库不含 API Key / oiioii CLI
 
+## Unreleased · Sprint 6
+
+- Kling 视频骨架：JWT 鉴权、任务提交/轮询/下载，默认 feature flag 关闭
+- 任务中心新增 Provider 视频任务列表（Fake/Seedance/Kling）
+- 默认关闭，不产生任何 Kling 费用
+- safeStorage 加密迁移留到打包阶段
+
 ## Unreleased · Sprint 5
 
 - 视频 Provider 抽象：Fake 视频全链路 + Seedance 骨架（feature flag 默认关闭）
