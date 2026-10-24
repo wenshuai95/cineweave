@@ -570,6 +570,7 @@ function scriptReferenceModal(){
  const area=$('#scriptReferenceText');
  const count=()=>{if($('#scriptReferenceCount'))$('#scriptReferenceCount').textContent=area.value.replace(/\s/g,'').length+' 字';};
  area.oninput=count;
+ area.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#scriptReferenceSave').click();}};
  $('#scriptReferenceCancel').onclick=closeModal;
  $('#scriptReferenceSave').onclick=()=>{
   if(p!==project)return;
@@ -592,6 +593,7 @@ function shotSheetModal(focusShotId=null){
  bindDelete();
  $('#shotSheetAdd').onclick=()=>{const shot=emptyRow();body.insertAdjacentHTML('beforeend',rowHtml(shot,body.children.length));bindDelete();body.lastElementChild?.scrollIntoView({block:'nearest'});};
  $('#shotSheetCancel').onclick=closeModal;
+ $('#shotSheetRows').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#shotSheetSave').click();}});
  $('#shotSheetSave').onclick=()=>{
   if(p!==storyProject)return;
   const next=[];
@@ -1837,6 +1839,11 @@ async function quoteNow(){
   finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;q('#genCancel').textContent='取消';}}
  }
  q('#genPrompt').oninput=resetQuote;
+ q('#genRun').title='⌘/Ctrl + Enter 提交';
+ panel.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!busy){event.preventDefault();closeModal();return;}
+  if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();if(!q('#genRun').disabled)q('#genRun').click();}
+ });
  q('#genRun').onclick=run;
  loadProviders();
  loadHistory();
