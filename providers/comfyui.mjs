@@ -23,7 +23,8 @@ export function createComfyProvider({
   const request = async (path, options = {}, timeout = 30000) => {
     let response;
     try {
-      response = await fetchImpl(base + path, {...options, signal: AbortSignal.timeout(timeout)});
+      const form = options.body instanceof FormData;
+      response = await fetchImpl(base + path, {...options, headers: {...(form ? {} : {'Content-Type': 'application/json'}), ...(options.headers || {})}, signal: AbortSignal.timeout(timeout)});
     } catch (error) {
       throw new ProviderError('COMFY_UNREACHABLE', `ComfyUI 未启动或不可访问：${error.message}`);
     }
@@ -52,8 +53,18 @@ export function createComfyProvider({
     }));
   };
 
-  const workflowFor = quote => {
+  const workflowFor = (quote, uploadedReference = null) => {
     const [width, height] = quote.size.split('x').map(Number);
+    if (uploadedReference) return {
+      3: {class_type: 'KSampler', inputs: {seed: quote.seed, steps: quote.steps, cfg: quote.cfg, sampler_name: 'euler', scheduler: 'normal', denoise: quote.denoise, model: ['4', 0], positive: ['6', 0], negative: ['7', 0], latent_image: ['11', 0]}},
+      4: {class_type: 'CheckpointLoaderSimple', inputs: {ckpt_name: quote.modelId}},
+      6: {class_type: 'CLIPTextEncode', inputs: {text: quote.prompt, clip: ['4', 1]}},
+      7: {class_type: 'CLIPTextEncode', inputs: {text: quote.negative, clip: ['4', 1]}},
+      8: {class_type: 'VAEDecode', inputs: {samples: ['3', 0], vae: ['4', 2]}},
+      9: {class_type: 'SaveImage', inputs: {filename_prefix: 'cineweave', images: ['8', 0]}},
+      10: {class_type: 'LoadImage', inputs: {image: uploadedReference}},
+      11: {class_type: 'VAEEncode', inputs: {pixels: ['10', 0], vae: ['4', 2]}},
+    };
     return {
       3: {class_type: 'KSampler', inputs: {seed: quote.seed, steps: quote.steps, cfg: quote.cfg, sampler_name: 'euler', scheduler: 'normal', denoise: 1, model: ['4', 0], positive: ['6', 0], negative: ['7', 0], latent_image: ['5', 0]}},
       4: {class_type: 'CheckpointLoaderSimple', inputs: {ckpt_name: quote.modelId}},
@@ -70,7 +81,7 @@ export function createComfyProvider({
     label: 'ComfyUI（本地）',
     enabled: true,
     capabilities: {
-      image: {textToImage: true, imageToImage: false, reference: false, sizes: SIZES, aspects: ['1:1', '4:3', '3:4', '16:9', '9:16']},
+      image: {textToImage: true, imageToImage: true, reference: true, sizes: SIZES, aspects: ['1:1', '4:3', '3:4', '16:9', '9:16']},
       video: {textToVideo: false, imageToVideo: false, firstLastFrame: false, durations: [], resolutions: []},
     },
     async listModels() { return listModels(); },
@@ -91,6 +102,7 @@ export function createComfyProvider({
       if (!SIZES.includes(size)) throw new ProviderError('INVALID_INPUT', `不支持的尺寸：${size}`);
       const models = await listModels();
       if (!models.some(model => model.id === input.modelId)) throw new ProviderError('MODEL_NOT_FOUND', `模型不存在：${input.modelId}`);
+      const reference = typeof input.reference === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(input.reference) ? input.reference : null;
       const quoteId = randomUUID();
       quotes.set(quoteId, {
         providerId: 'comfyui',
@@ -101,6 +113,8 @@ export function createComfyProvider({
         steps: Number.isFinite(input.steps) ? Math.min(60, Math.max(1, Math.round(input.steps))) : 20,
         cfg: Number.isFinite(input.cfg) ? Math.min(20, Math.max(1, input.cfg)) : 7,
         seed: Number.isFinite(input.seed) ? Math.abs(Math.round(input.seed)) : Math.floor(Math.random() * 1e9),
+        reference,
+        denoise: Number.isFinite(input.denoise) ? Math.min(0.95, Math.max(0.05, input.denoise)) : 0.65,
         projectId: input.projectId || null,
         expiresAt: now() + 10 * 60 * 1000,
       });
@@ -112,7 +126,18 @@ export function createComfyProvider({
       const task = store.create({providerId: 'comfyui', modelId: quote.modelId, kind: 'image', projectId: input.projectId || quote.projectId, sourceId: input.sourceId, prompt: quote.prompt});
       store.update(task.id, {status: 'running', progress: 0.1, message: '正在提交 ComfyUI…'});
       try {
-        const response = await request('/prompt', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt: workflowFor(quote), client_id: clientId})});
+        let uploadedReference = null;
+        if (quote.reference) {
+          const match = quote.reference.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/);
+          if (!match) throw new ProviderError('INVALID_INPUT', '参考图格式不支持');
+          const form = new FormData();
+          form.append('image', new Blob([Buffer.from(match[2], 'base64')], {type: match[1]}), 'cineweave-reference.' + (match[1].includes('png') ? 'png' : match[1].includes('webp') ? 'webp' : 'jpg'));
+          const uploaded = await request('/upload/image', {method: 'POST', body: form}, 60000);
+          const info = await uploaded.json();
+          uploadedReference = info?.name ? (info.subfolder ? info.subfolder + '/' + info.name : info.name) : null;
+          if (!uploadedReference) throw new ProviderError('COMFY_UPSTREAM', 'ComfyUI 参考图上传失败');
+        }
+        const response = await request('/prompt', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt: workflowFor(quote, uploadedReference), client_id: clientId})});
         const data = await response.json();
         const promptId = data?.prompt_id;
         if (!promptId) throw new ProviderError('COMFY_UPSTREAM', 'ComfyUI 没有返回任务 ID');

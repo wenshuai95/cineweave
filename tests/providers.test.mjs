@@ -390,3 +390,31 @@ test('kling config persists masked keys to a 0600 file and reloads', async () =>
     await rm(folder, {recursive: true, force: true});
   }
 });
+
+
+test('comfyui image-to-image uploads a reference and uses LoadImage/VAEEncode', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).endsWith('/object_info/CheckpointLoaderSimple')) return new Response(JSON.stringify({CheckpointLoaderSimple: {input: {required: {ckpt_name: [['sd_xl_base_1.0.safetensors']]}}}}), {status: 200});
+    if (String(url).endsWith('/upload/image')) return new Response(JSON.stringify({name: 'ref.png', subfolder: '', type: 'input'}), {status: 200});
+    if (String(url).endsWith('/prompt')) return new Response(JSON.stringify({prompt_id: 'p2'}), {status: 200});
+    if (String(url).endsWith('/history/p2')) return new Response(JSON.stringify({p2: {status: {completed: true}, outputs: {9: {images: [{filename: 'out.png', subfolder: '', type: 'output'}]}}}}), {status: 200});
+    if (String(url).includes('/view?')) return new Response(Buffer.from('png'), {status: 200, headers: {'Content-Type': 'image/png'}});
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createComfyProvider({fetchImpl});
+  const quote = await provider.quote({modelId: 'sd_xl_base_1.0.safetensors', prompt: 'variation', size: '1024x1024', reference: 'data:image/png;base64,AAAA'});
+  const submitted = await provider.submit({quoteId: quote.quoteId});
+  await provider.poll(submitted.taskId);
+  const upload = calls.find(call => String(call.url).endsWith('/upload/image'));
+  assert.ok(upload);
+  assert.ok(upload.options.body instanceof FormData);
+  const promptCall = calls.find(call => String(call.url).endsWith('/prompt'));
+  const workflow = JSON.parse(promptCall.options.body).prompt;
+  assert.equal(workflow[10].class_type, 'LoadImage');
+  assert.equal(workflow[10].inputs.image, 'ref.png');
+  assert.equal(workflow[11].class_type, 'VAEEncode');
+  assert.equal(workflow[3].inputs.latent_image[0], '11');
+  assert.equal(workflow[5], undefined);
+});

@@ -1617,7 +1617,8 @@ async function generationPanel(source,mode='image'){
  q('#genHelp').textContent=mode==='image'?'使用本地 ComfyUI 或云端 Seedream 生成图片；提交后结果自动加入画布。':'使用 Provider 生成视频；Fake 免费，云端视频按实际计费。';
  q('#genCancel').onclick=()=>closeModal();
  const refs=p.nodes.filter(n=>n.type==='image'&&n.src&&n.id!==sourceId&&p.edges.some(e=>(e.from===sourceId&&e.to===n.id)||(e.to===sourceId&&e.from===n.id))).slice(0,6);
- q('#genRefs').innerHTML=refs.length?refs.map(n=>`<img src="${escValue(n.src)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;margin:2px">`).join('')+' <span>连线参考；当前图片 Provider 以文生图为主</span>':'无连线参考。当前 Provider 以文字描述生成为主。';
+ const referenceSrc=refs[0]?.src||(source?.type==='image'&&source.src?source.src:null);
+ q('#genRefs').innerHTML=referenceSrc?`<img src="${escValue(referenceSrc)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;margin:2px"> <span>参考图已连入；ComfyUI 图生图会使用它，Seedream 暂不支持参考图。</span>`:'无连线参考。当前 Provider 以文字描述生成为主。';
  q('#genSizeField').hidden=mode!=='image';q('#genDurationField').hidden=mode!=='video';q('#genStepsField').hidden=mode!=='image';
  const prices={};const quotePaths={comfyui:'/api/comfy/quote',seedream:'/api/providers/seedream/quote'};
  const submitPaths={comfyui:'/api/comfy/generate',seedream:'/api/providers/seedream/generate'};
@@ -1688,7 +1689,7 @@ async function generationPanel(source,mode='image'){
 async function quoteNow(){
   const prompt=q('#genPrompt').value.trim(),modelId=q('#genModel').value;
   if(!prompt)throw Error('请填写描述');
-  if(mode==='image')return providerId==='comfyui'?api(quotePaths.comfyui,{modelId,prompt,size:q('#genSize').value,steps:Number(q('#genSteps').value)||20,projectId}):api(quotePaths.seedream,{modelId,prompt,size:q('#genSize').value,projectId});
+  if(mode==='image')return providerId==='comfyui'?api(quotePaths.comfyui,{modelId,prompt,size:q('#genSize').value,steps:Number(q('#genSteps').value)||20,projectId,reference:referenceSrc||undefined,denoise:0.65}):api(quotePaths.seedream,{modelId,prompt,size:q('#genSize').value,projectId});
   return api('/api/video/quote',{providerId,modelId,prompt,duration:Number(q('#genDuration').value)||2,kind:'video',projectId});
  }
  async function run(){
