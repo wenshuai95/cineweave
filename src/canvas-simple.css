@@ -137,6 +137,12 @@ body[data-canvas-mode=board] .workspace-toolbar .ui-icon{width:16px;height:16px}
 .stage-nav button.active{background:#3a3445;color:#f2e9ff}
 body[data-canvas-mode=board] .workspace-toolbar>div.stage-nav{display:flex;pointer-events:auto}
 @media(max-width:1240px){.stage-nav button{padding:5px 6px;font-size:11px}}
+/* Narrow director layouts: the 3D toolbar wraps inside its column instead of spilling over the inspector. */
+@media(max-width:1150px){
+ body[data-canvas-mode=stage] .workspace-toolbar{height:auto;min-height:47px;flex-wrap:wrap;padding:5px 10px;row-gap:4px;column-gap:5px}
+ body[data-canvas-mode=stage] .workspace-toolbar>button{padding:5px 8px}
+ body[data-canvas-mode=stage] .workspace-toolbar>.divider{display:none}
+}
 
 /* Phase 1: manual shot sheet (no AI script generation). */
 .shot-sheet-scroll{max-height:56vh;overflow:auto;border:1px solid #39393c;border-radius:10px;margin:8px 0}
@@ -175,6 +181,20 @@ body[data-canvas-mode=board] .workspace-toolbar>div.stage-nav{display:flex;point
 .gen-subrow .field{min-width:150px}
 .gen-subrow select,.gen-subrow input{background:#242427;border-color:#333337;border-radius:9px}
 .generation-history summary{cursor:pointer;color:#a9a5b4;font-size:12px}
+/* History rows keep provider, prompt, live status and the one relevant action. */
+.gen-history-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #2d2c31}
+.gen-history-row:last-child{border-bottom:0}
+.gen-history-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.gen-history-meta{font-size:12px;color:#cfcbd8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gen-history-status{font-size:11px;color:#a9a5b4}
+.gen-history-status.queued,.gen-history-status.running{color:#c9b8ee}
+.gen-history-status.succeeded{color:#9fc4a8}
+.gen-history-status.failed{color:#e8a3a3}
+.gen-history-error{font-size:11px;line-height:1.5;color:#d29a9a;overflow-wrap:anywhere}
+.gen-history-hint{flex:none;font-size:11px;color:#8f8a99;padding-top:5px}
+.gen-history-empty{margin:0;font-size:12px;color:#8f8a99}
+.gen-history-row button{flex:none;min-height:28px;padding:4px 8px;font-size:11px;border-radius:8px}
+.gen-history-row button.history-recover{color:#29221a;background:var(--ui-accent,#e5ddff);border-color:var(--ui-accent,#e5ddff);font-weight:600}
 .gen-chip[hidden],.gen-subrow [hidden],#genVideoRefField[hidden]{display:none!important}
 
 /* Compact visual node editor: preview + fields + one primary action. */

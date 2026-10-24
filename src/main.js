@@ -4,6 +4,8 @@ import {startI18nDom, applyI18n} from './i18n/dom.mjs';
 import {openOnboarding, shouldShowOnboarding} from './onboarding.mjs';
 import {translateToast} from './i18n/toast.mjs';
 import {inlineNodeText,writeInlineNodeText} from './inline-node-text.mjs';
+import {generationKeyboardAction,generationCloseAction,generationQuoteReset} from './generation-session.mjs';
+import {buildGenerationHistory,generationHistoryAction,generationHistoryPollTargets} from './generation-history.mjs';
 import {canvasRelations,wireRelationState,fitRelationView,snapshotCanvasView,relationTargets} from './canvas-focus.mjs';
 import {collectTaskRecords,taskCenterCounts,filterTaskRecords,queryTaskRecord} from './task-center.mjs';
 import {directorFrameSamples} from './workstation/director-vision.mjs';
@@ -570,7 +572,9 @@ function scriptReferenceModal(){
  const area=$('#scriptReferenceText');
  const count=()=>{if($('#scriptReferenceCount'))$('#scriptReferenceCount').textContent=area.value.replace(/\s/g,'').length+' 字';};
  area.oninput=count;
- area.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#scriptReferenceSave').click();}};
+ const saveKey=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#scriptReferenceSave').click();}};
+ $('#modalRoot .modal')?.addEventListener('keydown',saveKey);
+ area.focus({preventScroll:true});
  $('#scriptReferenceCancel').onclick=closeModal;
  $('#scriptReferenceSave').onclick=()=>{
   if(p!==project)return;
@@ -593,7 +597,7 @@ function shotSheetModal(focusShotId=null){
  bindDelete();
  $('#shotSheetAdd').onclick=()=>{const shot=emptyRow();body.insertAdjacentHTML('beforeend',rowHtml(shot,body.children.length));bindDelete();body.lastElementChild?.scrollIntoView({block:'nearest'});};
  $('#shotSheetCancel').onclick=closeModal;
- $('#shotSheetRows').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#shotSheetSave').click();}});
+ $('#modalRoot .modal')?.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#shotSheetSave').click();}});
  $('#shotSheetSave').onclick=()=>{
   if(p!==storyProject)return;
   const next=[];
@@ -607,6 +611,7 @@ function shotSheetModal(focusShotId=null){
  };
  const storyProject=p;
  if(focusShotId){const row=body.querySelector(`[data-shot-row="${focusShotId}"]`);row?.scrollIntoView({block:'center'});row?.querySelector('[data-shot-field="scene"]')?.focus({preventScroll:true});}
+ else body.querySelector('[data-shot-field="scene"]')?.focus({preventScroll:true});
 }
 
 function jumpToStage(stage){
@@ -1683,16 +1688,27 @@ async function api(path,data,{signal}={}){if(data&&!aiToken){const status=await 
 
 async function generationPanel(source,mode='image'){
  const project=p,projectId=p.id,sourceId=source?.id,projectTitle=p.name||'';
- let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[],stopRequested=false;
+ let providerId='',models=[],quote=null,busy=false,resultUrl=null,providerList=[],stopRequested=false,submittedTask=false;
  nodeToolModal(source?.id,mode==='image'?'生成图片':'生成视频','',`<div class="gen-composer-v2"><div class="gen-preview">${source?.src?(source.type==='video'?`<video src="${esc(source.src)}" controls></video>`:`<img src="${esc(source.src)}" alt="">`):`<div class="gen-preview-empty"><span>${mode==='image'?'▧':'▷'}</span><p>${mode==='image'?'图片预览':'视频预览'}</p></div>`}</div><div class="gen-card"><div class="gen-chips"><label class="gen-chip">参考<select id="genReference"></select></label><label class="gen-chip">模型<select id="genProvider"></select></label><label class="gen-chip" id="genSizeField">画幅<select id="genSize"><option>1024x1024</option><option>1280x720</option><option>720x1280</option><option>768x768</option></select></label><label class="gen-chip" id="genDurationField" hidden>时长<select id="genDuration"><option>2</option><option>4</option><option>5</option><option>10</option></select></label><button type="button" id="genMore" class="gen-chip gen-chip-btn">更多</button></div><div class="gen-chips gen-chips-advanced" id="genAdvancedChips" hidden><label class="gen-chip">构图<select id="genShotSize"><option value="">自动</option><option value="远景">远景</option><option value="全景">全景</option><option value="中景">中景</option><option value="近景">近景</option><option value="特写">特写</option><option value="俯拍">俯拍</option><option value="低角度">低角度</option></select></label><label class="gen-chip">配色<select id="genPalette"><option value="">自动</option><option value="自然真实">自然</option><option value="暖色">暖色</option><option value="冷色">冷色</option><option value="低饱和">低饱和</option><option value="黑白">黑白</option></select></label><label class="gen-chip">风格<select id="genStyle"><option value="">自动</option><option value="电影写实">电影写实</option><option value="胶片质感">胶片</option><option value="概念设计">概念设计</option><option value="插画">插画</option><option value="广告质感">广告质感</option></select></label><button type="button" id="genCapturePreviz" class="gen-chip gen-chip-btn">取导演台首帧</button></div>
 <div id="genRefs" class="gen-ref-strip">正在读取参考…</div><label class="field" id="genVideoRefField" hidden>参考视频<select id="genVideoReference"></select></label><p id="genVideoRefNote" class="help-text"></p><textarea id="genPrompt" class="gen-prompt" rows="4" maxlength="6000" placeholder="描述你想生成的画面；参考图、白模和已有素材会作为上下文"></textarea><div class="gen-subrow"><label class="field grow">模型<select id="genModel"></select></label><label class="field" id="genStepsField">步数<input id="genSteps" type="number" min="1" max="60" value="20"></label></div><p id="genStatus" class="help-text" role="status">正在读取服务商…</p><div id="genResult"></div><details class="generation-history"><summary>最近生成</summary><div id="genHistory" class="help-text">正在读取…</div></details></div></div>`,`<span id="genPrice" class="composer-price" role="status"></span><button id="genCancel">取消</button><button id="genRun" class="primary" disabled>查看费用</button>`);
  const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
  const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const setStatus=text=>{if(q('#genStatus'))q('#genStatus').textContent=text;};
  const live=()=>panel.isConnected&&p===project;
- const resetQuote=()=>{quote=null;q('#genPrice').textContent='';q('#genRun').textContent='查看费用';};
+ const resetQuote=()=>{const next=generationQuoteReset();quote=next.quote;q('#genPrice').textContent=next.price;q('#genRun').textContent=next.runLabel;};
+ const dismissComposer=()=>{
+  if(generationCloseAction({busy,submitted:submittedTask})==='background'){
+   stopRequested=true;
+   if(sourceId)setNodeGeneration(sourceId,null);
+   toast('生成已在后台继续；结果可在「最近生成」中恢复');
+  }
+  closeModal();
+ };
  q('#genPrompt').value=typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source);
- q('#genCancel').onclick=()=>{if(busy&&stopRequested!==null&&q('#genCancel').textContent==='停止等待'){stopRequested=true;q('#genCancel').disabled=true;setStatus('正在停止等待；后台任务可能继续，可在最近生成中恢复。');return;}closeModal();};
+ q('#genCancel').onclick=()=>{if(busy&&stopRequested!==null&&q('#genCancel').textContent==='停止等待'){stopRequested=true;q('#genCancel').disabled=true;setStatus('正在停止等待；后台任务可能继续，可在最近生成中恢复。');return;}dismissComposer();};
+ q('#closeModal').onclick=dismissComposer;
+ const composerBackdrop=panel.closest('.modal-backdrop');
+ composerBackdrop?.addEventListener('click',event=>{if(event.target===composerBackdrop){event.stopImmediatePropagation();dismissComposer();}},true);
  const refs=p.nodes.filter(n=>n.type==='image'&&n.src&&n.id!==sourceId&&p.edges.some(e=>(e.from===sourceId&&e.to===n.id)||(e.to===sourceId&&e.from===n.id))).slice(0,6);
  const defaultRef=refs[0]||(source?.type==='image'&&source.src?source:null);
  let referenceSrc=defaultRef?.src||null,referenceLabel=defaultRef?'画布图片':'无参考';
@@ -1746,22 +1762,71 @@ async function generationPanel(source,mode='image'){
   }catch(e){setStatus(e.message);q('#genRun').disabled=true;}
  }
  
+ let historyTimer=null,historyRefreshing=false,activeTaskId=null;
+ const historyBusy=new Set();
+ const taskInCanvas=taskId=>!!taskId&&p.nodes.some(n=>n.generatedTask===taskId);
+ async function fetchHistoryRows(){
+  const [a,b,c]=await Promise.all([
+   api('/api/providers/tasks?projectId='+encodeURIComponent(projectId)),
+   api('/api/comfy/tasks?projectId='+encodeURIComponent(projectId)),
+   api('/api/video/tasks?projectId='+encodeURIComponent(projectId)),
+  ]);
+  return buildGenerationHistory({providerTasks:a.tasks||[],comfyTasks:b.tasks||[],videoTasks:c.tasks||[]},{mode});
+ }
+ function scheduleHistoryAutoRefresh(rows){
+  if(historyTimer){clearTimeout(historyTimer);historyTimer=null;}
+  if(!panel.isConnected||!generationHistoryPollTargets(rows).length)return;
+  historyTimer=setTimeout(()=>{historyTimer=null;refreshActiveHistory();},2500);
+ }
+ function renderHistory(rows){
+  const host=q('#genHistory');if(!host)return;
+  const scroll=host.scrollTop;
+  const focused=document.activeElement?.dataset?.historyAction?{task:document.activeElement.dataset.historyTask,action:document.activeElement.dataset.historyAction}:null;
+  if(!rows.length){host.innerHTML='<p class="gen-history-empty">暂无生成任务。排队、生成中、完成和失败的任务都会保留在这里。</p>';scheduleHistoryAutoRefresh(rows);return;}
+  host.innerHTML=rows.map(row=>{
+   const action=generationHistoryAction(row,{added:taskInCanvas(row.id)});
+   const control=action.kind==='refresh'
+    ?`<button type="button" data-history-action="refresh" data-history-task="${escValue(row.id)}" data-history-provider="${escValue(row.providerId)}">刷新状态</button>`
+    :action.kind==='recover'
+     ?`<button type="button" class="history-recover" data-history-action="recover" data-history-task="${escValue(row.id)}" data-history-provider="${escValue(row.providerId)}">加入画布</button>`
+     :action.label?`<span class="gen-history-hint">${escValue(action.label)}</span>`:'';
+   return `<div class="gen-history-row" data-history-row="${escValue(row.id)}" data-history-status="${escValue(row.status)}"><span class="gen-history-main"><span class="gen-history-meta">${escValue(row.providerLabel)} · ${escValue(row.promptSummary)}</span><span class="gen-history-status ${escValue(row.status)}">${escValue(row.statusLabel)}</span>${row.errorText?`<small class="gen-history-error">${escValue(row.errorText)}</small>`:''}</span>${control}</div>`;
+  }).join('');
+  host.querySelectorAll('[data-history-action="refresh"]').forEach(button=>button.onclick=()=>refreshHistoryStatus(button));
+  host.querySelectorAll('[data-history-action="recover"]').forEach(button=>button.onclick=()=>recoverFromHistory(button));
+  host.scrollTop=scroll;
+  if(focused){const next=host.querySelector(`[data-history-action="${focused.action}"][data-history-task="${focused.task}"]`);next?.focus({preventScroll:true});}
+  scheduleHistoryAutoRefresh(rows);
+ }
  async function loadHistory(){
+  if(!q('#genHistory'))return;
+  try{const rows=await fetchHistoryRows();if(!live())return;renderHistory(rows);}
+  catch(e){if(q('#genHistory'))q('#genHistory').textContent=e.message;}
+ }
+ async function refreshActiveHistory(){
+  if(historyRefreshing||!live())return;
+  historyRefreshing=true;
   try{
-   const [a,b,c]=await Promise.all([
-    api('/api/providers/tasks?projectId='+encodeURIComponent(projectId)),
-    api('/api/comfy/tasks?projectId='+encodeURIComponent(projectId)),
-    api('/api/video/tasks?projectId='+encodeURIComponent(projectId)),
-   ]);
-   const tasks=[
-    ...(a.tasks||[]).map(x=>({...x,providerId:'seedream'})),
-    ...(b.tasks||[]).map(x=>({...x,providerId:'comfyui'})),
-    ...(c.tasks||[]),
-   ].filter(t=>t.kind===mode&&t.status==='succeeded').sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)).slice(0,8);
-   if(!q('#genHistory'))return;
-   q('#genHistory').innerHTML=tasks.length?tasks.map(t=>`<div class="gen-history-row" style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #2d2c31"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escValue(t.providerId)} · ${escValue((t.prompt||'').slice(0,40))}</span><button type="button" data-gen-recover="${escValue(t.id)}" data-gen-provider="${escValue(t.providerId)}">加入画布</button></div>`).join(''):'暂无已完成的生成。';
-   q('#genHistory').querySelectorAll('[data-gen-recover]').forEach(button=>button.onclick=()=>recoverTask(button.dataset.genRecover,button.dataset.genProvider));
-  }catch(e){if(q('#genHistory'))q('#genHistory').textContent=e.message;}
+   const targets=generationHistoryPollTargets(await fetchHistoryRows()).filter(target=>!busy||target.id!==activeTaskId);
+   if(targets.length)await Promise.all(targets.map(target=>api(pollPath(target.providerId,target.id)).catch(()=>null)));
+   if(live())await loadHistory();
+  }catch{}
+  finally{historyRefreshing=false;}
+ }
+ async function refreshHistoryStatus(button){
+  const taskId=button.dataset.historyTask,historyProvider=button.dataset.historyProvider;
+  if(historyBusy.has(taskId))return;
+  historyBusy.add(taskId);button.disabled=true;button.textContent='刷新中…';
+  try{await api(pollPath(historyProvider,taskId));}
+  catch(e){toast(e.message);}
+  finally{historyBusy.delete(taskId);if(live())loadHistory();}
+ }
+ async function recoverFromHistory(button){
+  const taskId=button.dataset.historyTask,historyProvider=button.dataset.historyProvider;
+  if(historyBusy.has(taskId))return;
+  historyBusy.add(taskId);button.disabled=true;
+  try{await recoverTask(taskId,historyProvider);}
+  finally{historyBusy.delete(taskId);if(live())loadHistory();}
  }
  async function recoverTask(taskId,pid){
   try{
@@ -1800,12 +1865,14 @@ async function quoteNow(){
   return api('/api/video/quote',{providerId,modelId,prompt,duration:Number(q('#genDuration').value)||2,kind:'video',projectId,image:info?.capabilities?.video?.imageToVideo&&referenceSrc?referenceSrc:undefined,referenceVideo:info?.capabilities?.video?.videoReference&&videoNode?.src?videoNode.src:undefined});
  }
  async function run(){
-  if(busy)return;const button=q('#genRun');let submittedTask=false;
+  if(busy)return;const button=q('#genRun');submittedTask=false;
   try{
    if(!quote){busy=true;button.disabled=true;setStatus('正在获取费用…');quote=await quoteNow();if(!live())return;q('#genPrice').textContent=quote.cost===0?'本地生成，不产生云端费用':quote.note||'按服务商实际计费';button.textContent='确认生成';setStatus('确认后将提交生成；提交后不可撤销。');busy=false;button.disabled=false;return;}
    busy=true;button.disabled=true;q('#genCancel').disabled=true;setStatus('正在提交…');const startedAt=Date.now();
    const submitted=mode==='image'?await api(submitPaths[providerId],{quoteId:quote.quoteId,projectId,sourceId}):await api('/api/video/generate',{quoteId:quote.quoteId,projectId,sourceId});
-   submittedTask=true;stopRequested=false;q('#genCancel').textContent='停止等待';q('#genCancel').disabled=false;const taskId=submitted.taskId;let task=null;setStatus('正在生成…');setNodeGeneration(sourceId,{status:'running',progress:0.04,label:'已提交 · 生成中'});
+   submittedTask=true;stopRequested=false;
+   if(!live()){if(sourceId)setNodeGeneration(sourceId,null);toast('生成已在后台继续；结果可在「最近生成」中恢复');return;}
+   q('#genCancel').textContent='停止等待';q('#genCancel').disabled=false;const taskId=submitted.taskId;activeTaskId=taskId;let task=null;setStatus('正在生成…');setNodeGeneration(sourceId,{status:'running',progress:0.04,label:'已提交 · 生成中'});
    for(let i=0;i<300;i++){
     await new Promise(r=>setTimeout(r,2000));if(!live())return;
     if(stopRequested)throw new DOMException('已停止等待','AbortError');
@@ -1835,15 +1902,22 @@ async function quoteNow(){
    if(mode==='image'&&resultNode){q('#genCandidates').onclick=()=>openImageCandidates(sourceId,taskId);q('#genAdoptVersion').onclick=()=>openImageAdoption(resultNode,false);q('#genAdoptOfficial').onclick=()=>openImageAdoption(resultNode,true);}else if(mode==='video'&&q('#genSendToEdit')){q('#genSaveToLibrary').onclick=async()=>{if(!resultNode)return toast('结果尚未加入画布');try{await wsShell.saveCanvasNodeToLibrary(resultNode.id);toast('已保存到项目素材库');}catch(e){toast('保存失败：'+e.message);}};q('#genSendToEdit').onclick=()=>{if(!resultNode)return toast('结果尚未加入画布');closeModal();wsShell?.sendCanvasNodeToEdit(resultNode.id);};}
    setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;loadHistory();
   }catch(e){if(e.name==='AbortError'&&submittedTask){setStatus('已停止等待；任务可能在后台继续，可在最近生成中恢复。');if(sourceId)setNodeGeneration(sourceId,null);}
-  else{setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});setTimeout(()=>{if(p.nodes.some(n=>n.id===sourceId&&n.generationProgress?.status==='failed'))setNodeGeneration(sourceId,null);},8000);}}}
-  finally{busy=false;if(live()){button.disabled=false;q('#genCancel').disabled=false;q('#genCancel').textContent='取消';}}
+  else{setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});setTimeout(()=>{if(p.nodes.some(n=>n.id===sourceId&&n.generationProgress?.status==='failed'))setNodeGeneration(sourceId,null);},8000);}}
+  resetQuote();if(live())loadHistory();}
+  finally{busy=false;activeTaskId=null;if(live()){button.disabled=false;q('#genCancel').disabled=false;q('#genCancel').textContent='取消';}}
  }
  q('#genPrompt').oninput=resetQuote;
  q('#genRun').title='⌘/Ctrl + Enter 提交';
- panel.addEventListener('keydown',event=>{
-  if(event.key==='Escape'&&!busy){event.preventDefault();closeModal();return;}
-  if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();if(!q('#genRun').disabled)q('#genRun').click();}
- });
+ const composerKey=event=>{
+  if(!panel.isConnected){document.removeEventListener('keydown',composerKey,true);return;}
+  const action=generationKeyboardAction(event);
+  if(!action)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(action==='dismiss')dismissComposer();
+  else if(action==='submit'&&!q('#genRun').disabled)q('#genRun').click();
+ };
+ document.addEventListener('keydown',composerKey,true);
+ q('#genPrompt').focus({preventScroll:true});
  q('#genRun').onclick=run;
  loadProviders();
  loadHistory();
