@@ -44,6 +44,7 @@ export function normalizeCapabilities(raw = {}) {
     video: {
       textToVideo: bool(video.textToVideo),
       imageToVideo: bool(video.imageToVideo),
+      videoReference: bool(video.videoReference),
       firstLastFrame: bool(video.firstLastFrame),
       durations: Array.isArray(video.durations) ? video.durations.filter(value => Number.isFinite(value) && value > 0) : [],
       resolutions: strings(video.resolutions),

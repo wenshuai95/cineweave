@@ -150,3 +150,12 @@
 - 去除音轨
 - 失败时保留原视频并在 manifest 标记 `normalized: false`
 - 实测 3 镜输出均为 24fps
+
+## 八、参考视频能力接口（2026-10-24）
+
+- Provider 能力契约新增 `video.videoReference`
+- 生成面板可选择整段参考视频
+- 只有声明 `videoReference` 的 Provider 才启用该槽
+- 当前 Seedance 1.0 / Kling / Fake 均未声明，因此界面保持禁用并说明
+- H3 接口已声明该能力；等模型安装后可接入
+- 视频结果卡新增“送入剪辑”
