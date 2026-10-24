@@ -1,5 +1,6 @@
 // Provider 统一契约：所有生图/生视频厂商都实现这组方法与能力声明。
 // 上层只依赖 id / capabilities / 方法，不出现厂商分支。
+import {normalizeReferenceLimits} from './reference-policy.mjs';
 
 export const PROVIDER_METHODS = Object.freeze([
   'listModels',
@@ -46,6 +47,7 @@ export function normalizeCapabilities(raw = {}) {
       imageToVideo: bool(video.imageToVideo),
       videoReference: bool(video.videoReference),
       firstLastFrame: bool(video.firstLastFrame),
+      referenceLimits: normalizeReferenceLimits(video.referenceLimits),
       durations: Array.isArray(video.durations) ? video.durations.filter(value => Number.isFinite(value) && value > 0) : [],
       resolutions: strings(video.resolutions),
     },

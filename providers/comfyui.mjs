@@ -82,7 +82,7 @@ export function createComfyProvider({
     enabled: true,
     capabilities: {
       image: {textToImage: true, imageToImage: true, reference: true, sizes: SIZES, aspects: ['1:1', '4:3', '3:4', '16:9', '9:16']},
-      video: {textToVideo: false, imageToVideo: false, firstLastFrame: false, durations: [], resolutions: []},
+      video: {textToVideo: false, imageToVideo: false, videoReference: false, firstLastFrame: false, durations: [], resolutions: [], referenceLimits: {images: 0, videos: 0, audios: 0, total: 0}},
     },
     async listModels() { return listModels(); },
     async health() {

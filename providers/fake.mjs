@@ -41,7 +41,7 @@ export function createFakeProvider({now = Date.now, stepMs = 40, store = createT
     enabled: true,
     capabilities: {
       image: {textToImage: true, imageToImage: true, reference: true, sizes: ['512x512', '1024x1024'], aspects: ['1:1', '16:9']},
-      video: {textToVideo: true, imageToVideo: true, firstLastFrame: false, durations: [2, 4], resolutions: ['512x512']},
+      video: {textToVideo: true, imageToVideo: true, videoReference: true, firstLastFrame: false, durations: [2, 4], resolutions: ['512x512'], referenceLimits: {images: 2, videos: 1, audios: 1, total: 4}},
     },
     async listModels() {
       return models.map(model => ({...model}));
@@ -67,6 +67,7 @@ export function createFakeProvider({now = Date.now, stepMs = 40, store = createT
         projectId: input.projectId,
         sourceId: input.sourceId,
         prompt: input.prompt,
+        references: Array.isArray(input.references) ? input.references : [],
       });
       store.update(task.id, {status: 'running', progress: 0.1});
       return {taskId: task.id};

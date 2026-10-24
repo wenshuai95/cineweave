@@ -24,9 +24,11 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now, onChang
     return task;
   };
 
+  const cloneReferences = references => Array.isArray(references) ? references.slice(0, 50).map(reference => ({...reference})) : [];
   const publicTask = task => ({
     ...task,
     outputs: task.outputs.map(output => ({...output})),
+    references: cloneReferences(task.references),
   });
 
   const store = {
@@ -45,6 +47,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now, onChang
         status: 'queued',
         progress: 0,
         outputs: [],
+        references: cloneReferences(input.references),
         error: null,
         message: '',
         cost: null,
@@ -75,6 +78,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now, onChang
       }
       if (Number.isFinite(patch.progress)) task.progress = clamp(patch.progress, 0, 1);
       if (Array.isArray(patch.outputs)) task.outputs = patch.outputs.map(output => ({...output}));
+      if (Array.isArray(patch.references)) task.references = cloneReferences(patch.references);
       if (patch.error !== undefined) task.error = patch.error;
       if (patch.message !== undefined) task.message = String(patch.message);
       if (patch.cost !== undefined) task.cost = patch.cost;

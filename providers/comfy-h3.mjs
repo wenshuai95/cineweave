@@ -75,7 +75,7 @@ export function createComfyH3Provider({baseUrl, fetchImpl = fetch, store = null}
       return status.installed ? [{id: 'minimax-h3-r2v', name: 'MiniMax H3 R2V（本地）', kind: 'video', referenceVideo: true}] : [];
     },
     descriptor() {
-      return {id: 'comfyui-h3', label: 'ComfyUI MiniMax H3（本地）', capabilities: {video: {textToVideo: true, imageToVideo: true, videoReference: true, firstLastFrame: true}}};
+      return {id: 'comfyui-h3', label: 'ComfyUI MiniMax H3（本地）', capabilities: {video: {textToVideo: true, imageToVideo: true, videoReference: true, firstLastFrame: true, referenceLimits: {images: 30, videos: 10, audios: 10, total: 50}}}};
     },
     async quote() { throw ProviderError('H3_NOT_INSTALLED', '本地 H3 接口尚未安装模型；请先在 ComfyUI 安装 H3 模型，造梦工坊不会自动下载。'); },
     async submit() { throw ProviderError('H3_NOT_INSTALLED', '本地 H3 接口尚未安装模型；当前只保留接口。'); },

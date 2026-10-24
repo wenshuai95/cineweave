@@ -28,3 +28,8 @@ credentials*
 .DS_Store
 Thumbs.db
 *.log
+
+# 本地 Agent 工具状态（非产品代码）
+.mimosa/
+.v2c/
+.video_agent/

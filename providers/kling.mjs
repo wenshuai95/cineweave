@@ -56,7 +56,7 @@ export function createKlingProvider({
     enabled,
     capabilities: {
       image: {textToImage: false, imageToImage: false, reference: false, sizes: [], aspects: []},
-      video: {textToVideo: true, imageToVideo: true, firstLastFrame: false, durations: [5, 10], resolutions: ['720p', '1080p']},
+      video: {textToVideo: true, imageToVideo: true, videoReference: false, firstLastFrame: false, durations: [5, 10], resolutions: ['720p', '1080p'], referenceLimits: {images: 1, videos: 0, audios: 0, total: 1}},
     },
     async listModels() {
       guard();
