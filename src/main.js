@@ -195,7 +195,7 @@ function renderSidebar(){
 }
 function canvasNodeActions(context,inspector=false){
  if(!context)return '';
- const actions=context.kind==='script'?[['edit','编辑剧本','editStorySource'],['storyboard','设计分镜','designStoryShots'],['assets','提取资产','extractStoryAssets']]:context.kind==='shot'?[['edit','编辑分镜','editStorySource']]:[['edit','图片与版本','manageStoryAsset']];
+ const actions=context.kind==='script'?[]:context.kind==='shot'?[['edit','编辑分镜','editStorySource']]:[['edit','图片与版本','manageStoryAsset']];
  return `<div class="node-source-actions">${actions.map(([operation,label,id])=>`<button type="button" ${inspector?`id="${id}"`:''} data-node-tool="${operation}">${label}</button>`).join('')}</div>`;
 }
 let versionsController;
@@ -251,7 +251,7 @@ async function runShotChecklistAction(shotId,action,button){
  const item=shotProductionFor(p,shotId);if(!item)return toast('这个镜头已移除，请刷新清单');
  if(action==='sync'){const ok=await sendPlanningToCanvas('shots',[shotId],{keepTool:true});if(ok){renderShotChecklist();focusShotFromChecklist(shotId);}return;}
  if(action==='assets'){toggleShotChecklist(false);const assetId=button?.dataset.assetId||item.assets.find(asset=>!asset.official)?.id||item.assets[0]?.id;wsShell?.openTool('assets',{assetId,mode:'planning'});return;}
- if(action==='edit'||action==='open-script'){toggleShotChecklist(false);wsShell?.openTool('script',{shotId,tab:'shots'});return;}
+ if(action==='edit'||action==='open-script'){toggleShotChecklist(false);shotSheetModal(shotId);return;}
  if(action==='generate'){const source=shotGenerationSource(item);if(!source)return toast('先把分镜整理到画布，再生成视频');providerVideoModal(source);return;}
  if(action==='cut'){const videoId=item.cutVideoId||item.adoptedVideoId||item.videos.generated[0]||item.videos.previz[0];if(!videoId)return toast('这个镜头还没有可送入剪辑的视频');wsShell?.sendCanvasNodeToEdit(videoId);return;}
  if(action==='locate'){focusShotFromChecklist(shotId);return;}
@@ -275,7 +275,7 @@ $('#shotChecklistBody').addEventListener('click',event=>{
  const locate=event.target.closest('[data-shot-locate]');
  if(locate){event.preventDefault();focusShotFromChecklist(locate.dataset.shotLocate);return;}
  const empty=event.target.closest('[data-shot-empty]');
- if(empty){toggleShotChecklist(false);if(empty.dataset.shotEmpty==='script')wsShell?.openTool('script',{tab:'shots'});else createScriptNode();}
+ if(empty){toggleShotChecklist(false);if(empty.dataset.shotEmpty==='script')shotSheetModal();else createScriptNode();}
 });
 let nodeOverlayFrame=0;
 const framedNodePanels=new WeakSet();
@@ -556,11 +556,40 @@ function scriptReferenceModal(){
   catch(e){if(history.length)p=history.pop();updateUndo();toast(e.message);}
  };
 }
+
+function shotSheetModal(focusShotId=null){
+ const story=p.workstation.story||{shots:[],assets:[]};
+ const original=new Map((story.shots||[]).map(shot=>[shot.id,structuredClone(shot)]));
+ const rows=[...original.values()].map(shot=>({...shot}));
+ const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const rowHtml=(shot,index)=>`<tr data-shot-row="${escValue(shot.id)}"><td>${String(index+1).padStart(2,'0')}</td><td><input data-shot-field="scene" value="${escValue(shot.scene)}" maxlength="200" aria-label="场景"></td><td><textarea data-shot-field="description" rows="3" maxlength="6000" aria-label="画面描述">${escValue(shot.description)}</textarea></td><td><input data-shot-field="duration" type="number" min=".1" max="600" step=".1" value="${Number(shot.duration)||5}" aria-label="时长"></td><td><input data-shot-field="shotSize" value="${escValue(shot.shotSize)}" maxlength="100" aria-label="景别"></td><td><input data-shot-field="cameraMovement" value="${escValue(shot.cameraMovement)}" maxlength="200" aria-label="运镜"></td><td><textarea data-shot-field="dialogue" rows="3" maxlength="6000" aria-label="对白">${escValue(shot.dialogue)}</textarea></td><td><button type="button" data-shot-delete aria-label="删除镜头">删除</button></td></tr>`;
+ const emptyRow=()=>({id:uid(),scene:'',description:'',duration:5,shotSize:'',cameraMovement:'',dialogue:'',characters:[],assetIds:[]});
+ modal('镜头工作表','手工维护已有剧本的镜头；不生成剧本、不自动拆分镜。',`<section class="settings-section shot-sheet-section"><p class="help-text">逐镜填写场景、画面、时长和运镜；保存后用于白模预演、生成和剪辑。新镜头不会自动生成内容。</p><div class="shot-sheet-scroll"><table class="shot-sheet-table"><thead><tr><th>#</th><th>场景</th><th>画面描述</th><th>时长/s</th><th>景别</th><th>运镜</th><th>对白</th><th></th></tr></thead><tbody id="shotSheetRows">${rows.map(rowHtml).join('')}</tbody></table></div><button type="button" id="shotSheetAdd" class="key-button">＋ 新增镜头</button></section>`,`<button id="shotSheetCancel">取消</button><button class="primary" id="shotSheetSave">保存镜头表</button>`);
+ const body=$('#shotSheetRows');
+ const bindDelete=()=>body.querySelectorAll('[data-shot-delete]').forEach(b=>b.onclick=()=>b.closest('tr')?.remove());
+ bindDelete();
+ $('#shotSheetAdd').onclick=()=>{const shot=emptyRow();body.insertAdjacentHTML('beforeend',rowHtml(shot,body.children.length));bindDelete();body.lastElementChild?.scrollIntoView({block:'nearest'});};
+ $('#shotSheetCancel').onclick=closeModal;
+ $('#shotSheetSave').onclick=()=>{
+  if(p!==storyProject)return;
+  const next=[];
+  for(const tr of body.querySelectorAll('[data-shot-row]')){
+   const old=original.get(tr.dataset.shotRow)||{};
+   const field=name=>tr.querySelector(`[data-shot-field="${name}"]`)?.value??'';
+   const duration=Math.min(600,Math.max(.1,Number(field('duration'))||5));
+   next.push({...old,id:tr.dataset.shotRow,scene:field('scene').trim().slice(0,200),description:field('description').slice(0,6000),duration,shotSize:field('shotSize').trim().slice(0,100),cameraMovement:field('cameraMovement').trim().slice(0,200),dialogue:field('dialogue').slice(0,6000),characters:Array.isArray(old.characters)?old.characters:[],assetIds:Array.isArray(old.assetIds)?old.assetIds:[]});
+  }
+  checkpoint();p.workstation.story={...p.workstation.story,shots:next};commit();closeModal();if(shotListOpen)renderShotChecklist();toast('镜头表已保存');
+ };
+ const storyProject=p;
+ if(focusShotId){const row=body.querySelector(`[data-shot-row="${focusShotId}"]`);row?.scrollIntoView({block:'center'});row?.querySelector('[data-shot-field="scene"]')?.focus({preventScroll:true});}
+}
+
 function jumpToStage(stage){
  const setActive=()=>$('#stageNav')?.querySelectorAll('[data-stage]').forEach(b=>b.classList.toggle('active',b.dataset.stage===stage));
  setActive();
  if(stage==='script')return scriptReferenceModal();
- if(stage==='shots'){if(!shotListOpen)toggleShotChecklist(true);return;}
+ if(stage==='shots'){shotSheetModal();return;}
  if(stage==='assets'){wsShell?.openTool('assets');return;}
  if(stage==='previz'){setMode('stage');return;}
  if(stage==='edit'){wsShell?.setPage('edit');return;}
@@ -1149,7 +1178,7 @@ function organizeNodeProperties(n){
  const identity=document.createElement('div');identity.className='inspector-section node-identity';identity.append(name);const edit=document.createElement('button');edit.type='button';edit.className='key-button';edit.textContent=getCanvasStoryContext(p,n.id)?.kind==='shot'?t('node.editShot'):t('node.editContent');edit.onclick=()=>editCanvasNode(n.id);identity.append(edit);const disclosure=document.createElement('details');disclosure.className='node-content-disclosure';const summary=document.createElement('summary');summary.textContent=t('node.contentDisclosure');disclosure.append(summary,content);identity.append(disclosure);
  const next=document.createDocumentFragment();next.append(identity);
  const group=(key,title,ids,open=false)=>{const buttons=ids.map(id=>controls.get(id)).filter(Boolean);if(!buttons.length)return;const holder=document.createElement('div');holder.innerHTML=propertyGroup('node-'+n.type,key,title,'',open);const detail=holder.firstElementChild;detail.querySelector('.property-group-body').append(...buttons);next.append(detail);};
- group('source',t('node.sourceGroup'),['editStorySource','designStoryShots','extractStoryAssets','manageStoryAsset','useAsScript'],true);
+ group('source',t('node.sourceGroup'),['manageStoryAsset','useAsScript'],true);
  group('video',t('node.videoGroup'),['generateVideo'],true);
  group('create',t('node.createGroup'),n.type==='image'?['imageToScene','imageToActor','goObject','generateAiImage']:n.type==='model'?['modelToStage']:n.type==='director'?['goDirector']:['generateAiImage','goObject'],true);
  group('more',t('node.moreGroup'),['generateScene']);
@@ -1507,8 +1536,7 @@ function referencePackModal(){
 function aiTaskModal(){modal('AI 参考任务包','导出提示词、镜头和素材关系，用于外部创作或交接；不会自动提交生成。',`<span class="badge">离线参考清单</span><label class="field">目标模型名称（选填）<input id="aiModel" placeholder="例如：计划使用的视频模型" value="${esc(p.ai.model)}"></label><label class="field">生成意图与参考规则<textarea rows="6" id="aiPrompt">${esc(p.ai.prompt)}</textarea></label><p class="help-text">任务包包含工程、镜头时间表及画布引用关系。三维工程与渲染视频不同；需要控制运动时，请将预演视频作为生成参考。API 密钥请仅保存在本机模型设置中，不要写进工程内容。</p>`,`<button id="exportReferencePack">按镜头参考包</button><button id="exportTask">导出 AI 任务包</button><button class="primary" id="saveAI">保存设定</button>`);$('#exportReferencePack').onclick=()=>{closeModal();referencePackModal()};const save=()=>{checkpoint();p.ai.model=$('#aiModel').value;p.ai.prompt=$('#aiPrompt').value;persist()};$('#saveAI').onclick=()=>{save();closeModal();toast('生成设定已保存')};$('#exportTask').onclick=()=>{save();const task={schema:'jingchang-ai-task/1',kind:'reference-to-video',provider:null,model:p.ai.model||null,prompt:p.ai.prompt,video:{duration:p.duration,fps:p.fps,width:1280,height:720,referenceFile:p.name+'.webm'},shots:p.shots.map(s=>({...s,camera:p.objects.find(o=>o.id===s.cameraId)})),assets:p.nodes,connections:p.edges,project:p};download(new Blob([JSON.stringify(task,null,2)],{type:'application/json'}),p.name+'.ai-task.json');toast('任务包已导出，尚未调用 AI')};}
 
 function aiModal(){
- settingsPage('api',t('settings.apiSubtitle'),`<p id="aiStatus" class="preset-help">正在读取配置…</p><section class="settings-section"><h3>${t('settings.textModel')}</h3><p class="help-text">${t('settings.textHelp')}</p><button id="aiTextSettings" class="primary">${t('settings.textSettings')}</button></section><section class="settings-section"><h3>${t('settings.seedreamTitle')}</h3><p class="help-text">${t('settings.seedreamHelp')}</p><p class="help-text" id="seedreamStatus">正在读取配置…</p><label class="field">接入方式<select id="seedreamMode"><option value="agent-plan">Agent Plan（套餐内额度）</option><option value="ark">方舟按量（需余额）</option></select></label><label class="field">API Key<input id="seedreamKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field">默认模型<input id="seedreamModel" autocomplete="off" placeholder="doubao-seedream-5.0-flash"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="seedreamSave">保存</button><button id="seedreamTest">测试模型列表</button><button id="seedreamClear">清除密钥</button></div><p class="help-text" id="seedreamMessage"></p></section><section class="settings-section"><h3>${t('settings.comfyTitle')}</h3><p class="help-text">${t('settings.comfyHelp')}</p><p class="help-text" id="comfyStatus">${t('settings.comfyStatus')}</p><label class="field">${t('settings.comfyUrl')}<input id="comfyUrl" autocomplete="off" placeholder="http://127.0.0.1:8188"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="comfyStart">${t('onboarding.startComfy')}</button><button id="comfyCheck">${t('settings.comfyCheck')}</button><button id="comfySave">${t('settings.comfySave')}</button></div><p class="help-text" id="comfyMessage"></p></section><section class="settings-section"><h3>${t('settings.klingTitle')}</h3><p class="help-text">${t('settings.klingHelp')}</p><p class="help-text" id="klingStatus">${t('settings.klingStatus')}</p><label class="field">${t('settings.accessKey')}<input id="klingAccessKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field">${t('settings.secretKey')}<input id="klingSecretKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field ws-check-field"><input type="checkbox" id="klingEnabled"> ${t('settings.enable')}</label><div class="row"><button id="klingSave" class="primary">${t('settings.save')}</button></div><p class="help-text" id="klingMessage"></p></section>`);
- $('#aiTextSettings').onclick=()=>{closeModal();showTextSettings({toast});};
+ settingsPage('api',t('settings.apiSubtitle'),`<section class="settings-section"><h3>${t('settings.seedreamTitle')}</h3><p class="help-text">${t('settings.seedreamHelp')}</p><p class="help-text" id="seedreamStatus">正在读取配置…</p><label class="field">接入方式<select id="seedreamMode"><option value="agent-plan">Agent Plan（套餐内额度）</option><option value="ark">方舟按量（需余额）</option></select></label><label class="field">API Key<input id="seedreamKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field">默认模型<input id="seedreamModel" autocomplete="off" placeholder="doubao-seedream-5.0-flash"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="seedreamSave">保存</button><button id="seedreamTest">测试模型列表</button><button id="seedreamClear">清除密钥</button></div><p class="help-text" id="seedreamMessage"></p></section><section class="settings-section"><h3>${t('settings.comfyTitle')}</h3><p class="help-text">${t('settings.comfyHelp')}</p><p class="help-text" id="comfyStatus">${t('settings.comfyStatus')}</p><label class="field">${t('settings.comfyUrl')}<input id="comfyUrl" autocomplete="off" placeholder="http://127.0.0.1:8188"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="comfyStart">${t('onboarding.startComfy')}</button><button id="comfyCheck">${t('settings.comfyCheck')}</button><button id="comfySave">${t('settings.comfySave')}</button></div><p class="help-text" id="comfyMessage"></p></section><section class="settings-section"><h3>${t('settings.klingTitle')}</h3><p class="help-text">${t('settings.klingHelp')}</p><p class="help-text" id="klingStatus">${t('settings.klingStatus')}</p><label class="field">${t('settings.accessKey')}<input id="klingAccessKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field">${t('settings.secretKey')}<input id="klingSecretKey" type="password" autocomplete="off" placeholder="已配置时留空保留"></label><label class="field ws-check-field"><input type="checkbox" id="klingEnabled"> ${t('settings.enable')}</label><div class="row"><button id="klingSave" class="primary">${t('settings.save')}</button></div><p class="help-text" id="klingMessage"></p></section>`);
  const sdStatus=$('#seedreamStatus'),sdMsg=$('#seedreamMessage'),sdKey=$('#seedreamKey'),sdModel=$('#seedreamModel'),sdMode=$('#seedreamMode');
  const readSeedream=async()=>{try{const info=await api('/api/providers/config');const cfg=info.config?.seedream||{};if(!sdStatus.isConnected)return;sdStatus.textContent=cfg.configured?`${t('settings.configured')} · ${cfg.mode==='agent-plan'?t('settings.agentPlan'):t('settings.arkPayg')} · ${cfg.model}`:t('settings.notConfigured');sdKey.value='';sdMode.value=cfg.mode||'agent-plan';sdModel.value=cfg.model||'';}catch(e){if(sdStatus.isConnected)sdStatus.textContent=e.message;}};
  readSeedream();
@@ -1534,7 +1562,6 @@ function aiModal(){
   klingMsg.textContent=t('settings.saved');await readKling();
  }catch(e){klingMsg.textContent=e.message;}};
 
- const statusEl=$('#aiStatus');api('/api/ai/status').then(s=>{if(!statusEl.isConnected)return;aiToken=s.token;statusEl.textContent=`${t('settings.textModel')}: ${s.config.configured?t('settings.configured'):t('settings.notConfigured')}`;}).catch(e=>{if(statusEl.isConnected)statusEl.textContent=e.message;});
 }
 async function captureDepth(options={}){if(!stage){toast('三维渲染器不可用');return}stop();try{await stage.readyAssets()}catch(e){toast(e.message);return}if(p.nodes.length>=500)return toast('画布节点已达上限，请先移除不需要的节点');const src=stage.depthShot(time,override,options),o=override?p.objects.find(o=>o.id===override):activeCamera(p,time);checkpoint();const n=asset('image',{title:`${o?.name||'机位'} · 深度图 ${time.toFixed(2)}s${options.simplifiedCharacterIds?.length?' · 简化角色':''}`,text:`深度参考 · ${formatFor(o).width} × ${formatFor(o).height}\n近黑远白的线性深度图，可作为生成模型的深度控制参考（updream 式双锚点）。`,src});p.nodes.push(n);const d=p.nodes.find(n=>n.type==='director');if(d)p.edges.push({from:d.id,to:n.id});setMode('board');filter='all';commit();select(n.id);fitBoard();toast('深度图已加入画布，可选中后下载')}
 async function capture(options={}){if(!stage){toast('三维渲染器不可用');return}stop();try{await stage.readyAssets()}catch(e){toast(e.message);return}if(p.nodes.length>=500)return toast('画布节点已达上限，请先移除不需要的节点');const src=stage.screenshot(time,override,options),o=override?p.objects.find(o=>o.id===override):activeCamera(p,time);checkpoint();const n=asset('image',{title:`${o?.name||'机位'} · ${time.toFixed(2)}s${options.simplifiedCharacterIds?.length?' · 简化角色':''}`,text:`预演截图 · ${formatFor(o).width} × ${formatFor(o).height}\n用于构图、角色站位与场景参考。`,src});p.nodes.push(n);const d=p.nodes.find(n=>n.type==='director');if(d)p.edges.push({from:d.id,to:n.id});setMode('board');filter='all';commit();select(n.id);fitBoard();toast('截图已加入画布，可选中后下载')}
@@ -1984,9 +2011,9 @@ function nodeContextMenu(n,x,y){
  if(n.type==='video'&&n.src)items.push(...nodeQuickActions(p,n).filter(a=>['frames','trim','audio','depth','mute','compatibility'].includes(a.id)).map(a=>leaf(a.label,()=>runNodeQuickAction(n,a.id))));
  if(['text','image','video','audio'].includes(n.type))items.push(leaf('整理为镜头组',()=>bundleBoardShot([n.id])));
  if(n.src&&['image','video','audio'].includes(n.type))items.push(leaf('预览素材',()=>mediaNodePanel(n)));
- if(['text','actor','scene'].includes(n.type))items.push(leaf('AI 创作',()=>wsShell?.openTool('assistant',{nodeId:n.id})),leaf('创作用途模板',canvasTemplatesModal));
+ if(['text','actor','scene'].includes(n.type))items.push(leaf('创作用途模板',canvasTemplatesModal));
  if(['text','image','video','audio','actor','scene'].includes(n.type))items.push(leaf('生成视频',()=>providerVideoModal(n)));
- if(context?.kind==='script')items.push(leaf('编辑项目剧本',()=>openNodeTool(n.id)),leaf('设计文学分镜',()=>openNodeTool(n.id,'storyboard')),leaf('提取资产提示词',()=>openNodeTool(n.id,'assets')));
+ if(context?.kind==='script')items.push(leaf('编辑剧本参考',()=>scriptReferenceModal()));
  else if(context?.kind==='shot')items.push(leaf('编辑这个分镜',()=>openNodeTool(n.id)));
  else if(context)items.push(leaf('管理资产图片与版本',()=>openNodeTool(n.id)));
  else if(n.type==='text')items.push(leaf('用作项目剧本',()=>promoteNodeScript(n.id)));

@@ -146,6 +146,7 @@ export function installWorkstation(ctx){
   if(restoreFocus&&returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
  }
  function openTool(kind,options={}){
+  if(kind==='script'||kind==='assistant'){ctx.toast?.('创作助手/剧本生成已移除；请使用剧本参考和镜头工作表');return;}
   if(!TOOL_NAMES[kind])return;
   ctx.prepareCanvasTool?.(options);if(kind==='script')ctx.ensureScriptNode?.();
   if(current!== 'canvas')setPage('canvas');

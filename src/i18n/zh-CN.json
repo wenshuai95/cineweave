@@ -30,7 +30,7 @@
     "save": "保存 Kling 密钥",
     "interface": "界面",
     "help": "使用帮助",
-    "apiSubtitle": "管理文字模型和媒体生成服务。",
+    "apiSubtitle": "管理图片与视频生成服务。",
     "textModel": "文字模型",
     "textHelp": "DeepSeek / 兼容接口用于创作助手、白模导演和场景规划。",
     "textSettings": "文字模型设置",

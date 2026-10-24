@@ -137,3 +137,12 @@ body[data-canvas-mode=board] .workspace-toolbar .ui-icon{width:16px;height:16px}
 .stage-nav button.active{background:#3a3445;color:#f2e9ff}
 body[data-canvas-mode=board] .workspace-toolbar>div.stage-nav{display:flex;pointer-events:auto}
 @media(max-width:1240px){.stage-nav button{padding:5px 6px;font-size:11px}}
+
+/* Phase 1: manual shot sheet (no AI script generation). */
+.shot-sheet-scroll{max-height:56vh;overflow:auto;border:1px solid #39393c;border-radius:10px;margin:8px 0}
+.shot-sheet-table{width:100%;border-collapse:collapse;font-size:12px}
+.shot-sheet-table th{position:sticky;top:0;z-index:1;background:#242426;color:#aaa8b2;text-align:left;padding:8px;border-bottom:1px solid #39393c;white-space:nowrap}
+.shot-sheet-table td{padding:6px;border-bottom:1px solid #2d2c31;vertical-align:top}
+.shot-sheet-table input,.shot-sheet-table textarea{width:100%;min-width:58px;background:#1b1b1d;border:1px solid #39393c;border-radius:6px;color:#eceaf2;padding:5px 6px;font:inherit}
+.shot-sheet-table textarea{resize:vertical;min-height:54px}
+.shot-sheet-table [data-shot-delete]{background:transparent;border:0;color:#e09a9a;cursor:pointer;white-space:nowrap}

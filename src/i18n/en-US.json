@@ -30,7 +30,7 @@
     "save": "Save Kling keys",
     "interface": "Interface",
     "help": "Help",
-    "apiSubtitle": "Manage text models and media generation services.",
+    "apiSubtitle": "Connect image and video generation providers.",
     "textModel": "Text model",
     "textHelp": "DeepSeek / compatible API for Creative Assistant, previz director and scene planning.",
     "textSettings": "Text model settings",
