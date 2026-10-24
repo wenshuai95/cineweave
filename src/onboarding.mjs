@@ -1,6 +1,6 @@
 import {t} from './i18n/index.mjs';
 
-export const ONBOARDING_KEY = 'cineweave.onboarding.v1';
+export const ONBOARDING_KEY = 'cineweave.onboarding.v2';
 
 export function shouldShowOnboarding(storage = globalThis.localStorage) {
   try { return storage?.getItem?.(ONBOARDING_KEY) !== 'done'; } catch { return true; }
@@ -45,6 +45,20 @@ export function openOnboarding({modal, closeModal, api, toast, onDone} = {}) {
     }
   }
 
+  async function startComfy() {
+    const button = document.querySelector('#obComfyStart');
+    if (button) { button.disabled = true; button.textContent = t('onboarding.startingComfy'); }
+    try {
+      comfyResult = await api('/api/comfy/start');
+      if (!comfyResult.ok) throw Error(comfyResult.error || t('onboarding.notDetected'));
+      const models = await api('/api/comfy/models');
+      comfyResult.models = (models.models || []).map(m => m.id);
+    } catch (e) {
+      comfyResult = {ok: false, error: e.message};
+    }
+    render();
+  }
+
   async function saveImage() {
     const key = document.querySelector('#obCloudKey')?.value?.trim() || '';
     try {
@@ -80,7 +94,7 @@ export function openOnboarding({modal, closeModal, api, toast, onDone} = {}) {
     const status = comfyResult ? (comfyResult.ok
       ? `<p class="help-text" style="color:var(--success,#3ecf8e)">${t('onboarding.detected', {version: comfyResult.version || ''})}${comfyResult.models?.length ? ` · ${comfyResult.models.length} checkpoint(s): ${esc(comfyResult.models.slice(0, 3).join(', '))}` : ''}</p>`
       : `<p class="help-text" style="color:var(--danger,#ff6b6b)">${t('onboarding.notDetected')} ${esc(comfyResult.error || '')}</p>`) : '';
-    return `<section class="settings-section"><p>${t('onboarding.comfyHelp')}</p><label class="field">${t('onboarding.address')}<input id="obComfyUrl" value="${esc(comfyUrl)}" placeholder="http://127.0.0.1:8188"></label><div class="row"><button id="obComfyDetect">${t('onboarding.detect')}</button><span class="help-text">${t('onboarding.comfyHint')}</span></div>${status}<p class="help-text">${t('onboarding.comfyStartHint')}</p></section>`;
+    return `<section class="settings-section"><p>${t('onboarding.comfyHelp')}</p><label class="field">${t('onboarding.address')}<input id="obComfyUrl" value="${esc(comfyUrl)}" placeholder="http://127.0.0.1:8188"></label><div class="row" style="flex-wrap:wrap;gap:8px"><button id="obComfyStart">${t('onboarding.startComfy')}</button><button id="obComfyDetect">${t('onboarding.detect')}</button><span class="help-text">${t('onboarding.comfyHint')}</span></div>${status}<p class="help-text">${t('onboarding.comfyStartHint')}</p></section>`;
   }
   function imageBody() {
     const configured = imageStatus?.config?.seedream;
@@ -111,6 +125,7 @@ export function openOnboarding({modal, closeModal, api, toast, onDone} = {}) {
       next();
     });
     document.querySelector('#obFinish')?.addEventListener('click', finish);
+    document.querySelector('#obComfyStart')?.addEventListener('click', startComfy);
     document.querySelector('#obComfyDetect')?.addEventListener('click', saveComfy);
     document.querySelector('#obCloudSave')?.addEventListener('click', saveImage);
     document.querySelector('#obVideoSave')?.addEventListener('click', saveVideo);

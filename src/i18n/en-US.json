@@ -63,7 +63,9 @@
     "secretKey": "SecretKey",
     "enable": "Enable Kling",
     "enabled": "enabled",
-    "disabled": "disabled"
+    "disabled": "disabled",
+    "comfyStarting": "Starting ComfyUI…",
+    "comfyStarted": "ComfyUI started"
   },
   "language": {
     "en": "English",
@@ -192,7 +194,8 @@
     "copied": "Independent copy created",
     "restoreToast": "Project restored",
     "archiveToast": "Project moved to trash; restorable anytime",
-    "start": "Starting point"
+    "start": "Starting point",
+    "onboarding": "Setup wizard"
   },
   "canvas": {
     "nodes": "Node list",
@@ -678,6 +681,8 @@
     "next": "Next",
     "start": "Start setup",
     "openProjects": "Open projects",
-    "comfyStartHint": "Start ComfyUI first (e.g. ~/ComfyUI/启动 ComfyUI.command), wait until it is ready, then detect again."
+    "comfyStartHint": "Start ComfyUI first (e.g. ~/ComfyUI/启动 ComfyUI.command), wait until it is ready, then detect again.",
+    "startComfy": "Start ComfyUI",
+    "startingComfy": "Starting ComfyUI…"
   }
 }

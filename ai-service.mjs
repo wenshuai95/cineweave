@@ -11,7 +11,7 @@ import {validatePlan} from './src/ai-plans.mjs';
 const token=randomUUID();
 const folder=process.env.JINGCHANG_DATA_DIR?pathToFileURL(resolve(process.env.JINGCHANG_DATA_DIR)+sep):new URL('./.local/',import.meta.url);
 const providerService=createProviderService({folder:fileURLToPath(folder)});
-const comfyService=createComfyService();
+const comfyService=createComfyService({folder:fileURLToPath(folder)});
 const providerVideoService=createVideoService({folder:fileURLToPath(folder)});
 const json=(res,data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data))};
 async function body(req,limit=15*1024*1024){const chunks=[];let bytes=0;for await(const part of req){const chunk=Buffer.isBuffer(part)?part:Buffer.from(part);bytes+=chunk.length;if(bytes>limit)throw Error('请求过大');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');}
@@ -65,6 +65,7 @@ export async function handleAI(req,res,url){
    const parts=url.pathname.split('/'),index=Number(parts.at(-1)),taskId=parts.at(-3),providerId=parts.at(-4);const file=await providerVideoService.download(providerId,taskId,index);res.writeHead(200,{'Content-Type':file.mime,'Content-Length':file.data.length,'Cache-Control':'no-store'});res.end(file.data);return true;
   }
   if(req.method==='GET'&&url.pathname==='/api/comfy/status'){json(res,await comfyService.health());return true;}
+  if(req.method==='POST'&&url.pathname==='/api/comfy/start'){json(res,await comfyService.start());return true;}
   if(req.method==='GET'&&url.pathname==='/api/comfy/models'){json(res,{models:await comfyService.models()});return true;}
   if(req.method==='POST'&&url.pathname==='/api/comfy/config'){json(res,{status:comfyService.configure((await body(req)).baseUrl)});return true;}
   if(req.method==='GET'&&url.pathname==='/api/comfy/tasks'){json(res,{tasks:comfyService.tasks(url.searchParams.get('projectId')||undefined)});return true;}
