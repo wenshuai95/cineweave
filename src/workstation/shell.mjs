@@ -315,5 +315,6 @@ export function installWorkstation(ctx){
   onProjectsView(){closeExport();closeTool({restoreFocus:false});pages[current]?.onHide?.();},
   sendCanvasNodeToEdit,replaceCanvasVersionInEdit,sendVideoVersionsToEdit,
   importMediaFiles,
+  saveCanvasNodeToLibrary:importCanvasNodeToLibrary,
  };
 }
