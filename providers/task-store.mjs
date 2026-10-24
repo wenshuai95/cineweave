@@ -39,6 +39,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now} = {}) {
         projectId: input.projectId == null ? null : String(input.projectId),
         sourceId: input.sourceId == null ? null : String(input.sourceId),
         prompt: typeof input.prompt === 'string' ? input.prompt : '',
+        remoteId: input.remoteId == null ? null : String(input.remoteId),
         status: 'queued',
         progress: 0,
         outputs: [],
@@ -74,6 +75,7 @@ export function createTaskStore({idFactory = randomUUID, now = Date.now} = {}) {
       if (patch.error !== undefined) task.error = patch.error;
       if (patch.message !== undefined) task.message = String(patch.message);
       if (patch.cost !== undefined) task.cost = patch.cost;
+      if (patch.remoteId !== undefined) task.remoteId = patch.remoteId == null ? null : String(patch.remoteId);
       task.updatedAt = now();
       return publicTask(task);
     },

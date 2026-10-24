@@ -48,7 +48,17 @@
     "clearing": "正在清除…",
     "keyCleared": "密钥已清除",
     "agentPlan": "Agent Plan",
-    "arkPayg": "方舟按量"
+    "arkPayg": "方舟按量",
+    "comfyTitle": "ComfyUI 本地生图",
+    "comfyHelp": "在本机运行，不产生云端费用。请先启动 ComfyUI（默认 http://127.0.0.1:8188）。",
+    "comfyStatus": "正在读取 ComfyUI 状态…",
+    "comfyUrl": "ComfyUI 地址",
+    "comfyCheck": "检测连接",
+    "comfySave": "保存",
+    "comfyConnected": "ComfyUI 已连接 · {version}",
+    "comfyDisconnected": "ComfyUI 不可用：{error}",
+    "comfySaved": "地址已保存",
+    "comfyChecking": "正在检测…"
   },
   "language": {
     "en": "English",
@@ -573,5 +583,19 @@
     "produceP3": "工程自动保存在本机；可通过工程菜单导出备份。画布节点删除只移除节点与连线，导演台中的已摆放对象保留；从素材管理删除媒体时，应先检查它是否用于剪辑。",
     "shortcuts": "快捷键与使用限制",
     "canvasKeys": "画布快捷键速查"
+  },
+  "comfy": {
+    "title": "ComfyUI 本地生图",
+    "subtitle": "在本机生成，不产生云端费用。",
+    "prompt": "画面描述",
+    "model": "模型",
+    "size": "尺寸",
+    "steps": "步数",
+    "generate": "本地生成",
+    "working": "ComfyUI 正在生成…",
+    "notRunning": "ComfyUI 未启动。请先启动，或到 设置 → API 检查地址。",
+    "free": "本地生成，不产生云端费用。",
+    "already": "该图片已在画布中。",
+    "added": "ComfyUI 图片已加入画布。"
   }
 }

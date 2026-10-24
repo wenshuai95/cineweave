@@ -6,6 +6,7 @@ import {createTaskStore} from '../providers/task-store.mjs';
 import {createFakeProvider} from '../providers/fake.mjs';
 import {createSeedreamProvider} from '../providers/seedream.mjs';
 import {createProviderService} from '../provider-service.mjs';
+import {createComfyProvider} from '../providers/comfyui.mjs';
 import {mkdtemp, rm, readFile, stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -231,4 +232,48 @@ test('seedream Agent Plan mode uses plan base URL and static model list', async 
   assert.ok(calls.some(call => call.url === 'https://ark.cn-beijing.volces.com/api/plan/v3/images/generations'));
   const file = await provider.download(submitted.taskId);
   assert.equal(file.mime, 'image/jpeg');
+});
+
+
+test('comfyui adapter lists checkpoints, submits a workflow, polls and downloads', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    if (String(url).endsWith('/object_info/CheckpointLoaderSimple')) {
+      return new Response(JSON.stringify({CheckpointLoaderSimple: {input: {required: {ckpt_name: [['sd_xl_base_1.0.safetensors']]}}}}), {status: 200});
+    }
+    if (String(url).endsWith('/prompt')) {
+      return new Response(JSON.stringify({prompt_id: 'p1'}), {status: 200});
+    }
+    if (String(url).endsWith('/history/p1')) {
+      return new Response(JSON.stringify({p1: {status: {completed: true}, outputs: {9: {images: [{filename: 'cineweave_0001.png', subfolder: '', type: 'output'}]}}}}), {status: 200});
+    }
+    if (String(url).includes('/view?')) return new Response(Buffer.from('png-bytes'), {status: 200, headers: {'Content-Type': 'image/png'}});
+    throw new Error('unexpected ' + url);
+  };
+  const provider = createComfyProvider({fetchImpl});
+  const models = await provider.listModels();
+  assert.equal(models[0].id, 'sd_xl_base_1.0.safetensors');
+  const quote = await provider.quote({modelId: models[0].id, prompt: 'rainy courtyard', size: '1024x1024'});
+  assert.equal(quote.cost, 0);
+  const submitted = await provider.submit({quoteId: quote.quoteId});
+  assert.equal(submitted.task.status, 'running');
+  const done = await provider.poll(submitted.taskId);
+  assert.equal(done.status, 'succeeded');
+  assert.equal(done.outputs[0].filename, 'cineweave_0001.png');
+  const promptCall = calls.find(call => String(call.url).endsWith('/prompt'));
+  const sent = JSON.parse(promptCall.options.body);
+  assert.equal(sent.prompt[4].inputs.ckpt_name, 'sd_xl_base_1.0.safetensors');
+  assert.equal(sent.prompt[6].inputs.text, 'rainy courtyard');
+  assert.equal(sent.prompt[5].inputs.width, 1024);
+  const file = await provider.download(submitted.taskId, 0);
+  assert.equal(file.mime, 'image/png');
+  assert.equal(file.data.toString(), 'png-bytes');
+});
+
+test('comfyui adapter reports unreachable local service', async () => {
+  const provider = createComfyProvider({fetchImpl: async () => { throw new Error('ECONNREFUSED'); }});
+  const health = await provider.health();
+  assert.equal(health.ok, false);
+  assert.match(health.error, /ECONNREFUSED|不可访问/);
 });

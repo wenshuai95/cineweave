@@ -48,7 +48,17 @@
     "clearing": "Clearing…",
     "keyCleared": "Key cleared",
     "agentPlan": "Agent Plan",
-    "arkPayg": "Ark pay-as-you-go"
+    "arkPayg": "Ark pay-as-you-go",
+    "comfyTitle": "ComfyUI local generation",
+    "comfyHelp": "Runs on your machine; no cloud cost. Start ComfyUI locally first (default http://127.0.0.1:8188).",
+    "comfyStatus": "Reading ComfyUI status…",
+    "comfyUrl": "ComfyUI address",
+    "comfyCheck": "Check connection",
+    "comfySave": "Save",
+    "comfyConnected": "ComfyUI connected · {version}",
+    "comfyDisconnected": "ComfyUI unavailable: {error}",
+    "comfySaved": "Address saved",
+    "comfyChecking": "Checking…"
   },
   "language": {
     "en": "English",
@@ -573,5 +583,19 @@
     "produceP3": "Projects autosave locally; export a backup from the Project menu. Deleting a canvas node only removes the node and its connections; placed Director objects stay. Before deleting media in asset management, check whether it is used in Edit.",
     "shortcuts": "Shortcuts & limits",
     "canvasKeys": "Canvas shortcut reference"
+  },
+  "comfy": {
+    "title": "ComfyUI local generation",
+    "subtitle": "Runs on this computer; no cloud cost.",
+    "prompt": "Scene description",
+    "model": "Checkpoint",
+    "size": "Size",
+    "steps": "Steps",
+    "generate": "Generate locally",
+    "working": "ComfyUI is generating…",
+    "notRunning": "ComfyUI is not running. Start it first or check Settings → API.",
+    "free": "Local generation, no cloud cost.",
+    "already": "This image is already on the canvas.",
+    "added": "ComfyUI image added to canvas."
   }
 }

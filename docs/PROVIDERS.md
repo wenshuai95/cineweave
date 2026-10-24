@@ -70,3 +70,14 @@
 - 密钥不进入工程、日志、仓库
 - 仅允许本机回环服务访问
 - 错误统一为 `ProviderError(code, message)`
+
+
+## ComfyUI（Sprint 4，本地免费）
+
+- 默认地址：`http://127.0.0.1:8188`
+- 探测：`/system_stats`
+- 模型：`/object_info/CheckpointLoaderSimple` → checkpoint 列表（当前 `sd_xl_base_1.0.safetensors`）
+- 生成：`POST /prompt`（SDXL 基础工作流：Checkpoint → CLIP → KSampler → VAE → SaveImage）
+- 轮询：`GET /history/{prompt_id}`；下载：`GET /view?filename=...`
+- 路由：`/api/comfy/status|models|config|quote|generate|tasks|task/:id|task/:id/file/:index`
+- 仅允许本机/局域网地址；无云端费用；不占用 Seedream 额度

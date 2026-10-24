@@ -7,6 +7,13 @@
 - 离线 CC0 资产单独发布（GitHub Release `assets-cc0.zip`）
 - 清理个人路径与本地配置，仓库不含 API Key / oiioii CLI
 
+## Unreleased · Sprint 4
+
+- ComfyUI 本地生图：探测、checkpoint 列表、SDXL 工作流、轮询、下载
+- 画布「ComfyUI」入口：本地生成免费，自动加入画布
+- 设置 → API 新增 ComfyUI 地址检测/保存
+- 任务存储支持厂商 remoteId
+
 ## Unreleased · Sprint 2
 
 - 支持 Agent Plan 模式：`/api/plan/v3` + `doubao-seedream-5.0-flash/pro`，套餐内额度直接生图
