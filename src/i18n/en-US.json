@@ -297,5 +297,29 @@
     "filesGroup": "Media & connections",
     "contentDisclosure": "Content preview & detailed edit",
     "useAsScript": "Use as project script"
+  },
+  "export": {
+    "title": "Export preview",
+    "subtitle": "Switch cameras by shot, or output one camera. Lock and Solo do not change the export.",
+    "camera": "Output camera",
+    "followShots": "Follow shot sequence",
+    "format": "Video format",
+    "aspect": "Output aspect",
+    "start": "Start / s",
+    "end": "End / s",
+    "simplify": "Simplify character shapes",
+    "simplifyHint": "Limbless mannequin keeps position, facing and height; affects this export only.",
+    "simplifyNote": "Simplified output does not express body performance. Keep original characters for walking, waving, etc.",
+    "preview": "Preview current frame",
+    "noCharacters": "No simplifiable humanoid characters in this project.",
+    "sizeHelp": "A single camera uses its own aspect; shot switching uses the canvas aspect and letterboxes to preserve composition. Recording is real-time; keep the app in front. Canvas audio is reference only and is not mixed into the export.",
+    "refPack": "Shot reference pack",
+    "screenshot": "Capture current camera frame",
+    "startRecord": "Start recording",
+    "cancelRecord": "Cancel recording",
+    "preparing": "Preparing local models…",
+    "recording": "Recording… {percent}%",
+    "exportFailed": "Export failed: {error}",
+    "downloadedFull": "Video downloaded; canvas is full, so no video node was added."
   }
 }

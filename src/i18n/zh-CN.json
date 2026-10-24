@@ -297,5 +297,29 @@
     "filesGroup": "素材与连线",
     "contentDisclosure": "内容预览与详细编辑",
     "useAsScript": "用作项目剧本"
+  },
+  "export": {
+    "title": "导出预演",
+    "subtitle": "可按剪辑切机，或只输出一个机位。锁定与 Solo 不改变导出内容。",
+    "camera": "输出机位",
+    "followShots": "按镜头编排切换",
+    "format": "视频格式",
+    "aspect": "输出画幅",
+    "start": "开始 / 秒",
+    "end": "结束 / 秒",
+    "simplify": "简化角色外形",
+    "simplifyHint": "无四肢人形替身，保留站位、朝向与身高；仅影响本次输出。",
+    "simplifyNote": "简化后不表达肢体表演。需要走路、挥手等动作细节时，请保留原角色。",
+    "preview": "预览当前帧",
+    "noCharacters": "当前工程没有可简化的人形角色。",
+    "sizeHelp": "单机位固定采用该机位画幅；切机输出可指定画布画幅，遇到不同画幅会加黑边，完整保留构图。视频实时录制，请保持前台。画布音频是参考素材，尚不混入导出。",
+    "refPack": "按镜头参考包",
+    "screenshot": "截取所选机位当前帧",
+    "startRecord": "开始录制",
+    "cancelRecord": "取消录制",
+    "preparing": "正在准备本地模型…",
+    "recording": "正在录制… {percent}%",
+    "exportFailed": "导出失败：{error}",
+    "downloadedFull": "视频已下载；画布节点已满，未添加视频节点"
   }
 }
