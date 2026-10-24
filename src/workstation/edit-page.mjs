@@ -80,8 +80,8 @@ export function createEditPage(root,ctx){
      <p class="help-text" id="wsLibStatus" role="status">${t('edit.importHint')}</p>
     </aside>
     <main class="ws-edit-main">
-     <div class="ws-preview-wrap"><div class="ws-preview-frame"><video id="wsEdVideo" playsinline preload="auto"></video><div class="ws-preview-gap hidden" id="wsEdGap">${empty?`<section class="ws-edit-empty-start"><h3>${t('edit.emptyTitle')}</h3><p>${t('edit.emptyText')}</p><div class="ws-flow-actions"><button id="wsEdEmptyImport" class="primary">${t('edit.importExternal')}</button><button id="wsEdEmptyCanvas">${t('edit.chooseCanvas')}</button></div><p id="wsEdEmptyReason">时间线中还没有片段，加入后即可预览和导出。</p></section>`:'黑场 / 空隙'}</div><span class="ws-preview-tag" id="wsEdTag"></span></div>
-     <div class="ws-preview-row"><span id="wsEdClipInfo" class="muted">—</span><span class="grow"></span><span class="muted">V1 视频 · A1 音频</span></div></div>
+     <div class="ws-preview-wrap"><div class="ws-preview-frame"><video id="wsEdVideo" playsinline preload="auto"></video><div class="ws-preview-gap hidden" id="wsEdGap">${empty?`<section class="ws-edit-empty-start"><h3>${t('edit.emptyTitle')}</h3><p>${t('edit.emptyText')}</p><div class="ws-flow-actions"><button id="wsEdEmptyImport" class="primary">${t('edit.importExternal')}</button><button id="wsEdEmptyCanvas">${t('edit.chooseCanvas')}</button></div><p id="wsEdEmptyReason">${t('edit.emptyReason')}</p></section>`:t('edit.blackGap')}</div><span class="ws-preview-tag" id="wsEdTag"></span></div>
+     <div class="ws-preview-row"><span id="wsEdClipInfo" class="muted">—</span><span class="grow"></span><span class="muted">${t('edit.previewTracks')}</span></div></div>
      <div class="ws-tl-scroll" id="wsTlScroll"><div class="ws-tl-content" id="wsTlContent"></div></div>
     </main>
     <aside class="ws-edit-side">
@@ -161,8 +161,8 @@ export function createEditPage(root,ctx){
   els.content.style.width=width+'px';
   els.content.innerHTML=`
    <div class="ws-tl-ruler" id="wsTlRuler" style="width:${width}px">${ticks}</div>
-   <div class="ws-tl-track"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>V1</b> 视频<span>单轨 · 顺序排列</span></div><div class="ws-tl-lane" data-lane="video" style="width:${laneW}px"></div></div>
-   <div class="ws-tl-track audio"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>A1</b> 音频<span>轨音量 <input type="number" id="wsEdA1Gain" min="0" max="2" step="0.05" value="${seq().audioGain??1}"> <label class="ws-check"><input type="checkbox" id="wsEdA1Mute" ${seq().audioMuted?'checked':''}>静音</label></span></div><div class="ws-tl-lane" data-lane="audio" style="width:${laneW}px"></div></div>
+   <div class="ws-tl-track"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>V1</b> ${t('edit.videoTrack')}<span>${t('edit.singleTrackHint')}</span></div><div class="ws-tl-lane" data-lane="video" style="width:${laneW}px"></div></div>
+   <div class="ws-tl-track audio"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>A1</b> ${t('edit.audioTrack')}<span>${t('edit.trackVolume')} <input type="number" id="wsEdA1Gain" min="0" max="2" step="0.05" value="${seq().audioGain??1}"> <label class="ws-check"><input type="checkbox" id="wsEdA1Mute" ${seq().audioMuted?'checked':''}>${t('edit.mute')}</label></span></div><div class="ws-tl-lane" data-lane="audio" style="width:${laneW}px"></div></div>
    <i class="ws-tl-playhead" id="wsTlPlayhead" style="left:${LABEL_W}px"></i>`;
   els.ruler=els.content.querySelector('#wsTlRuler');
   els.playheadEl=els.content.querySelector('#wsTlPlayhead');
@@ -201,11 +201,11 @@ export function createEditPage(root,ctx){
  }
  function renderInspector(){
   const c=selectedClip();
-  if(!c){els.inspector.innerHTML=`<h3>片段</h3><p class="help-text">点击时间线片段查看属性。<br>从左侧素材库点「＋」或拖入轨道。</p>`;return;}
+  if(!c){els.inspector.innerHTML=`<h3>${t('edit.clip')}</h3><p class="help-text">${t('edit.clickClip')}<br>${t('edit.addClip')}</p>`;return;}
   const asset=assetOf(c.assetId),src=sourceFrames(asset);
-  els.inspector.innerHTML=`<h3>片段 · ${esc(asset?.name||'素材缺失')}</h3>
+  els.inspector.innerHTML=`<h3>${t('edit.clipNamed',{name:esc(asset?.name||t('edit.missingAsset'))})}</h3>
    ${!asset?'<p class="ws-warn">⚠ 素材已缺失（被删除或来自旧备份）。可删除此片段。</p>':''}
-   <label class="field">时间显示<select id="wsPrUnit" aria-label="片段时间单位"><option value="seconds" ${timeUnit==='seconds'?'selected':''}>秒</option><option value="timecode" ${timeUnit==='timecode'?'selected':''}>时间码（时:分:秒:帧）</option><option value="frames" ${timeUnit==='frames'?'selected':''}>帧</option></select></label>
+   <label class="field">${t('edit.timeDisplay')}<select id="wsPrUnit" aria-label="${t('edit.timeDisplay')}"><option value="seconds" ${timeUnit==='seconds'?'selected':''}>${t('edit.seconds')}</option><option value="timecode" ${timeUnit==='timecode'?'selected':''}>${t('edit.timecode')}</option><option value="frames" ${timeUnit==='frames'?'selected':''}>${t('edit.frames')}</option></select></label>
    <label class="field">位置 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrStart" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.start,timeUnit,seq().fps)}"></label>
    <div class="ws-field-row">
     <label class="field">入点 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrIn" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.in,timeUnit,seq().fps)}"></label>
@@ -214,14 +214,14 @@ export function createEditPage(root,ctx){
    <p class="help-text">时长 ${clipLength(c)} 帧 · ${(clipLength(c)/seq().fps).toFixed(2)} 秒${src?` · 素材共 ${src} 帧`:''}</p>
    <div class="ws-field-row">
     <label class="field">音量<input type="number" id="wsPrVolume" min="0" max="2" step="0.05" value="${c.volume}"></label>
-    <label class="field ws-check-field"><input type="checkbox" id="wsPrMute" ${c.muted?'checked':''}>片段静音</label>
+    <label class="field ws-check-field"><input type="checkbox" id="wsPrMute" ${c.muted?'checked':''}>${t('edit.clipMute')}</label>
    </div>
    <div class="ws-field-row">
     <button id="wsPrSplit" class="grow">✂ 拆分</button>
     <button id="wsPrDelete" class="danger grow">删除</button>
-    <button id="wsPrRipple" class="grow" title="删除并左移后续片段">闭合空隙</button>
+    <button id="wsPrRipple" class="grow" title="Delete and shift following clips">${t('edit.closeGap')}</button>
    </div>
-   <p class="help-text">双击数值输入框可全选直接键入。首版不支持变速与转场；片段音量只作用于本片段原声。</p>`;
+   <p class="help-text">${t('edit.inspectorHelp')}</p>`;
   els.inspector.querySelector('#wsPrUnit').onchange=e=>{timeUnit=e.target.value;renderInspector();root.querySelector('#wsPrUnit').focus();};
   const readTime=input=>{try{input.setCustomValidity('');return parseClipTime(input.value,timeUnit,seq().fps);}catch(error){input.setCustomValidity(error.message);input.reportValidity();return null;}};
   els.inspector.querySelector('#wsPrStart').onchange=e=>{const start=readTime(e.target);if(start===null)return;ctx.checkpoint();setTrack(selected.track,moveClip(trackOf(selected.track),c.id,start));ctx.commit();ctx.persist();render();};
