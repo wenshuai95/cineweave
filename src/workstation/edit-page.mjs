@@ -5,6 +5,7 @@
 import {SEQUENCE_FPS,clipLength,clipEnd,trackEnd,sequenceDuration,placeClip,moveClip,trimClip,splitClip,removeClip,formatTimecode,isSequenceFps,refpsSequence} from './sequence.mjs';
 import {cutLibraryRows} from './cut-library.mjs';
 import {uid} from '../model.mjs';
+import {t} from '../i18n/index.mjs';
 import {parseClipTime,displayClipTime,isNativeActivationTarget} from './media-interactions.mjs';
 
 const LABEL_W=118,LANE_TAIL=220,MIN_PPF=.04,MAX_PPF=32;
@@ -44,7 +45,7 @@ export function createEditPage(root,ctx){
   stop();
   root.innerHTML=`
    <header class="ws-page-header ws-edit-header">
-    <div class="ws-edit-heading"><div><h2>剪辑</h2><p>粗剪与导出 · ${formatTimecode(totalFrames(),seq().fps)} · ${(totalFrames()/seq().fps).toFixed(2)} 秒 · ${seq().fps} fps</p></div><div class="ws-edit-output-actions"><button id="wsEdToCanvas" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="将粗剪结果渲染为 MP4 视频节点">导出到画布 ↗</button><button id="wsEdExport" class="primary" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="导出当前时间线为 MP4 文件">导出成片 ↗</button></div></div>
+    <div class="ws-edit-heading"><div><h2>${t('edit.title')}</h2><p>${t('edit.subtitle',{timecode:formatTimecode(totalFrames(),seq().fps),seconds:(totalFrames()/seq().fps).toFixed(2),fps:seq().fps})}</p></div><div class="ws-edit-output-actions"><button id="wsEdToCanvas" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="将粗剪结果渲染为 MP4 视频节点">${t('edit.toCanvas')}</button><button id="wsEdExport" class="primary" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="导出当前时间线为 MP4 文件">${t('edit.export')}</button></div></div>
     <div class="ws-edit-toolbar">
      <button id="wsEdHome" title="回到开头 Home">|◁</button>
      <button id="wsEdStepBack" title="上一帧 ←">◁</button>
@@ -52,34 +53,34 @@ export function createEditPage(root,ctx){
      <button id="wsEdStepFwd" title="下一帧 →">▷</button>
      <span class="timecode" id="wsEdTimecode">00:00.00</span>
      <span class="divider"></span>
-     <label class="ws-inline-label" title="影片帧率：24 / 25 / 30，切换时保持时间不变">帧率
+     <label class="ws-inline-label" title="影片帧率：24 / 25 / 30，切换时保持时间不变">${t('edit.fps')}
       <select id="wsEdFps">${SEQUENCE_FPS.map(f=>`<option value="${f}" ${seq().fps===f?'selected':''}>${f}</option>`).join('')}</select>
      </label>
      <span class="divider"></span>
      <button id="wsEdUndo" title="撤销 ⌘Z">↶</button>
      <button id="wsEdRedo" title="重做 ⌘⇧Z">↷</button>
      <span class="divider"></span>
-     <button id="wsEdSplit" title="在播放杆处拆分所选片段 S">✂ 拆分</button>
-     <button id="wsEdDelete" title="删除所选片段 Delete">✕ 删除</button>
-     <button id="wsEdRipple" title="删除所选片段并闭合空隙">⇤ 闭合空隙</button>
+     <button id="wsEdSplit" title="在播放杆处拆分所选片段 S">${t('edit.split')}</button>
+     <button id="wsEdDelete" title="删除所选片段 Delete">${t('edit.delete')}</button>
+     <button id="wsEdRipple" title="删除所选片段并闭合空隙">${t('edit.ripple')}</button>
      <span class="divider"></span>
      <button id="wsEdZoomOut" title="缩小 −">−</button>
      <button id="wsEdZoomIn" title="放大 ＋">＋</button>
-     <button id="wsEdFit" title="缩放适配全部片段 F">⛶ 适应</button>
+     <button id="wsEdFit" title="缩放适配全部片段 F">${t('edit.fit')}</button>
 
     </div>
    </header>
    <div class="ws-edit-body">
     <aside class="ws-cut-library" aria-label="剪辑素材库" id="wsCutLibrary">
-     <header><div><h3>素材库 <small id="wsLibCount"></small></h3><p>本地素材与画布视频，按需加入剪辑</p></div><button id="wsEdImport" class="primary">＋ 导入</button></header>
+     <header><div><h3>${t('edit.library')} <small id="wsLibCount"></small></h3><p>${t('edit.libraryHint')}</p></div><button id="wsEdImport" class="primary">${t('edit.import')}</button></header>
      <input type="file" id="wsEdFile" multiple accept=".mp4,.webm,.mp3,.wav,.ogg,.m4a,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4" hidden>
-     <nav ${hasLibrary?'':'hidden'} class="ws-library-filters ${hasLibrary?'':'hidden'}" aria-label="素材分类">${[['all','全部'],['previz','白模预演'],['video','视频'],['audio','音频']].map(([id,label])=>`<button data-library-filter="${id}" aria-pressed="${libraryFilter===id}">${label}</button>`).join('')}</nav>
-     <input ${hasLibrary?'':'hidden'} id="wsLibSearch" class="${hasLibrary?'':'hidden'}" type="search" aria-label="搜索剪辑素材" placeholder="搜索素材名称" value="${esc(libraryQuery)}">
+     <nav ${hasLibrary?'':'hidden'} class="ws-library-filters ${hasLibrary?'':'hidden'}" aria-label="素材分类">${[['all',t('edit.filterAll')],['previz',t('edit.filterPreviz')],['video',t('edit.filterVideo')],['audio',t('edit.filterAudio')]].map(([id,label])=>`<button data-library-filter="${id}" aria-pressed="${libraryFilter===id}">${label}</button>`).join('')}</nav>
+     <input ${hasLibrary?'':'hidden'} id="wsLibSearch" class="${hasLibrary?'':'hidden'}" type="search" aria-label="搜索剪辑素材" placeholder="${t('edit.search')}" value="${esc(libraryQuery)}">
      <div class="ws-bin-list" id="wsEdBin">${binHtml()}</div>
-     <p class="help-text" id="wsLibStatus" role="status">可拖入文件导入。点预览查看原片，点「＋」或拖到轨道加入剪辑。</p>
+     <p class="help-text" id="wsLibStatus" role="status">${t('edit.importHint')}</p>
     </aside>
     <main class="ws-edit-main">
-     <div class="ws-preview-wrap"><div class="ws-preview-frame"><video id="wsEdVideo" playsinline preload="auto"></video><div class="ws-preview-gap hidden" id="wsEdGap">${empty?`<section class="ws-edit-empty-start"><h3>开始你的粗剪</h3><p>导入外部视频或音频，或从左侧选择画布素材加入时间线。</p><div class="ws-flow-actions"><button id="wsEdEmptyImport" class="primary">导入外部素材</button><button id="wsEdEmptyCanvas">选择画布视频</button></div><p id="wsEdEmptyReason">时间线中还没有片段，加入后即可预览和导出。</p></section>`:'黑场 / 空隙'}</div><span class="ws-preview-tag" id="wsEdTag"></span></div>
+     <div class="ws-preview-wrap"><div class="ws-preview-frame"><video id="wsEdVideo" playsinline preload="auto"></video><div class="ws-preview-gap hidden" id="wsEdGap">${empty?`<section class="ws-edit-empty-start"><h3>${t('edit.emptyTitle')}</h3><p>${t('edit.emptyText')}</p><div class="ws-flow-actions"><button id="wsEdEmptyImport" class="primary">${t('edit.importExternal')}</button><button id="wsEdEmptyCanvas">${t('edit.chooseCanvas')}</button></div><p id="wsEdEmptyReason">时间线中还没有片段，加入后即可预览和导出。</p></section>`:'黑场 / 空隙'}</div><span class="ws-preview-tag" id="wsEdTag"></span></div>
      <div class="ws-preview-row"><span id="wsEdClipInfo" class="muted">—</span><span class="grow"></span><span class="muted">V1 视频 · A1 音频</span></div></div>
      <div class="ws-tl-scroll" id="wsTlScroll"><div class="ws-tl-content" id="wsTlContent"></div></div>
     </main>
@@ -87,7 +88,7 @@ export function createEditPage(root,ctx){
      <section class="ws-inspector" id="wsEdInspector"></section>
     </aside>
    </div>
-   <dialog class="ws-library-preview" id="wsLibPreview" aria-labelledby="wsLibPreviewTitle"><header><h3 id="wsLibPreviewTitle">素材预览</h3><button id="wsLibPreviewClose" aria-label="关闭素材预览">关闭 ×</button></header><div id="wsLibPreviewMedia"></div></dialog>`;
+   <dialog class="ws-library-preview" id="wsLibPreview" aria-labelledby="wsLibPreviewTitle"><header><h3 id="wsLibPreviewTitle">${t('edit.preview')}</h3><button id="wsLibPreviewClose" aria-label="关闭素材预览">${t('edit.close')}</button></header><div id="wsLibPreviewMedia"></div></dialog>`;
   Object.assign(els,{scroll:root.querySelector('#wsTlScroll'),content:root.querySelector('#wsTlContent'),
    video:root.querySelector('#wsEdVideo'),gap:root.querySelector('#wsEdGap'),tag:root.querySelector('#wsEdTag'),
    timecode:root.querySelector('#wsEdTimecode'),playBtn:root.querySelector('#wsEdPlay'),
