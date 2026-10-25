@@ -406,3 +406,106 @@ body[data-ws-page=edit] .topbar .workspace-switch{background:#2a2530;border-colo
 body[data-canvas-mode=board] .workspace-toolbar .workspace-title,body[data-canvas-mode=board] .workspace-toolbar .breadcrumb{display:none}
 body[data-canvas-mode=board] .workspace-toolbar #stageBreadcrumb{display:none}
 .ws-bottomnav{display:none!important}
+
+/* ===== A1/A2/A4 Jimeng canvas parity (2026-10-25) ===== */
+.canvas-title-block,.canvas-top-controls{display:flex;align-items:center;gap:6px}
+.topbar .canvas-hud-meta{display:none}
+body[data-canvas-mode=board] .topbar{position:absolute;z-index:40;left:12px;right:12px;top:10px;height:40px;padding:0;background:transparent;border:0;box-shadow:none;gap:8px;pointer-events:none}
+body[data-canvas-mode=board] .topbar>*{pointer-events:auto}
+body[data-canvas-mode=board] .topbar .brand{flex:none;width:36px;min-width:36px;padding:0;background:transparent}
+body[data-canvas-mode=board] .topbar .brand>div:not(.mark){display:none}
+body[data-canvas-mode=board] .topbar .brand .mark{width:32px;height:32px}
+body[data-canvas-mode=board] .topbar>.divider{display:none}
+body[data-canvas-mode=board] .canvas-title-block{height:36px;width:287px;min-width:287px;padding:0 7px;border-radius:8px;background:rgba(13,13,13,.72);backdrop-filter:blur(80px);gap:3px}
+body[data-canvas-mode=board] .canvas-title-block #projectName{flex:1;width:auto;max-width:none;height:34px;padding:0 4px;border:0;background:transparent;color:#f0eef4;font-size:13px}
+body[data-canvas-mode=board] .canvas-title-block .workspace-switch{flex:none;height:28px;padding:0 7px;border:0;background:transparent;backdrop-filter:none;color:#aaa5b2;font-size:11px}
+body[data-canvas-mode=board] .topbar .canvas-hud-meta{display:flex;height:36px;gap:6px;align-items:center;margin-left:2px}
+body[data-canvas-mode=board] #canvasHudCount,body[data-canvas-mode=board] #canvasHudSave{display:flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:rgba(13,13,13,.72);backdrop-filter:blur(80px);color:#a9a5b0;font-size:11px;white-space:nowrap}
+body[data-canvas-mode=board] #canvasHudName{display:none}
+body[data-canvas-mode=board] .canvas-top-controls{height:36px;margin-left:auto;padding:0 4px;border-radius:8px;background:rgba(32,32,34,.8);border:1px solid rgba(255,255,255,.04);backdrop-filter:blur(40px);gap:2px}
+body[data-canvas-mode=board] .canvas-top-controls>button{height:28px;min-height:28px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:#cfccd5;font-size:11px}
+body[data-canvas-mode=board] .canvas-top-controls>button:hover{background:rgba(255,255,255,.08)}
+body[data-canvas-mode=board] .workspace-toolbar{display:none!important}
+body[data-canvas-mode=board] .canvas-create-rail{left:12px;top:50%;width:48px;height:444px;padding:8px 5px;border:0;border-radius:12px;background:rgb(32,32,34);gap:9px;justify-content:center;backdrop-filter:none;box-shadow:0 8px 26px #0004}
+body[data-canvas-mode=board] .canvas-create-rail button{width:36px;height:36px;min-height:36px;border-radius:9px}
+body[data-canvas-mode=board] .canvas-create-rail .ui-icon{width:17px;height:17px}
+body[data-canvas-mode=board] .canvas-bottom-dock{position:absolute;z-index:36;left:12px;bottom:16px;width:164px;height:36px;padding:4px;display:flex;align-items:center;gap:2px;border-radius:8px;background:rgb(13,13,13)}
+body[data-canvas-mode=board] .canvas-bottom-dock button{width:28px;height:28px;min-height:28px;padding:0;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:#a7a3ae;font-size:12px}
+body[data-canvas-mode=board] .canvas-bottom-dock button:hover{background:rgba(255,255,255,.07);color:#fff}
+body[data-canvas-mode=board] .canvas-bottom-dock button.active{background:rgba(255,255,255,.08);color:#f4f1fa}
+body[data-canvas-mode=board] .canvas-bottom-dock #dockZoom{width:48px;margin-left:auto;font-size:10px;color:#b8b4bf}
+body[data-canvas-mode=board] .canvas-bottom-dock .ui-icon{width:16px;height:16px}
+body[data-canvas-mode=board] .board-controls,body[data-canvas-mode=board] #boardToolbar{display:none!important}
+body[data-canvas-mode=board] #board.hide-edges #edges{display:none}
+body[data-canvas-mode=board] .canvas-ai-entry{right:12px;bottom:16px;width:120px;height:36px;padding:0;justify-content:center;border:0;border-radius:20px;background:rgba(39,39,39,.72);backdrop-filter:blur(40px);font-size:12px;box-shadow:none}
+body[data-canvas-mode=board] .canvas-ai-entry .ui-icon{width:16px;height:16px}
+
+/* A2 nodes */
+body[data-canvas-mode=board] #board .node{background:transparent!important;border:0!important;border-radius:8px!important;box-shadow:none!important;overflow:visible!important}
+body[data-canvas-mode=board] #board .node.node-text,body[data-canvas-mode=board] #board .node.node-audio{width:243.8px!important;height:243.8px!important}
+body[data-canvas-mode=board] #board .node.node-image,body[data-canvas-mode=board] #board .node.node-video{width:433.4px!important;height:243.8px!important}
+body[data-canvas-mode=board] #board .node .node-empty,body[data-canvas-mode=board] #board .node .node-text,body[data-canvas-mode=board] #board .node .node-audio,body[data-canvas-mode=board] #board .node .node-media{width:100%;height:100%;border-radius:8px!important}
+body[data-canvas-mode=board] #board .node .node-empty{background:linear-gradient(145deg,#252527,#1d1d20);border:1px solid #2d2d31}
+body[data-canvas-mode=board] #board .node .node-empty-icon{height:100%;width:100%;border-radius:8px!important;background:linear-gradient(145deg,#252527,#1d1d20);color:rgba(255,255,255,.32);font-size:20px}
+body[data-canvas-mode=board] #board .node .node-empty-icon .ui-icon{width:22px;height:22px}
+body[data-canvas-mode=board] #board .node img.node-media,body[data-canvas-mode=board] #board .node video.node-media{width:100%;height:100%;min-height:0;max-height:none;object-fit:cover;border-radius:8px!important}
+body[data-canvas-mode=board] #board .node .node-text{padding:16px;height:100%;max-height:none;background:#1d1d20;border-radius:8px!important;font-size:12px;line-height:1.8;color:#b8b4bf}
+body[data-canvas-mode=board] #board .node .node-audio{height:100%;background:#1d1d20;border-radius:8px!important}
+body[data-canvas-mode=board] #board .node .node-tag{left:1px;top:-32px;height:24px;font-size:13px;color:rgba(255,255,255,.35);gap:6px}
+body[data-canvas-mode=board] #board .node .node-tag-icon{color:rgba(255,255,255,.35)}
+body[data-canvas-mode=board] #board .node .node-tag-icon .ui-icon{width:16px;height:16px}
+body[data-canvas-mode=board] #board .node.selected{outline:1px solid rgba(0,142,229,.9)!important;outline-offset:2px;box-shadow:none!important}
+body[data-canvas-mode=board] #board .node .port{top:calc(50% - 42.5px);width:42px;height:85px;border:0!important;border-radius:0;background:transparent!important;opacity:1;font-size:0;color:transparent;z-index:4}
+body[data-canvas-mode=board] #board .node .port.in{left:-21px}body[data-canvas-mode=board] #board .node .port.out{right:-21px}
+body[data-canvas-mode=board] #board .node .port::before{display:none}
+body[data-canvas-mode=board] #board .node .port::after{content:'';width:7px;height:7px;border-radius:50%;background:#0f0f12;border:1px solid #7b7b84;opacity:0;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);transition:opacity .15s}
+body[data-canvas-mode=board] #board .node:hover .port::after,body[data-canvas-mode=board] #board .node.selected .port::after{opacity:1}
+body[data-canvas-mode=board] #edges .edge-line{stroke:rgb(0,142,229)!important;stroke-width:1px!important;fill:none}
+body[data-canvas-mode=board] #edges .edge-line.relation-muted{opacity:.28}
+body[data-canvas-mode=board] #edges .edge-line.relation-related,body[data-canvas-mode=board] #edges .edge-line.selected{stroke:#45b6ff!important;stroke-width:1.4px!important}
+
+/* A4 attached composer and result toolbar */
+.modal.gen-attached-composer{height:206px;min-height:206px;padding:10px 12px;border:0;border-radius:20px;background:rgba(34,34,34,.72);backdrop-filter:blur(24px);box-shadow:0 16px 44px #0009;overflow:hidden}
+.gen-attached-composer .modal-heading{position:absolute;right:8px;top:6px;z-index:4;padding:0;margin:0;border:0;background:transparent}
+.gen-attached-composer .modal-heading h2{display:none}
+.gen-attached-composer .modal-heading #closeModal{width:24px;height:24px;min-height:24px;padding:0;border:0;background:transparent;color:#a9a5b0}
+.gen-attached-composer .gen-composer-v2{display:block;height:100%;max-height:none;padding:0;grid-template-columns:none}
+.gen-attached-composer .gen-preview{display:none!important}
+.gen-attached-composer .gen-card{height:calc(100% - 38px);max-height:none;padding:0 4px 34px 0;overflow:auto}
+.gen-attached-composer .gen-chips{gap:5px;flex-wrap:wrap;margin-bottom:5px}
+.gen-attached-composer .gen-chip{height:28px;padding:3px 7px;font-size:11px}
+.gen-attached-composer #genPrompt{min-height:60px;max-height:66px;width:100%;border:0;background:transparent;font-size:13px;padding:6px 2px;resize:none}
+.gen-attached-composer .gen-prompt::placeholder{color:#8f8b95}
+.gen-attached-composer .gen-video-refs,.gen-attached-composer #genRefs,.gen-attached-composer #genRefTokens{max-height:70px}
+.gen-attached-composer .gen-subrow{display:flex;gap:6px;margin-top:3px}
+.gen-attached-composer #genStatus{font-size:10px;margin:3px 0}
+.gen-attached-composer .generation-history{display:none}
+.gen-attached-composer .modal-actions{position:absolute;right:10px;bottom:8px;margin:0;padding:0;border:0;background:transparent;display:flex;gap:5px;z-index:5}
+.gen-attached-composer .modal-actions button{min-height:30px;padding:3px 9px;border-radius:8px;font-size:11px}
+.gen-attached-composer .modal-actions .composer-price{font-size:10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.image-result-toolbar{position:fixed;z-index:71;display:flex;align-items:center;gap:2px;height:38px;max-width:calc(100vw - 24px);padding:4px;border:1px solid #3d3b43;border-radius:10px;background:rgba(31,31,34,.88);backdrop-filter:blur(24px);box-shadow:0 8px 24px #0007;overflow-x:auto;scrollbar-width:none}
+.image-result-toolbar[hidden]{display:none!important}
+.image-result-toolbar button{height:30px;min-height:30px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:#d3cfd9;font-size:11px;white-space:nowrap}
+.image-result-toolbar button:hover{background:rgba(255,255,255,.08);color:#fff}
+@media(max-width:1150px){body[data-canvas-mode=board] .canvas-title-block{width:240px;min-width:240px}body[data-canvas-mode=board] #canvasHudCount,body[data-canvas-mode=board] #canvasHudSave{padding:0 7px}body[data-canvas-mode=board] .canvas-top-controls>button{padding:0 6px}}
+.modal.gen-attached-composer{border-radius:20px!important;background:rgba(34,34,34,.72)!important}
+.gen-attached-composer .gen-card>*{flex-shrink:0}
+body[data-canvas-mode=board] .node-tool-backdrop:has(.gen-attached-composer){background:transparent!important;backdrop-filter:none!important}
+.gen-attached-composer .generation-history{display:block;font-size:10px}
+/* Topbar: truly transparent overlay; brand + one title pill + one controls pill. */
+body[data-canvas-mode=board] .app{grid-template-rows:0 minmax(0,1fr) 27px}
+body[data-canvas-mode=board] .topbar{grid-row:1;background:transparent!important;border-bottom:0!important;box-shadow:none!important}
+body[data-canvas-mode=board] .workbench{grid-row:2}
+body[data-canvas-mode=board] .statusbar{grid-row:3}
+body[data-canvas-mode=board] .canvas-title-block .canvas-hud-meta{display:flex!important;height:24px;gap:4px;margin-left:2px;padding:0;min-width:0}
+body[data-canvas-mode=board] .canvas-title-block #canvasHudName{display:none}
+body[data-canvas-mode=board] .canvas-title-block :is(#canvasHudCount,#canvasHudSave){display:flex;align-items:center;height:22px;padding:0 5px;border-radius:5px;background:rgba(255,255,255,.05);backdrop-filter:none;color:#a9a5b0;font-size:10px;white-space:nowrap}
+body[data-canvas-mode=board] .canvas-title-block #projectName{min-width:0}
+body[data-canvas-mode=board] .canvas-title-block .workspace-switch{font-size:10px;padding:0 4px;height:24px}
+@media(max-width:1150px){body[data-canvas-mode=board] .canvas-title-block #canvasHudSave{display:none!important}}
+/* Keep the title pill a single 287/240px capsule; children shrink inside it. */
+body[data-canvas-mode=board] .canvas-title-block{overflow:hidden;white-space:nowrap}
+body[data-canvas-mode=board] .canvas-title-block #projectName{flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important}
+body[data-canvas-mode=board] .canvas-title-block .workspace-switch{flex:0 0 auto;max-width:54px;overflow:hidden;text-overflow:ellipsis}
+body[data-canvas-mode=board] .canvas-title-block .canvas-hud-meta{flex:0 0 auto;min-width:0}
+body[data-canvas-mode=board] .canvas-title-block :is(#canvasHudCount,#canvasHudSave){flex:0 0 auto;background:transparent!important;border:0;padding:0 3px!important}

@@ -265,3 +265,15 @@ dialog.ws-library-preview{position:fixed;inset:0;margin:auto;width:min(820px,cal
  .ws-edit-side{width:100%;border-top:1px solid var(--line);border-left:0}
  .ws-export-dialog .ws-deliver-grid{grid-template-columns:1fr}
 }
+
+/* 剪辑素材库：缩略图、缺失态与恢复入口 */
+.ws-bin-thumb{flex:none;width:46px;height:30px;border-radius:4px;overflow:hidden;background:#11161a;border:1px solid #343d44;display:grid;place-items:center;color:#9daeb8;font-size:15px}
+.ws-bin-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ws-bin-thumb.has-thumb{border-color:#4c5a64}
+.ws-bin-thumb.image{color:#d8c39b}
+.ws-bin-row.missing{border-color:#7a3b34;background:#2a1d1c}
+.ws-bin-row.missing .ws-bin-thumb{color:#ff9c86;border-color:#7a3b34}
+.ws-bin-row.missing .ws-bin-name small{color:#e5a497}
+.ws-recover-media{padding:20px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.ws-recover-media .ws-warn{margin:0;max-width:520px;line-height:1.7}
+.ws-cut-library .ws-bin-row .ws-bin-actions button.danger{padding:2px 6px;color:#f1a294;border-color:#4d3532}

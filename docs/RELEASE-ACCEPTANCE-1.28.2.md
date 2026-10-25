@@ -1,7 +1,7 @@
 # 造梦工坊 v1.28.2 交付验收
 
 日期：2026-10-25
-版本：1.28.2
+版本：1.28.2（历史版本；最新见 [RELEASE-ACCEPTANCE-1.29.0.md](RELEASE-ACCEPTANCE-1.29.0.md)）
 主题：ZCode 缺陷修复（不扩展功能）
 
 ZCode 原始静态测试报告：[ZCODE-BUG-REPORT-1.28.1.md](ZCODE-BUG-REPORT-1.28.1.md)；复跑说明：[zcode-test/README.txt](zcode-test/README.txt)。

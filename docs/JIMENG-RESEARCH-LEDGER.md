@@ -12,9 +12,10 @@ projectId：`b02f4b43-8bfc-46e1-b36d-c3c5a13356b4`
 | 图片 | Seedream 5.0 Lite | t2i / 2K / 16:9 / 1 张 | 成功，2560×1440 | 0 |
 | 视频 | Seedance 2.5 | t2v / 5s / 480p / 16:9 | 失败，serviceCode 20115 | 60（记录） |
 | 视频 | Seedance 2.5 | m2v / 5s / 480p / 16:9 / 图片参考 | 成功 | 60 |
+| 视频 | Seedance 2.5 | m2v / 5s / 480p / 图片+视频参考 | 成功 | 90 |
 | 节点 | 文本/图片/视频/音频 | 创建 | 全部成功 | 0 |
 
-**记录累计：约 120 / 500 积分。**
+**记录累计：约 210 / 500 积分。**
 
 ## 观测
 
@@ -24,7 +25,11 @@ projectId：`b02f4b43-8bfc-46e1-b36d-c3c5a13356b4`
 - 失败节点在 UI 卡内显示失败原因与“重新生成”。
 - 成功视频节点直接显示视频画面和播放按钮；类型标签浮在节点外。
 - 空节点仅有深灰卡片 + 类型图标。
-- 左侧竖排工具、底部缩放、右下“与 AI 对话”是最明显的画布壳层。
+- 左侧竖排工具、底部**导航 dock**（选择工具/小地图/显示连线/缩放）与右下“与 AI 对话”是画布壳层。
+- 生成卡贴在选中空节点下方（680×206），不是屏幕底部。
+- 已生成图片选中后显示顶部编辑工具栏，不显示生成卡。
+- 双击创建菜单 200×444，右键菜单 200×372。
+- 2.5 已实测图片+视频混合参考成功（90 积分）。
 
 ## 截图
 
@@ -32,13 +37,20 @@ projectId：`b02f4b43-8bfc-46e1-b36d-c3c5a13356b4`
 - `docs/jimeng-parity/02-node-anatomy.png`
 - `docs/jimeng-parity/03-video-result.png`
 - `docs/jimeng-parity/04-video-failed.png`
+- `docs/jimeng-parity/05-local-app-canvas.png` 真实客户端画布
+- `docs/jimeng-parity/08-node-attached-composer.png` 节点生成卡
+- `docs/jimeng-parity/09-create-menu.png` 创建菜单
+- `docs/jimeng-parity/10-video-composer.png` 视频生成卡
+- `docs/jimeng-parity/12-context-menu.png` 右键菜单
+- `docs/jimeng-parity/13-marquee-select.png` 框选多选
 
 ## 未覆盖
 
-- 选中节点后的真实 composer 交互（受浏览器自动化限制）
-- 音频生成、时间轴、分享/协作
+- 连线真实拖拽建立/断线（React Flow 指针捕获，CDP 合成拖拽未稳定复现）
+- 音频参考生成
 - 长视频与多人参考
 - 实际积分余额对账
+- 生成中/停止/失败重试的完整卡内状态
 
 ## 结论
 

@@ -224,6 +224,18 @@ export function refpsSequence(sequence,newFps){
  return {fps:Number(newFps),video:mapTrack(sequence.video),audio:mapTrack(sequence.audio),audioGain:sequence.audioGain??1,audioMuted:sequence.audioMuted===true};
 }
 
+// 拖动 / 裁切时吸附到播放头、片段接缝与 0；threshold 单位为序列帧。
+export function snapFrame(frame,candidates=[],threshold=2){
+ const target=Math.round(frame),limit=Math.max(0,Math.round(threshold));
+ let best=null;
+ for(const raw of candidates){
+  if(!Number.isFinite(Number(raw)))continue;
+  const candidate=Math.round(Number(raw)),distance=Math.abs(candidate-target);
+  if(distance<=limit&&(best===null||distance<best.distance))best={frame:candidate,distance};
+ }
+ return best?best.frame:target;
+}
+
 export const framesToSeconds=(frames,fps)=>frames/fps;
 export const secondsToFrames=(seconds,fps)=>Math.round(seconds*fps);
 export function formatTimecode(frames,fps){

@@ -1,8 +1,8 @@
 import {uid} from '../model.mjs';
 
 // Canvas media is offered directly, without silently appending anything to a track.
-export function cutLibraryRows(project,{filter='all',query=''}={}){
- const assets=project.workstation.assets.filter(a=>['video','audio'].includes(a.kind));
+export function cutLibraryRows(project,{filter='all',query='',includeImages=false}={}){
+ const assets=project.workstation.assets.filter(a=>(includeImages?['video','audio','image']:['video','audio']).includes(a.kind));
  const nodes=project.nodes.filter(n=>['video','audio'].includes(n.type)&&/^data:(video|audio)\//.test(n.src||''));
  const directors=new Set(project.nodes.filter(n=>n.type==='director').map(n=>n.id));
  const previzIds=new Set(project.edges.filter(e=>directors.has(e.from)).map(e=>e.to));

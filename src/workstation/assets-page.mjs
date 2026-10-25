@@ -116,9 +116,9 @@ export function createAssetsPage(root,ctx){
      <h3>剪辑媒体 · ${ws.assets.length} 个 <small>（单个 ≤300 MB · 共 ≤500 个）</small></h3>
      ${ws.assets.length?`<div class="ws-asset-list">${ws.assets.map(a=>`
        <div class="ws-asset-row" data-asset="${esc(a.id)}">
-        <span class="ws-asset-icon ${a.kind}">${a.kind==='video'?'▷':'♫'}</span>
+        <span class="ws-asset-icon ${a.kind}">${a.kind==='video'?'▷':a.kind==='audio'?'♫':'▧'}</span>
         <span class="ws-asset-name" title="${esc(a.name)}">${esc(a.name)}${a.durationSec?`<small>${fmtDuration(a.durationSec)}</small>`:'<small>时长未知</small>'}</span>
-        <span class="ws-asset-meta">${a.kind==='video'?'视频':'音频'} · ${fmtBytes(a.size)}</span>
+        <span class="ws-asset-meta">${a.kind==='video'?'视频':a.kind==='audio'?'音频':'图片'} · ${fmtBytes(a.size)}</span>
         <span class="ws-asset-actions">
          <button data-preview="${esc(a.id)}">预览</button>
          ${a.kind==='video'?`<button data-send-video="${esc(a.id)}" title="追加到剪辑页视频轨 V1 末尾">→ V1</button>`:''}
