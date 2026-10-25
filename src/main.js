@@ -1511,6 +1511,7 @@ function modal(title,subtitle,body,actions='',options={}){
 }
 function closeModal({restoreFocus=true}={}){if(exporting)return;document.body.classList.remove('gen-dock-open');$$('#modalRoot video,#modalRoot audio').forEach(m=>m.pause());$('#modalRoot').innerHTML='';restoreModalBackground();if(restoreFocus&&modalReturnFocus?.isConnected)modalReturnFocus.focus({preventScroll:true});modalReturnFocus=null;renderNodeActionBar();}
 document.addEventListener('keydown',e=>{
+ if(e.isComposing||e.keyCode===229)return;
  if(e.key==='Escape'&&$('.modal')&&!exporting){e.preventDefault();e.stopImmediatePropagation();closeModal();return;}
  const dialog=$('.modal[aria-modal="true"]');if(e.key!=='Tab'||!dialog)return;
  const focusables=[...dialog.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,a[href],[tabindex="0"]')].filter(el=>el.getClientRects().length&&!el.closest('[hidden]'));
@@ -1745,6 +1746,8 @@ async function generationPanel(source,mode='image'){
  const panel=document.querySelector('#genPrompt')?.closest('.modal');if(!panel)return;const q=sel=>panel.querySelector(sel);
  if(dockComposer){panel.classList.add('gen-bottom-dock');document.body.classList.add('gen-dock-open');}
  const escValue=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const draft=source?.videoDraft&&typeof source.videoDraft==='object'?source.videoDraft:null;
+ let draftApplied=false;
  const setStatus=text=>{if(q('#genStatus'))q('#genStatus').textContent=text;};
  const live=()=>panel.isConnected&&p===project;
  const resetQuote=()=>{const next=generationQuoteReset();quote=next.quote;q('#genPrice').textContent=next.price;q('#genRun').textContent=next.runLabel;};
@@ -1756,7 +1759,7 @@ async function generationPanel(source,mode='image'){
   }
   closeModal();
  };
- q('#genPrompt').value=typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source);
+ q('#genPrompt').value=(mode==='video'&&typeof draft?.prompt==='string'&&draft.prompt.trim())?draft.prompt:(typeof source?.imagePromptDraft==='string'?source.imagePromptDraft:canvasImagePrompt(p,source));
  q('#genCancel').onclick=()=>{if(busy&&stopRequested!==null&&q('#genCancel').textContent==='停止等待'){stopRequested=true;q('#genCancel').disabled=true;setStatus('正在停止等待；后台任务可能继续，可在最近生成中恢复。');return;}dismissComposer();};
  q('#closeModal').onclick=dismissComposer;
  const composerBackdrop=panel.closest('.modal-backdrop');
@@ -1888,6 +1891,14 @@ async function generationPanel(source,mode='image'){
     q('#genRun').disabled=true;q('#genModelNote').hidden=false;q('#genModelNote').textContent=reason;setStatus(reason);return;
    }
    q('#genModel').value=available[0].id;
+   if(!draftApplied&&mode==='video'&&draft){
+    if(draft.modelId&&available.some(model=>model.id===draft.modelId))q('#genModel').value=draft.modelId;
+    updateVideoControls();
+    const duration=String(draft.duration??''),resolution=String(draft.resolution??'');
+    if([...q('#genDuration').options].some(option=>option.value===duration))q('#genDuration').value=duration;
+    if([...q('#genSize').options].some(option=>option.value===resolution))q('#genSize').value=resolution;
+    draftApplied=true;
+   }else{updateVideoControls();}
    const disabled=models.find(model=>model.available===false);
    if(disabled?.unavailableReason){q('#genModelNote').hidden=false;q('#genModelNote').textContent=disabled.unavailableReason;}
    updateVideoControls();q('#genRun').disabled=false;updateRefNote();if(multiReferenceMode)renderVideoReferences();setStatus('就绪。第一步查看费用，第二步确认生成。');
@@ -1907,7 +1918,8 @@ async function generationPanel(source,mode='image'){
     const label=provider.enabled?provider.label:`${provider.id==='seedance'?'Seedance 2.5':provider.label}（未配置）`;
     return `<option value="${escValue(provider.id)}" ${provider.enabled?'':'disabled'} title="${escValue(provider.unavailableReason||'')}">${escValue(label)}</option>`;
    }).join('');
-   q('#genProvider').value=enabled[0].id;
+   const preferredProvider=mode==='video'&&draft?.providerId&&enabled.some(p=>p.id===draft.providerId)?draft.providerId:enabled[0].id;
+   q('#genProvider').value=preferredProvider;
    updateVideoRefAvailability();
    q('#genProvider').onchange=()=>{resetQuote();loadModels();};
    q('#genModel').onchange=()=>{resetQuote();updateVideoControls();if(multiReferenceMode)renderVideoReferences();};q('#genSize').onchange=resetQuote;q('#genDuration').onchange=resetQuote;q('#genSteps').oninput=resetQuote;for(const id of ['genShotSize','genPalette','genStyle'])q('#'+id).onchange=resetQuote;
@@ -1988,7 +2000,7 @@ async function generationPanel(source,mode='image'){
    const src=await readDataURL(await response.blob());if(!live())return;
    if(mode==='image'){
     const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:composePrompt(),context:imageAssetContext(project,sourceId),createNode:extra=>asset('image',{title:`${pid} · 恢复结果`,...extra})});
-    if(plan.already){setStatus('该结果已在画布中');return;}
+    if(plan.already){setStatus('该结果已在画布中');resetQuote();return;}
     checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
     setMode('board');filter='all';commit();select(node.id);fitBoard();
    }else{
@@ -2040,9 +2052,9 @@ async function quoteNow(){
    if(!quote){busy=true;button.disabled=true;setStatus('正在获取费用…');quote=await quoteNow();if(!live())return;q('#genPrice').textContent=quote.cost===0?'本地生成，不产生云端费用':quote.note||'按服务商实际计费';button.textContent='确认生成';setStatus('确认后将提交生成；提交后不可撤销。');busy=false;button.disabled=false;return;}
    busy=true;button.disabled=true;q('#genCancel').disabled=true;setStatus('正在提交…');const startedAt=Date.now();
    const referenceSnapshot=multiReferenceMode?referenceSnapshotFor(project,videoRefs):null;
-   if(multiReferenceMode&&source){
-    source.videoDraft={...(source.videoDraft||{}),prompt:composePrompt(),modelId:q('#genModel').value,duration:String(q('#genDuration').value||''),referenceOrder:videoRefs.map(reference=>reference.nodeId)};
-    source.referenceSnapshot=referenceSnapshot;
+   if(mode==='video'&&source){
+    source.videoDraft={...(source.videoDraft||{}),prompt:composePrompt(),modelId:q('#genModel').value,duration:String(q('#genDuration').value||''),resolution:q('#genSize').value,providerId,referenceOrder:videoRefs.map(reference=>reference.nodeId)};
+    if(multiReferenceMode)source.referenceSnapshot=referenceSnapshot;
    }
    const submitted=mode==='image'?await api(submitPaths[providerId],{quoteId:quote.quoteId,projectId,sourceId}):await api('/api/video/generate',{quoteId:quote.quoteId,projectId,sourceId});
    submittedTask=true;stopRequested=false;
@@ -2063,7 +2075,7 @@ async function quoteNow(){
    if(mode==='image'){
     const context=imageAssetContext(project,sourceId);
     const plan=planCanvasImageResult(project,{sourceId,taskId,src,prompt:composePrompt(),context,createNode:extra=>asset('image',{title:`${providerId} · `+composePrompt().slice(0,24),...extra})});
-    if(plan.already){setStatus('该图片已在画布中');return;}
+    if(plan.already){setStatus('该图片已在画布中');resetQuote();return;}
     checkpoint();const node=plan.node;if(plan.replace)p.nodes[p.nodes.findIndex(v=>v.id===node.id)]=node;else p.nodes.push(node);if(plan.edge)p.edges.push(plan.edge);
    }else{
     checkpoint();const node=asset('video',{title:`${providerId} · `+composePrompt().slice(0,24),text:`Provider: ${providerId}\nModel: ${q('#genModel').value}\n${composePrompt()}`,src,generatedTask:taskId,referenceSnapshot:referenceSnapshot||[],...(multiReferenceMode&&source?.videoDraft?{videoDraft:{...source.videoDraft}}:{})});p.nodes.push(node);if(multiReferenceMode)for(const reference of videoRefs)p.edges.push({from:reference.nodeId,to:node.id});
@@ -2077,7 +2089,7 @@ async function quoteNow(){
    if(mode==='image'&&resultNode){q('#genCandidates').onclick=()=>openImageCandidates(sourceId,taskId);q('#genAdoptVersion').onclick=()=>openImageAdoption(resultNode,false);q('#genAdoptOfficial').onclick=()=>openImageAdoption(resultNode,true);}else if(mode==='video'&&q('#genSendToEdit')){q('#genSaveToLibrary').onclick=async()=>{if(!resultNode)return toast('结果尚未加入画布');try{await wsShell.saveCanvasNodeToLibrary(resultNode.id);toast('已保存到项目素材库');}catch(e){toast('保存失败：'+e.message);}};q('#genSendToEdit').onclick=()=>{if(!resultNode)return toast('结果尚未加入画布');closeModal();wsShell?.sendCanvasNodeToEdit(resultNode.id);};}
    setStatus('生成完成。');button.textContent='再次生成';quote=null;q('#genPrice').textContent='';q('#genCancel').disabled=false;loadHistory();
   }catch(e){if(e.name==='AbortError'&&submittedTask){setStatus('已停止等待；任务可能在后台继续，可在最近生成中恢复。');if(sourceId)setNodeGeneration(sourceId,null);}
-  else{setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});setTimeout(()=>{if(p.nodes.some(n=>n.id===sourceId&&n.generationProgress?.status==='failed'))setNodeGeneration(sourceId,null);},8000);}}
+  else{setStatus(e.message);if(submittedTask&&sourceId){setNodeGeneration(sourceId,{status:'failed',progress:1,label:e.message||'生成失败'});}}
   resetQuote();if(live())loadHistory();}
   finally{busy=false;activeTaskId=null;if(live()){button.disabled=false;q('#genCancel').disabled=false;q('#genCancel').textContent='取消';}}
  }

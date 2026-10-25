@@ -85,7 +85,7 @@ app.on('window-all-closed',()=>{});
 if(single)app.whenReady().then(async()=>{
  try{
   await startServer();
-  win=new BrowserWindow({width:1440,height:940,minWidth:1080,minHeight:720,title:APP_NAME,backgroundColor:'#141619',show:false,webPreferences:{preload:join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
+  win=new BrowserWindow({width:1440,height:940,minWidth:1024,minHeight:720,title:APP_NAME,backgroundColor:'#141619',show:false,webPreferences:{preload:join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
   const openLink=url=>{try{if(new URL(url).protocol==='https:')shell.openExternal(url);}catch{}};
   win.webContents.setWindowOpenHandler(({url})=>{openLink(url);return {action:'deny'};});
   win.webContents.on('will-navigate',(event,url)=>{if(url!==BASE+'/'){event.preventDefault();openLink(url);}});

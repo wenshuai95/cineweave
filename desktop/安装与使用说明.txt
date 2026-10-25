@@ -1,8 +1,8 @@
-造梦工坊 v1.28.1
+造梦工坊 v1.28.2
 适用：Apple Silicon Mac（arm64），macOS 13 或更新版本。
 
 【安装】
-1. 打开「造梦工坊-v1.28.1-AppleSilicon.dmg」。
+1. 打开「造梦工坊-v1.28.2-AppleSilicon.dmg」。
 2. 将「造梦工坊.app」拖入 Applications（应用程序）文件夹；已有旧版会提示替换。
 3. 首次打开如提示“无法验证开发者”：在“系统设置 → 隐私与安全性”中仍要打开。签名状态可在终端用 codesign --verify --deep --strict "/Applications/造梦工坊.app" 检查。
 4. 本包为本机临时签名，未做 Apple Developer ID 签名与公证；请只从可信来源获取安装包。
