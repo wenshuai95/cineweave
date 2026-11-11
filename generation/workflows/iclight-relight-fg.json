@@ -1,0 +1,189 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "portrait.png"
+    }
+  },
+  "2": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": [
+        "1",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "width": 768,
+      "height": 768,
+      "crop": "disabled"
+    }
+  },
+  "3": {
+    "class_type": "BiRefNetRMBG",
+    "inputs": {
+      "image": [
+        "2",
+        0
+      ],
+      "model": "BiRefNet-general",
+      "sensitivity": 1.0,
+      "mask_blur": 0,
+      "mask_offset": 0,
+      "invert_output": false,
+      "refine_foreground": true,
+      "unload_model": true,
+      "background": "Alpha",
+      "background_color": "#222222"
+    }
+  },
+  "4": {
+    "class_type": "EmptyImage",
+    "inputs": {
+      "width": 768,
+      "height": 768,
+      "batch_size": 1,
+      "color": 16777215
+    }
+  },
+  "5": {
+    "class_type": "ImageCompositeMasked",
+    "inputs": {
+      "destination": [
+        "4",
+        0
+      ],
+      "source": [
+        "3",
+        0
+      ],
+      "x": 0,
+      "y": 0,
+      "resize_source": false,
+      "mask": [
+        "3",
+        1
+      ]
+    }
+  },
+  "6": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "5",
+        0
+      ],
+      "vae": [
+        "7",
+        2
+      ]
+    }
+  },
+  "7": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "v1-5-pruned-emaonly.safetensors"
+    }
+  },
+  "8": {
+    "class_type": "LoadAndApplyICLightUnet",
+    "inputs": {
+      "model": [
+        "7",
+        0
+      ],
+      "model_path": "IC-Light\\iclight_sd15_fc.safetensors"
+    }
+  },
+  "9": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "7",
+        1
+      ],
+      "text": "photo of a person, strong warm sunlight from the left side, dark shadow on the right side of the face"
+    }
+  },
+  "10": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "7",
+        1
+      ],
+      "text": "bad quality, blurry, deformed"
+    }
+  },
+  "11": {
+    "class_type": "ICLightConditioning",
+    "inputs": {
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "10",
+        0
+      ],
+      "vae": [
+        "7",
+        2
+      ],
+      "foreground": [
+        "6",
+        0
+      ],
+      "multiplier": 0.18215
+    }
+  },
+  "12": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "8",
+        0
+      ],
+      "positive": [
+        "11",
+        0
+      ],
+      "negative": [
+        "11",
+        1
+      ],
+      "latent_image": [
+        "11",
+        2
+      ],
+      "seed": 20261111,
+      "steps": 25,
+      "cfg": 2.05,
+      "sampler_name": "euler",
+      "scheduler": "ddim_uniform",
+      "denoise": 1.0
+    }
+  },
+  "13": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "12",
+        0
+      ],
+      "vae": [
+        "7",
+        2
+      ]
+    }
+  },
+  "14": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "13",
+        0
+      ],
+      "filename_prefix": "iclight_relight_fg"
+    }
+  }
+}

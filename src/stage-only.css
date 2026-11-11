@@ -1,0 +1,90 @@
+/* stageOnly 嵌入模式：只保留导演台、时间轴、左侧素材/对象栏、右侧属性栏。
+   嵌入时可能落在小窗口/缩放屏里，因此取消旧应用的 1000px 最小宽度并做响应式列宽。 */
+body.stage-only .app{grid-template-rows:minmax(0,1fr)!important;min-width:0!important}
+body.stage-only .topbar,
+body.stage-only .statusbar,
+body.stage-only .ws-bottomnav,
+body.stage-only .ws-canvas-tools,
+body.stage-only .workspace-toolbar{display:none!important}
+body.stage-only .workbench,
+body.stage-only .workbench.library-open{
+  height:100%;min-height:0;
+  grid-template-columns:190px 5px minmax(0,1fr) 5px 240px!important;
+}
+body.stage-only .workbench>.panel-splitter{min-width:0}
+body.stage-only .sidebar{min-width:0;overflow:auto}
+body.stage-only .inspector{min-width:0}
+body.stage-only .stage-shell{min-height:150px}
+
+@media(max-width:1180px){
+  body.stage-only .workbench,
+  body.stage-only .workbench.library-open{grid-template-columns:170px 4px minmax(0,1fr) 4px 215px!important}
+}
+@media(max-width:980px){
+  body.stage-only .workbench,
+  body.stage-only .workbench.library-open{grid-template-columns:150px 4px minmax(0,1fr) 4px 190px!important}
+  body.stage-only .stage-top{gap:3px}
+  body.stage-only .stage-top button{padding:5px 6px;font-size:11px}
+}
+@media(max-width:1100px){
+  body.stage-only .object-row [data-lock],
+  body.stage-only .object-row [data-solo]{display:none}
+}
+@media(max-width:840px){
+  body.stage-only .workbench,
+  body.stage-only .workbench.library-open{grid-template-columns:132px 0 minmax(0,1fr) 0 170px!important}
+  body.stage-only .stage-caption{display:none}
+  body.stage-only .timeline-toolbar{flex-wrap:wrap;height:auto;min-height:40px;padding:5px 8px;gap:4px}
+}
+@media(max-width:700px){
+  body.stage-only .sidebar{width:0!important;min-width:0!important;overflow:hidden!important}
+  body.stage-only .workbench,
+  body.stage-only .workbench.library-open{grid-template-columns:0 0 minmax(0,1fr) 0 160px!important}
+  body.stage-only .timeline-navigation>span:last-child{display:none}
+}
+@media(max-height:820px){
+  body.stage-only .timeline{height:210px}
+  body.stage-only .timeline-help{min-height:0;padding:3px 10px}
+}
+@media(max-height:700px){
+  body.stage-only .timeline{height:180px}
+  body.stage-only .stage-shell{min-height:120px}
+}
+
+/* 低高度窗口：优先保证舞台与轨道可见，压缩时间轴辅助条 */
+@media(max-height:640px){
+  body.stage-only .timeline{height:158px}
+  body.stage-only .timeline-navigation{display:none}
+  body.stage-only .timeline-help{display:none}
+  body.stage-only .timeline-toolbar{min-height:38px;padding:4px 8px}
+}
+@media(max-height:540px){
+  body.stage-only .timeline{height:138px}
+  body.stage-only .timeline-toolbar{flex-wrap:wrap;min-height:36px}
+}
+
+/* 通用嵌入：画布/剪辑/导演台共用 */
+body.embed-mode .app{grid-template-rows:minmax(0,1fr)!important;min-width:0!important}
+body.embed-mode .topbar,
+body.embed-mode .statusbar,
+body.embed-mode .ws-bottomnav,
+body.embed-mode .ws-canvas-tools,
+body.embed-mode .workspace-toolbar{display:none!important}
+body.embed-mode .workbench{grid-row:1!important;height:100%;min-height:0}
+
+/* 画布嵌入：保留经典左/右栏 */
+body.embed-canvas .workbench{grid-template-columns:190px 5px minmax(0,1fr) 5px 240px!important}
+body.embed-canvas .sidebar{display:flex!important;min-width:0}
+body.embed-canvas .inspector{display:flex!important;min-width:0}
+body.embed-canvas .workbench>.sidebar{grid-column:1;grid-row:1}
+body.embed-canvas .workbench>[data-panel-resize=left]{grid-column:2;grid-row:1}
+body.embed-canvas .workbench>.center{grid-column:3;grid-row:1}
+body.embed-canvas .workbench>[data-panel-resize=right]{grid-column:4;grid-row:1}
+body.embed-canvas .workbench>.inspector{grid-column:5;grid-row:1}
+@media(max-width:1180px){body.embed-canvas .workbench{grid-template-columns:170px 4px minmax(0,1fr) 4px 215px!important}}
+@media(max-width:980px){body.embed-canvas .workbench{grid-template-columns:150px 4px minmax(0,1fr) 4px 190px!important}}
+@media(max-width:840px){body.embed-canvas .workbench{grid-template-columns:132px 0 minmax(0,1fr) 0 170px!important}}
+
+/* 剪辑嵌入 */
+body.embed-edit .ws-page{grid-row:1!important;grid-column:1!important}
+body.embed-edit .workbench{display:none!important}

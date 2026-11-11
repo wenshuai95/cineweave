@@ -98,7 +98,7 @@ export function normalizeDeliver(raw){
 // 工程校验入口：缺省补全、坏数据修复，不抛错（旧工程 / 中途损坏都不阻塞保存）。
 export function validateWorkstation(raw){
  const ws=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
- return {
+ const out={
   script:typeof ws.script==='string'?ws.script.slice(0,200000):'',
   story:normalizeStory(ws.story),
   writing:normalizeWriting(ws.writing),
@@ -109,6 +109,9 @@ export function validateWorkstation(raw){
   sequence:normalizeSequence(ws.sequence),
   deliver:normalizeDeliver(ws.deliver),
  };
+ // 片段画布文档：只有工程里存在时才透传，旧工程的规范化结果保持原样。
+ if(ws.canvas&&typeof ws.canvas==='object'&&!Array.isArray(ws.canvas)&&Array.isArray(ws.canvas.nodes))out.canvas=ws.canvas;
+ return out;
 }
 
 // 轨道上的空闲区间（升序，最后一个为 [cursor,∞)）。
@@ -222,18 +225,6 @@ export function refpsSequence(sequence,newFps){
   return {...c,start,in:inF,out};
  }).sort((a,b)=>a.start-b.start);};
  return {fps:Number(newFps),video:mapTrack(sequence.video),audio:mapTrack(sequence.audio),audioGain:sequence.audioGain??1,audioMuted:sequence.audioMuted===true};
-}
-
-// 拖动 / 裁切时吸附到播放头、片段接缝与 0；threshold 单位为序列帧。
-export function snapFrame(frame,candidates=[],threshold=2){
- const target=Math.round(frame),limit=Math.max(0,Math.round(threshold));
- let best=null;
- for(const raw of candidates){
-  if(!Number.isFinite(Number(raw)))continue;
-  const candidate=Math.round(Number(raw)),distance=Math.abs(candidate-target);
-  if(distance<=limit&&(best===null||distance<best.distance))best={frame:candidate,distance};
- }
- return best?best.frame:target;
 }
 
 export const framesToSeconds=(frames,fps)=>frames/fps;

@@ -3,13 +3,14 @@ import {writingRequest,generateWriting} from '../text-writing.mjs';
 import {normalizeStory} from '../src/workstation/story.mjs';
 import {applyAssetDesigns} from '../src/workstation/asset-agent.mjs';
 import {sendStoryToCanvas} from '../src/workstation/story-canvas.mjs';
+import {connectionLabel} from '../src/workstation/text-settings.mjs';
 const cfg={base:'https://api.deepseek.com',model:'deepseek-flash',key:'FAKE_TEST_ONLY'};
 const model=raw=>async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify(raw)},finish_reason:'stop'}]}));
 const design={kind:'character',name:'阿青',description:'青年',prompt:'青年全身设定图，朴素外套，写实质感，灰色背景',negativePrompt:'文字、水印',shotIds:['shot1']};
 test('DeepSeek connection test validates the model without generating tokens',async()=>{
  const result=await generateWriting(cfg,{kind:'test',prompt:'',script:''},{fetchImpl:async(url,o)=>{assert.equal(url,'https://api.deepseek.com/models');assert.equal(o.method,'GET');assert.equal(o.body,undefined);return new Response(JSON.stringify({data:[{id:'deepseek-flash'}]}));}});assert.equal(result.verification,'models');
  let compatible;await generateWriting({...cfg,base:'https://example.com/v1'},{kind:'chat',prompt:'你好',script:''},{fetchImpl:async(u,o)=>{compatible=JSON.parse(o.body);return new Response(JSON.stringify({choices:[{message:{content:'你好'}}]}));}});assert.equal(compatible.thinking,undefined);
- let official;await generateWriting(cfg,{kind:'chat',prompt:'你好',script:''},{fetchImpl:async(u,o)=>{official=JSON.parse(o.body);return new Response(JSON.stringify({choices:[{message:{content:'你好'}}]}));}});assert.equal(official.thinking.type,'disabled');
+ let official;await generateWriting(cfg,{kind:'chat',prompt:'你好',script:''},{fetchImpl:async(u,o)=>{official=JSON.parse(o.body);return new Response(JSON.stringify({choices:[{message:{content:'你好'}}]}));}});assert.equal(official.thinking.type,'enabled','DeepSeek 官方接口默认使用深度思考（v1.23.1 起）');assert.ok(official.max_tokens>=10000);
 });
 test('model verification rejects wrong IDs and invalid JSON without exposing response contents',async()=>{
  await assert.rejects(generateWriting(cfg,{kind:'test',prompt:'',script:''},{fetchImpl:async()=>new Response(JSON.stringify({data:[{id:'other'}]}))}),/模型名称不在/);
@@ -41,7 +42,9 @@ test('image prompt survives backup, history normalization and canvas handoff',as
  const {demoProject}=await import('../src/model.mjs');const {buildWorkstationBackup,restoreWorkstationBackup}=await import('../src/workstation/backup.mjs');const p=demoProject();p.workstation.story=normalizeStory({assets:[{...design,id:'asset1'}]});sendStoryToCanvas(p,'assets',['asset1']);assert.equal(p.nodes.find(n=>n.storyRef?.id==='asset1').text,design.prompt);
  const {backup}=await buildWorkstationBackup(p,{get:async()=>null});const {project}=await restoreWorkstationBackup(backup,{put:async()=>{}});assert.equal(project.workstation.story.assets[0].negativePrompt,'文字、水印');assert.equal(project.workstation.story.assets[0].prompt,design.prompt);
 });
-
+test('configured badge does not claim an untested API is connected',()=>{
+ assert.match(connectionLabel({configured:true,model:'test'}),/待验证/);assert.match(connectionLabel({configured:true,model:'test',connection:{state:'connected'}}),/已连接/);assert.match(connectionLabel({configured:true,model:'test',connection:{state:'error'}}),/连接失败/);
+});
 test('a hung provider is bounded and never retried automatically',async()=>{
  const original=AbortSignal.timeout,deadlines=[];AbortSignal.timeout=ms=>{deadlines.push(ms);return original(15);};let calls=0;
  // Keep event loop alive: AbortSignal.timeout internally uses an unref timer.

@@ -1,0 +1,11 @@
+Quaternius · 动作重定向衍生资产（CC0-1.0）
+================================================
+本目录中的 *-actions.glb 由造梦工坊在本机生成，来源均为 CC0-1.0：
+  - 角色：Quaternius Ultimate Modular Characters / Women
+    https://quaternius.com/packs/ultimatemodularcharacters.html
+    https://quaternius.com/packs/ultimatemodularwomen.html
+  - 动作：Quaternius Universal Animation Library 2
+    https://quaternius.com/packs/universalanimationlibrary2.html
+处理方式：把动作库骨架（UAL2）的 85 段动作按语义骨骼映射重定向到角色骨架，
+片段以 RT_ 前缀命名；同时保留角色原有动作。
+CC0-1.0 允许复制、修改、分发与商用，无需署名；此处保留来源仅为可追溯。

@@ -2,9 +2,11 @@ import {buildDirectorRequest,validateDirectorReply} from './src/workstation/dire
 import {writingSkills,boundedHistory} from './src/workstation/writing-agent.mjs';
 import {validateStoryOutput,normalizeStory} from './src/workstation/story.mjs';
 import {buildPromptAssistantRequest,validatePromptAssistantResult} from './prompt-assistant.mjs';
+import {buildPerformanceRequest,validatePerformancePlan} from './src/performance/performance-agent.mjs';
 export function writingRequest(b){
  if(['director-plan','director-review'].includes(b?.kind))return buildDirectorRequest(b);
  if(b?.kind==='optimize-prompt')return buildPromptAssistantRequest(b);
+ if(b?.kind==='performance-plan')return buildPerformanceRequest(b);
  if(!b||!['chat','generate','rewrite','continue','storyboard','assets','test'].includes(b.kind))throw Error('请选择写作操作');
  if(typeof b.prompt!=='string'||b.prompt.length>6000||typeof b.script!=='string'||b.script.length>200000)throw Error('写作要求最多 6000 字，工程剧本最多 20 万字');
  if(b.kind!=='test'&&b.kind!=='generate'&&b.kind!=='chat'&&!b.script.trim())throw Error('请先写入剧本');
@@ -43,6 +45,10 @@ export async function generateWriting(config,b,{signal,fetchImpl=fetch}={}){
  let endpoint;try{endpoint=new URL(config.base);if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.search||endpoint.hash)throw Error();}catch{throw Error('接口地址须为有效 HTTPS 地址，不能含账号、参数或片段');}
  const timeout=b.kind==='test'?30000:180000;const combined=signal?AbortSignal.any([signal,AbortSignal.timeout(timeout)]):AbortSignal.timeout(timeout);
  const metadataTest=b.kind==='test'&&endpoint.hostname==='api.deepseek.com';
+ // 规划类任务用深度思考：同样的模型，节拍/镜头方案明显更完整（实测 18→26 拍）。
+ // 测试连接与配置请求仍然关闭，避免等待。思考 token 计入 max_tokens，因此额外留预算。
+ const thinking=endpoint.hostname==='api.deepseek.com'&&!metadataTest;
+ const outputBudget=request.max_tokens+(thinking?6000:0);
  const responseError=(e,stage='连接')=>{
   if(signal?.aborted)return Error('已取消本次请求');
   if(combined.aborted)return Error('模型服务响应超时，服务可能繁忙，请稍后手动重试');
@@ -52,7 +58,7 @@ export async function generateWriting(config,b,{signal,fetchImpl=fetch}={}){
   return Error('模型服务'+stage+'失败：'+(safe?safe+'（'+code+'）':'未收到完整响应（'+(stage==='连接'?'FETCH_ERROR':'BODY_READ_ERROR')+'）')+'。请检查网络或代理后手动重试');
  };
  let response;
- try{response=await fetchImpl(config.base.replace(/\/$/,'')+(metadataTest?'/models':'/chat/completions'),{method:metadataTest?'GET':'POST',redirect:metadataTest?'manual':'error',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},...(metadataTest?{}:{body:JSON.stringify({model:config.model,messages:request.messages,stream:false,max_tokens:request.max_tokens,...(endpoint.hostname==='api.deepseek.com'?{thinking:{type:'disabled'}}:{}),...(request.structured?{response_format:{type:'json_object'}}:{})})}),signal:combined});}
+ try{response=await fetchImpl(config.base.replace(/\/$/,'')+(metadataTest?'/models':'/chat/completions'),{method:metadataTest?'GET':'POST',redirect:metadataTest?'manual':'error',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},...(metadataTest?{}:{body:JSON.stringify({model:config.model,messages:request.messages,stream:false,max_tokens:outputBudget,...(endpoint.hostname==='api.deepseek.com'?{thinking:thinking?{type:'enabled'}:{type:'disabled'}}:{}),...(request.structured?{response_format:{type:'json_object'}}:{})})}),signal:combined});}
  catch(e){throw responseError(e);}
  if(metadataTest){
   let redirectURL=config.base.replace(/\/$/,'')+'/models';
@@ -84,6 +90,7 @@ export async function generateWriting(config,b,{signal,fetchImpl=fetch}={}){
  let raw;try{raw=JSON.parse(text.replace(/^\s*```(?:json)?\s*/,'').replace(/\s*```\s*$/,''));}catch{throw Error('模型没有返回可解析的 JSON，本次未采用，请重新生成');}
  if(request.director)return {...base,...validateDirectorReply(raw)};
  if(request.promptAssistant)return {...base,...validatePromptAssistantResult(raw,request.promptAssistant)};
+ if(request.performance)return {...base,...validatePerformancePlan(raw,request.performance)};
  if(request.localShots){
   if(!Array.isArray(raw.shots)||raw.shots.length!==request.selected.length||new Set(raw.shots.map(s=>s?.id)).size!==raw.shots.length||raw.shots.some(s=>!request.selected.some(o=>o.id===s?.id)))throw Error('模型修改了未选中的镜头或遗漏镜头，本次未采用');
   const validated=validateStoryOutput(raw,'storyboard').shots;

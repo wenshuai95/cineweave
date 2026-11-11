@@ -1,0 +1,129 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "source.png"
+    }
+  },
+  "3": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "mask.png"
+    }
+  },
+  "4": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "image": [
+        "3",
+        0
+      ],
+      "channel": "red"
+    }
+  },
+  "5": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": [
+        "4",
+        0
+      ],
+      "expand": 8,
+      "tapered_corners": true
+    }
+  },
+  "6": {
+    "class_type": "VAEEncodeForInpaint",
+    "inputs": {
+      "pixels": [
+        "2",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ],
+      "mask": [
+        "5",
+        0
+      ],
+      "grow_mask_by": 8
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "1",
+        1
+      ]
+    }
+  },
+  "8": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "blurry, low quality, deformed",
+      "clip": [
+        "1",
+        1
+      ]
+    }
+  },
+  "9": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "seed": 42,
+      "steps": 24,
+      "cfg": 5.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "positive": [
+        "7",
+        0
+      ],
+      "negative": [
+        "8",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ],
+      "denoise": 1.0
+    }
+  },
+  "10": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "11": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "zaomeng_inpaint",
+      "images": [
+        "10",
+        0
+      ]
+    }
+  }
+}

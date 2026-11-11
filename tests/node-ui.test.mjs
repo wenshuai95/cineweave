@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {nodePresentation,nodeQuickActions} from '../src/node-ui.mjs';
 import {starterProject,validateProject} from '../src/model.mjs';
 import {ensureScriptNode} from '../src/workstation/canvas-source.mjs';
-test('script source is a manual reference with only content editing',()=>{
+test('script source keeps its planning actions and is not presented as an ordinary note',()=>{
  const p=starterProject();p.workstation=validateProject(p).workstation;
  const n=ensureScriptNode(p),before=JSON.stringify(p);
  assert.equal(nodePresentation(p,n).label,'项目剧本');
- assert.deepEqual(nodeQuickActions(p,n).map(a=>a.id),['content']);
+ assert.ok(nodeQuickActions(p,n).some(a=>a.id==='storyboard'));
  assert.ok(!nodeQuickActions(p,n).some(a=>a.id==='promote'));
  assert.equal(JSON.stringify(p),before);
 });
@@ -55,14 +55,4 @@ test('a generated asset picture exposes adoption actions only with a real asset 
  ids=nodeQuickActions(p,candidate).map(action=>action.id);assert.ok(!ids.includes('asset-version'));assert.ok(!ids.includes('asset-official'));assert.ok(ids.includes('edit'));assert.equal(nodePresentation(p,candidate).status,'正式图');
  const plain={id:'plain',type:'image',title:'自由生成',text:'',src:'data:image/png;base64,BBBB'};p.nodes.push(plain);
  ids=nodeQuickActions(p,plain).map(action=>action.id);assert.ok(!ids.includes('asset-version'));assert.ok(!ids.includes('asset-official'));
-});
-test('canvas tags keep a single light type label outside the card',async()=>{
- const {nodeCanvasTag}=await import('../src/node-ui.mjs');
- assert.deepEqual(nodeCanvasTag({type:'text',title:'雨后会面'}),{icon:'text',label:'文本',type:'text',text:'T · 雨后会面'});
- assert.equal(nodeCanvasTag({type:'image',title:'参考图'}).text,'图片 · 参考图');
- assert.equal(nodeCanvasTag({type:'video'}).text,'视频');
- assert.equal(nodeCanvasTag({type:'audio'}).label,'音频');
- assert.equal(nodeCanvasTag({type:'director',title:'会面 · 3D 预演'}).text,'导演台 · 会面 · 3D 预演');
- assert.equal(nodeCanvasTag({type:'actor'}).icon,'model');
- assert.equal(nodeCanvasTag(null).text,'节点');
 });

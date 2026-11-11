@@ -6,8 +6,8 @@ import {bundleMemberIds} from './shot-bundles.mjs';
 export const CANVAS_CLIP_MIME='application/x-director-canvas-nodes';
 export const ALIGN_MODES=['left','right','top','bottom','hcenter','vcenter'];
 const NODE_TYPES=['text','actor','scene','director','image','video','audio','model'];
-const SRC_RE=/^data:(image\/(png|jpeg|webp|gif)|video\/(webm|mp4)|audio\/(mpeg|mp3|wav|x-wav|ogg|mp4|webm));base64,[A-Za-z0-9+/\r\n]*={0,2}$/i;
-const MODEL_SRC_RE=/^data:model\/gltf-binary;base64,[A-Za-z0-9+/]*={0,2}$/;
+const SRC_RE=/^(?:data:(image\/(png|jpeg|webp|gif)|video\/(webm|mp4)|audio\/(mpeg|mp3|wav|x-wav|ogg|mp4|webm));base64,[A-Za-z0-9+/\r\n]*={0,2}|\/api\/assets\/[0-9a-f]{64}\.(png|jpe?g|webp|gif|mp4|webm|mp3|wav|ogg|m4a))$/i;
+const MODEL_SRC_RE=/^(?:data:model\/gltf-binary;base64,[A-Za-z0-9+/]*={0,2}|\/api\/(?:model-)?assets\/[0-9a-f]{64}\.glb)$/;
 // 画布间可复制的字段；工程绑定（objectId/sceneObjectIds/modelTask/generatedTask）刻意排除。
 const COPY_FIELDS=['type','title','text','x','y','w','src','modelSrc','modelSize','modelKind'];
 
