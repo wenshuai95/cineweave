@@ -485,3 +485,14 @@ body.timeline-open .cv-timeline-overlay{box-shadow:none}
 .cv-timeline-preview.expanded .cv-timeline-preview-empty{color:#9aa3b2;font-size:14px}
 #timelineFull{min-width:32px;min-height:28px;border-radius:6px}
 #timelineFull:hover{background:rgba(255,255,255,.08)}
+
+/* AI 对话可选中复制 */
+.cv-ai-msg{user-select:text}
+.cv-ai-msg button[data-ai-copy]{display:inline-block;margin-top:8px;margin-right:6px;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);color:#cfd7e2}
+/* 重新生成时的进度覆盖层（图片/视频/音频通用） */
+.cv-generation-overlay{position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(8,10,14,.62);backdrop-filter:blur(2px);border-radius:10px;pointer-events:none}
+.cv-gen-card{min-width:190px;padding:14px 16px;border-radius:12px;background:rgba(20,24,30,.94);border:1px solid rgba(120,160,220,.35);box-shadow:0 12px 30px rgba(0,0,0,.4);color:#dbe8ff;font-size:12px;display:flex;flex-direction:column;gap:8px}
+.cv-gen-card span{color:#9fb3c8}
+.cv-gen-card b{align-self:flex-end;font-variant-numeric:tabular-nums;font-weight:600}
+.cv-gen-bar{height:5px;border-radius:999px;background:#0b0e12;overflow:hidden}
+.cv-gen-bar i{display:block;height:100%;background:linear-gradient(90deg,#4b8dff,#8ab4ff);border-radius:999px;transition:width .3s ease}

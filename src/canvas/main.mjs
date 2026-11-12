@@ -546,6 +546,7 @@ function renderNodes() {
     el.style.height = `${rect.height}px`;
     el.innerHTML = `
       <div class="cv-node-title">${ICONS[node.type] || ICONS.image}<span class="cv-node-name">${escapeHtml(node.title || node.type)}</span></div>
+      ${node.status === 'running' && node.resources?.length ? `<div class="cv-generation-overlay"><div class="cv-gen-card"><span>生成中…</span><b>${Math.round(Number(node.progress) || 0)}%</b><div class="cv-gen-bar"><i style="width:${Math.max(3, Math.min(100, Number(node.progress) || 0))}%"></i></div></div></div>` : ''}
       <div class="cv-card">
         <div class="cv-node-body">${nodeBody(node)}</div>
         <span class="cv-conn left" data-conn="in" data-id="${node.id}"></span>
@@ -1200,6 +1201,10 @@ function onKeyDown(event) {
     return;
   }
   const meta = event.metaKey || event.ctrlKey;
+  const inAiPanel = Boolean(document.activeElement?.closest?.('#aiPanel') || window.getSelection()?.anchorNode?.parentElement?.closest?.('#aiPanel'));
+  if (inAiPanel && meta && ['c', 'a'].includes(event.key.toLowerCase())) return; // 让浏览器复制/全选 AI 对话
+  const textSelected = Boolean(window.getSelection()?.toString());
+  if (textSelected && meta && event.key.toLowerCase() === 'c') return; // 有文本选区时不抢复制
   if (meta && event.key.toLowerCase() === 'z') {
     event.preventDefault();
     event.shiftKey ? redo() : undo();
@@ -3020,6 +3025,18 @@ function aiContextLabel() {
   return `DeepSeek · 上下文：${node.title || node.type}`;
 }
 
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return; } catch { /* fallback */ }
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  document.execCommand('copy');
+  area.remove();
+}
+
 function openAIPanel() {
   app.querySelector('#aiPanel').classList.add('open');
   app.querySelector('#aiContext').textContent = aiContextLabel();
@@ -3033,7 +3050,15 @@ function renderAIMessages() {
     host.innerHTML = '<div class="cv-ai-hint">可以问：这场戏怎么分镜？/ 帮我写一段雨夜追车的提示词 / 这个镜头用什么景别？</div>';
     return;
   }
-  host.innerHTML = aiMessages.map((message, index) => `<div class="cv-ai-msg ${message.role}">${escapeHtml(message.content).replace(/\n/g, '<br>')}${message.role === 'assistant' ? `<button data-ai-insert="${index}">插入提示词</button><button data-ai-apply="${index}">应用到节点</button>` : ''}</div>`).join('');
+  host.innerHTML = aiMessages.map((message, index) => `<div class="cv-ai-msg ${message.role}">${escapeHtml(message.content).replace(/\n/g, '<br>')}${`<button data-ai-copy="${index}">复制</button>`}${message.role === 'assistant' ? `<button data-ai-insert="${index}">插入提示词</button><button data-ai-apply="${index}">应用到节点</button>` : ''}</div>`).join('');
+  host.querySelectorAll('[data-ai-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const message = aiMessages[Number(button.dataset.aiCopy)];
+      if (!message) return;
+      try { await copyText(message.content); toast('已复制'); }
+      catch { toast('复制失败，请手动选中复制', true); }
+    });
+  });
   host.querySelectorAll('[data-ai-insert]').forEach((button) => {
     button.addEventListener('click', () => {
       const message = aiMessages[Number(button.dataset.aiInsert)];
