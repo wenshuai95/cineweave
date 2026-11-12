@@ -88,6 +88,7 @@ let tempLink = null;
 let dragPos = null;
 let toastTimer = null;
 let menuOpenedAt = 0;
+let dreaminaCatalog = { image: [], video: [], audio: [] };
 let marquee = null;
 let selectedEdge = null;
 let spaceHeld = false;
@@ -497,6 +498,7 @@ window.addEventListener('resize', applyViewport);
 
 render();
 probeProviders();
+loadDreaminaCatalog();
 if (EMBED) parent.postMessage({ type: 'canvas-ready' }, location.origin);
 
 function render() {
@@ -1943,17 +1945,77 @@ function alignSelection(mode) {
   toast('已对齐');
 }
 
+async function loadDreaminaCatalog() {
+  try {
+    const response = await fetch('/api/generation/models');
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data?.image || data?.video || data?.audio) {
+      dreaminaCatalog = { image: data.image || [], video: data.video || [], audio: data.audio || [] };
+    }
+  } catch { /* CLI 未登录时保留原有菜单 */ }
+}
+
+function dreaminaSpecFor(node) {
+  const model = node?.generation?.model;
+  if (!model) return null;
+  const type = node.type === 'image' ? 'image' : node.type === 'video' ? 'video' : node.type === 'audio' ? 'audio' : null;
+  return (dreaminaCatalog[type] || []).find((item) => item.model === model) || null;
+}
+
+function dreaminaModeFor(node) {
+  const spec = dreaminaSpecFor(node);
+  if (!spec) return null;
+  if (node.type === 'image') return spec.modes?.find((mode) => mode.name === 't2i') || spec.modes?.[0] || null;
+  if (node.type === 'video') {
+    const frameCount = videoFrameRefs(node).last ? 2 : videoFrameRefs(node).first ? 1 : 0;
+    return (spec.modes || []).find((mode) => mode.name === (frameCount ? 'first_last_frame' : 't2v') && (mode.references?.max ?? 0) >= frameCount) || spec.modes?.[0] || null;
+  }
+  return spec.modes?.[0] || null;
+}
+
+function dreaminaValues(node, flag) {
+  const mode = dreaminaModeFor(node);
+  return (mode?.flags || []).find((item) => item.flag === flag)?.values || [];
+}
+
+function dreaminaRange(node, flag, fallbackMin, fallbackMax) {
+  const mode = dreaminaModeFor(node);
+  const item = (mode?.flags || []).find((entry) => entry.flag === flag);
+  return {
+    min: Number.isFinite(Number(item?.min)) ? Number(item.min) : fallbackMin,
+    max: Number.isFinite(Number(item?.max)) ? Number(item.max) : fallbackMax,
+  };
+}
+
+function dreaminaModelLabel(node) {
+  return dreaminaSpecFor(node)?.displayName || '';
+}
+
+function chooseDreaminaModel(spec, type) {
+  const t2i = spec.modes?.find((mode) => mode.name === (type === 'video' ? 't2v' : 't2i')) || spec.modes?.[0] || null;
+  const resolutions = (t2i?.flags || []).find((flag) => flag.flag === '--resolution')?.values || [];
+  const duration = (t2i?.flags || []).find((flag) => flag.flag === '--duration');
+  const count = (t2i?.flags || []).find((flag) => flag.flag === '--count');
+  const patch = { model: spec.model };
+  if (resolutions.length) patch.resolution = resolutions[0];
+  if (type === 'video') patch.durationSeconds = Number(duration?.min) >= 4 ? Math.min(5, Number(duration.max) || 5) : 5;
+  if (count) patch.outputCount = Math.min(Number(count.max) || 1, 4);
+  setGeneration(patch);
+}
+
 function modelLabel(node) {
   const provider = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
-  if (node.type === 'audio') return 'SeedAudio 1.0';
+  if (node.type === 'audio') return dreaminaModelLabel(node) || 'SeedAudio 1.0';
   if (provider === 'dreamina') {
+    const catalogLabel = dreaminaModelLabel(node);
+    if (catalogLabel) return catalogLabel;
     const model = node.generation?.model || '';
     if (node.type === 'image') {
       if (model === 'seedream_4.1') return 'Seedream 4.1';
       if (model === 'jimeng_smart_image_v1') return '即梦 ImageMax';
       return 'Seedream 5.0 Flash';
     }
-    if (model === 'seedance_2.5_pro') return 'Seedance 2.5 Pro';
     return 'Seedance 2.5';
   }
   if (node.type === 'image') {
@@ -1971,14 +2033,19 @@ function modelLabel(node) {
 
 function modelOptions(node) {
   const provider = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
-  if (node.type === 'audio') return [['SeedAudio 1.0', () => {}]];
+  if (node.type === 'audio') {
+    const list = dreaminaCatalog.audio.filter((spec) => (spec.modes || []).some((mode) => mode.name === 'tts'));
+    return list.length ? list.map((spec) => [spec.displayName, () => setGeneration({ model: spec.model })]) : [['SeedAudio 1.0', () => setGeneration({ model: 'legacy_tts' })]];
+  }
   if (node.type === 'image') {
     return provider === 'dreamina'
-      ? [
-        ['Seedream 5.0 Flash', () => setGeneration({ model: 'high_aes_general_v50_flash' })],
-        ['Seedream 4.1', () => setGeneration({ model: 'seedream_4.1' })],
-        ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })],
-      ]
+      ? (dreaminaCatalog.image.length
+        ? dreaminaCatalog.image.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'image')])
+        : [
+          ['Seedream 5.0 Flash', () => setGeneration({ model: 'high_aes_general_v50_flash' })],
+          ['Seedream 4.1', () => setGeneration({ model: 'seedream_4.1' })],
+          ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })],
+        ])
       : [
         ['Z-Image Turbo（快，1024²）', () => setGeneration({ imageWorkflow: 'zimage-turbo' })],
         ['Flux', () => setGeneration({ imageWorkflow: 'flux-t2i' })],
@@ -1987,10 +2054,12 @@ function modelOptions(node) {
       ];
   }
   return provider === 'dreamina'
-    ? [
-      ['Seedance 2.5', () => setGeneration({ model: 'seedance_2.5_draft' })],
-      ['Seedance 2.5 Pro', () => setGeneration({ model: 'seedance_2.5_pro' })],
-    ]
+    ? (dreaminaCatalog.video.length
+      ? dreaminaCatalog.video.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'video')])
+      : [
+        ['Seedance 2.5', () => setGeneration({ model: 'seedance_2.5_draft' })],
+        ['Seedance 2.5 Pro', () => setGeneration({ model: 'seedance_2.5_pro' })],
+      ])
     : [
       ['H3（快，640×352）', () => setGeneration({ model: 'h3', durationSeconds: 5, h3Size: '360P' })],
       ['Wan 2.2（质量，832×480）', () => setGeneration({ model: 'wan22', durationSeconds: 5, resolution: '480P' })],
@@ -2073,8 +2142,12 @@ function openPicturePopover() {
 
 function pictureResolutions(node) {
   const provider = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
-  if (node.type === 'image') return provider === 'dreamina' ? ['1.5K', '2K', '4K'] : ['768 标准', '1024 高清'];
-  if (node.type === 'video') return provider === 'dreamina' ? ['480P', '720P', '1080P'] : ['360P', '480P'];
+  if (provider === 'dreamina') {
+    const values = dreaminaValues(node, '--resolution');
+    if (values.length) return values;
+  }
+  if (node.type === 'image') return ['768 标准', '1024 高清'];
+  if (node.type === 'video') return ['360P', '480P'];
   return ['标准'];
 }
 
@@ -2094,7 +2167,9 @@ function renderPicturePopover(node) {
   }).join('');
   const resolutions = pictureResolutions(node);
   app.querySelector('#picRes').innerHTML = resolutions.map((value) => `<button class="cv-pic-res-btn${(gen.resolution || resolutions[0]) === value ? ' active' : ''}" data-res="${value}">${value}</button>`).join('');
-  const counts = node.type === 'image' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4];
+  const maxCount = node.type === 'image' ? dreaminaRange(node, '--count', 1, 8).max : dreaminaRange(node, '--count', 1, 4).max;
+  const minCount = node.type === 'image' ? dreaminaRange(node, '--count', 1, 8).min : 1;
+  const counts = Array.from({ length: Math.max(0, maxCount - minCount + 1) }, (_, index) => index + minCount);
   app.querySelector('#picCounts').innerHTML = counts.map((value) => `<button class="cv-pic-count${(gen.outputCount || 1) === value ? ' active' : ''}" data-count="${value}">${value}</button>`).join('');
   app.querySelector('#picRatios').querySelectorAll('[data-ratio]').forEach((button) => button.addEventListener('click', () => {
     doc = updateNode(doc, node.id, { generation: { ratio: button.dataset.ratio } });
@@ -2126,14 +2201,14 @@ function openParamMenu(kind) {
   }
   if (kind === 'resolution') {
     let values;
-    if (node.type === 'image') values = provider === 'dreamina' ? ['1.5K', '2K'] : ['768 标准', '1024 高清'];
-    else if (node.type === 'video') values = provider === 'dreamina' ? ['480P', '720P', '1080P'] : ['360P', '480P'];
-    else values = ['标准'];
+    if (provider === 'dreamina') values = dreaminaValues(node, '--resolution');
+    if (!values?.length) values = node.type === 'image' ? (provider === 'dreamina' ? ['1.5K', '2K'] : ['768 标准', '1024 高清']) : node.type === 'video' ? (provider === 'dreamina' ? ['480P', '720P', '1080P'] : ['360P', '480P']) : ['标准'];
     items = values.map((value) => [value, () => setGeneration({ resolution: value, h3Size: node.type === 'video' ? value : node.generation?.h3Size })]);
   }
   if (kind === 'count') {
-    const values = node.type === 'image' ? [1, 2, 4] : [1];
-    items = values.map((value) => [`${value} 个`, () => setGeneration({ outputCount: value })]);
+    const values = node.type === 'image' ? [1, 2, 4, 8] : [1, 2, 3, 4];
+    const max = node.type === 'image' ? dreaminaRange(node, '--count', 1, 8).max : dreaminaRange(node, '--count', 1, 4).max;
+    items = values.filter((value) => value <= max).map((value) => [`${value} 个`, () => setGeneration({ outputCount: value })]);
   }
   if (!items.length) return;
   const button = app.querySelector(kind === 'model' ? '#dockModel' : kind === 'ratio' ? '#dockRatio' : kind === 'resolution' ? '#dockRes' : '#dockCount');
@@ -2256,8 +2331,8 @@ async function startImageQuote(node) {
         kind: 'dreamina-image', prompt,
         model: node.generation?.model || undefined,
         ratio: node.generation?.ratio || '16:9',
-        resolution: node.generation?.resolution || '2K',
-        count: node.generation?.outputCount || 1,
+        resolution: (() => { const allowed = dreaminaValues(node, '--resolution'); return allowed.length && !allowed.includes(node.generation?.resolution) ? allowed[0] : (node.generation?.resolution || '2K'); })(),
+        count: Math.min(node.generation?.outputCount || 1, dreaminaRange(node, '--count', 1, 4).max),
       }),
     });
     const quote = await response.json();
@@ -2287,8 +2362,8 @@ async function startVideoQuote(node) {
         firstFrameUrl: videoFrameRefs(node).first?.resource?.url || undefined,
         lastFrameUrl: videoFrameRefs(node).last?.resource?.url || undefined,
         ratio: node.generation?.ratio || '16:9',
-        resolution: (node.generation?.resolution || '480p').toLowerCase(),
-        duration: node.generation?.durationSeconds || 4,
+        resolution: (() => { const allowed = dreaminaValues(node, '--resolution'); const raw = String(node.generation?.resolution || '480p'); return allowed.length && !allowed.includes(raw) && !allowed.includes(raw.toLowerCase()) ? allowed[0] : raw.toLowerCase(); })(),
+        duration: Math.min(Math.max(node.generation?.durationSeconds || 4, dreaminaRange(node, '--duration', 4, 15).min), dreaminaRange(node, '--duration', 4, 15).max),
       }),
     });
     const quote = await response.json();
@@ -2312,7 +2387,7 @@ async function startAudioQuote(node) {
   try {
     const response = await fetch('/api/generation/quote', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'dreamina-audio', prompt, voiceName: node.generation?.voiceName || undefined }),
+      body: JSON.stringify({ kind: 'dreamina-audio', prompt, model: node.generation?.model || 'legacy_tts', voiceName: node.generation?.voiceName || undefined }),
     });
     const quote = await response.json();
     if (!response.ok) throw new Error(quote.error || '报价失败');

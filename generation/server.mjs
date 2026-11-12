@@ -23,6 +23,8 @@ const jobs = createJobStore();
 let activeJobId = null;
 const pendingQuotes = new Map();
 let voiceCache = null;
+let dreaminaModelCache = null;
+let dreaminaModelCacheAt = 0;
 let voiceCacheAt = 0;
 
 const RELIGHT_FG_MAPPING = [
@@ -150,6 +152,68 @@ export async function handleGeneration(req, res, url) {
   return true;
 }
 
+async function getDreaminaModelCatalog(provider) {
+  if (dreaminaModelCache && Date.now() - dreaminaModelCacheAt < 5 * 60 * 1000) return dreaminaModelCache;
+  const [image, video, audio] = await Promise.all([
+    provider.listModels('image'),
+    provider.listModels('video'),
+    provider.listModels('audio'),
+  ]);
+  dreaminaModelCache = {
+    image: Array.isArray(image) ? image : [],
+    video: Array.isArray(video) ? video : [],
+    audio: Array.isArray(audio) ? audio : [],
+    fetchedAt: Date.now(),
+  };
+  dreaminaModelCacheAt = Date.now();
+  return dreaminaModelCache;
+}
+
+function cliFlag(mode, name) {
+  return (mode?.flags || []).find((flag) => flag.flag === name) || null;
+}
+
+function cliModeRefs(mode) {
+  return mode?.references || { min: 0, max: 0, types: [] };
+}
+
+function pickCliMode(spec, names, refCount = 0) {
+  const modes = Array.isArray(spec?.modes) ? spec.modes : [];
+  const candidates = modes.filter((mode) => names.includes(mode.name));
+  const fits = candidates.filter((mode) => {
+    const refs = cliModeRefs(mode);
+    return refCount >= (Number(refs.min) || 0) && refCount <= (Number(refs.max) || 0);
+  });
+  return fits[0] || (refCount === 0 ? candidates.find((mode) => (Number(cliModeRefs(mode).min) || 0) === 0) : null) || null;
+}
+
+function cliAllowedValues(mode, flagName) {
+  const flag = cliFlag(mode, flagName);
+  return Array.isArray(flag?.values) ? flag.values : [];
+}
+
+function cliNumberRange(mode, flagName, fallbackMin, fallbackMax) {
+  const flag = cliFlag(mode, flagName);
+  return {
+    min: Number.isFinite(Number(flag?.min)) ? Number(flag.min) : fallbackMin,
+    max: Number.isFinite(Number(flag?.max)) ? Number(flag.max) : fallbackMax,
+  };
+}
+
+function fallbackCliSpec(type, model) {
+  if (type === 'image') return { model, displayName: model, modes: [{ name: 't2i', flags: [{ flag: '--resolution', values: ['1.5K', '2K'] }, { flag: '--count', min: 1, max: 4 }], references: { min: 0, max: 0 } }] };
+  if (type === 'video') return { model, displayName: model, modes: [
+    { name: 't2v', flags: [{ flag: '--resolution', values: ['480p', '720p', '1080p'] }, { flag: '--duration', min: 4, max: 15 }], references: { min: 0, max: 0 } },
+    { name: 'first_last_frame', flags: [{ flag: '--resolution', values: ['480p', '720p', '1080p'] }, { flag: '--duration', min: 4, max: 15 }], references: { min: 1, max: 2 } },
+  ] };
+  return { model, displayName: model, modes: [{ name: 'tts', flags: [], references: { min: 0, max: 0 } }] };
+}
+
+function pickCliModel(catalog, type, requested, fallback) {
+  const list = catalog?.[type] || [];
+  return list.find((item) => item.model === requested) || list.find((item) => item.model === fallback) || list[0] || fallbackCliSpec(type, requested || fallback || 'seedance_2.5_draft');
+}
+
 async function handle(req, res, url) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
@@ -207,6 +271,18 @@ async function handle(req, res, url) {
     return;
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/generation/models') {
+    const config = await loadConfig();
+    const provider = createDreaminaCliProvider({ command: config.dreamina.command, profile: config.dreamina.profile || undefined });
+    try {
+      const catalog = await getDreaminaModelCatalog(provider);
+      sendJson(res, 200, catalog);
+    } catch (error) {
+      sendJson(res, 200, { image: [], video: [], audio: [], error: error.message || String(error) });
+    }
+    return;
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/generation/workflows') {
     const config = await loadConfig();
     let files = [];
@@ -255,17 +331,19 @@ async function handle(req, res, url) {
     let created;
     let pending;
     if (kind === 'dreamina-image') {
-      const model = body.model || config.dreamina.imageModel || 'high_aes_general_v50_flash';
-      const resolution = body.resolution || '2K';
+      const catalog = await getDreaminaModelCatalog(provider).catch(() => null);
+      const spec = pickCliModel(catalog, 'image', body.model || config.dreamina.imageModel, 'high_aes_general_v50_flash');
+      const mode = pickCliMode(spec, ['t2i']) || spec?.modes?.[0] || null;
+      const model = spec?.model || body.model || config.dreamina.imageModel || 'high_aes_general_v50_flash';
+      const allowedRes = cliAllowedValues(mode, '--resolution');
+      const resolution = allowedRes.includes(body.resolution) ? body.resolution : (allowedRes[0] || body.resolution || '2K');
       const ratio = body.ratio || '16:9';
-      const count = clampInt(body.count, 1, 4, 1);
+      const countRange = cliNumberRange(mode, '--count', 1, 4);
+      const count = clampInt(body.count, countRange.min, countRange.max, 1);
       created = await provider.createImageNode({ projectId, prompt, model, ratio, resolution, count });
       pending = { kind, projectId, nodeId: created.nodeId, model, resolution, ratio, count, prompt };
     } else if (kind === 'dreamina-video') {
-      const model = body.model || config.dreamina.videoModel || 'seedance_2.5_draft';
-      const resolution = body.resolution || '480p';
-      const duration = clampInt(body.duration, 4, 15, 4);
-      const ratio = body.ratio || '16:9';
+      const catalog = await getDreaminaModelCatalog(provider).catch(() => null);
       const frameRefs = [];
       for (const [key, label] of [['firstFrameUrl', '首帧'], ['lastFrameUrl', '尾帧']]) {
         const assetName = basename(String(body[key] || '').split('?')[0]);
@@ -273,16 +351,34 @@ async function handle(req, res, url) {
         const uploaded = await provider.uploadResource({ projectId, file: join(ASSETS_DIR, assetName), name: `${label}-${assetName}` });
         frameRefs.push(`res:${uploaded.resourceId}`);
       }
+      const spec = pickCliModel(catalog, 'video', body.model || config.dreamina.videoModel, 'seedance_2.5_draft');
+      const mode = frameRefs.length >= 2
+        ? pickCliMode(spec, ['first_last_frame'], 2)
+        : frameRefs.length === 1
+          ? pickCliMode(spec, ['first_last_frame'], 1)
+          : pickCliMode(spec, ['t2v'], 0);
+      if (!mode) throw jobError(`模型 ${spec?.displayName || body.model || ''} 不支持当前参考数量（${frameRefs.length} 张）`);
+      const model = spec?.model || body.model || config.dreamina.videoModel || 'seedance_2.5_draft';
+      const allowedRes = cliAllowedValues(mode, '--resolution');
+      const resolution = allowedRes.includes(String(body.resolution || '').toLowerCase()) ? String(body.resolution).toLowerCase() : (allowedRes.includes(body.resolution) ? body.resolution : (allowedRes[0] || body.resolution || '480p'));
+      const ratio = body.ratio || '16:9';
+      const durationRange = cliNumberRange(mode, '--duration', 4, 15);
+      const duration = clampInt(body.duration, durationRange.min, durationRange.max, Math.min(5, durationRange.max));
       created = await provider.createVideoNode({
         projectId, prompt, ratio, resolution, duration, model,
-        mode: frameRefs.length ? 'first_last_frame' : 't2v', refs: frameRefs,
+        mode: mode.name, refs: frameRefs,
       });
-      pending = { kind, projectId, nodeId: created.nodeId, model, resolution, duration, ratio, prompt, frameRefs };
+      pending = { kind, projectId, nodeId: created.nodeId, model, resolution, duration, ratio, prompt, frameRefs, mode: mode.name };
     } else {
-      const voice = await provider.pickVoice('legacy_tts').catch(() => null);
+      const catalog = await getDreaminaModelCatalog(provider).catch(() => null);
+      const requestedAudio = body.model || 'legacy_tts';
+      const spec = pickCliModel(catalog, 'audio', requestedAudio, 'legacy_tts');
+      const audioModel = spec?.model || requestedAudio;
+      const scenario = audioModel === 'seed_audio_v1' ? 'text-reading' : undefined;
+      const voice = await provider.pickVoice(audioModel).catch(() => null);
       const voiceName = body.voiceName || voice?.voiceName;
-      created = await provider.createAudioNode({ projectId, prompt, model: 'legacy_tts', voiceName, scenario: 'text-reading' });
-      pending = { kind, projectId, nodeId: created.nodeId, model: 'legacy_tts', prompt, voiceName };
+      created = await provider.createAudioNode({ projectId, prompt, model: audioModel, voiceName, scenario });
+      pending = { kind, projectId, nodeId: created.nodeId, model: audioModel, prompt, voiceName, scenario };
     }
     const quote = await provider.quote({ projectId, nodeId: created.nodeId });
     pending.credits = quote.maxCredits;
@@ -291,7 +387,7 @@ async function handle(req, res, url) {
     sendJson(res, 200, {
       quoteId, kind, credits: quote.maxCredits, model: pending.model, voiceName: pending.voiceName || null,
       resolution: pending.resolution, duration: pending.duration, ratio: pending.ratio,
-      confirmationRequired: quote.confirmationRequired, projectId,
+      confirmationRequired: quote.confirmationRequired, projectId, mode: pending.mode || null,
     });
     return;
   }
