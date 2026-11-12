@@ -2058,7 +2058,8 @@ function modelOptions(node) {
       ? dreaminaCatalog.video.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'video')])
       : [
         ['Seedance 2.5', () => setGeneration({ model: 'seedance_2.5_draft' })],
-        ['Seedance 2.5 Pro', () => setGeneration({ model: 'seedance_2.5_pro' })],
+        ['Seedance 2.5 Flash', () => setGeneration({ model: 'seedance_2.5_flash' })],
+        ['Seedance 2.5 VIP', () => setGeneration({ model: 'seedance_2.5' })],
       ])
     : [
       ['H3（快，640×352）', () => setGeneration({ model: 'h3', durationSeconds: 5, h3Size: '360P' })],
