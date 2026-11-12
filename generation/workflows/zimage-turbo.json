@@ -1,0 +1,139 @@
+{
+  "1": {
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Z-Image Turbo (GGUF Q5_K_M)"
+    },
+    "inputs": {
+      "unet_name": "z_image_turbo-Q5_K_M.gguf"
+    }
+  },
+  "2": {
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "Shift"
+    },
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "shift": 3.0
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoaderGGUF",
+    "_meta": {
+      "title": "Qwen3-4B (GGUF)"
+    },
+    "inputs": {
+      "clip_name": "Qwen3-4B-Q5_K_M.gguf",
+      "type": "lumina2"
+    }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "正向提示词"
+    },
+    "inputs": {
+      "clip": [
+        "3",
+        0
+      ],
+      "text": "a cinematic portrait of a young woman in warm golden hour light, 85mm lens, natural skin texture"
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "负向提示词"
+    },
+    "inputs": {
+      "clip": [
+        "3",
+        0
+      ],
+      "text": "blurry, low quality, watermark, distorted"
+    }
+  },
+  "6": {
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "尺寸"
+    },
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "7": {
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Flux VAE"
+    },
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "8步 Turbo 采样"
+    },
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ],
+      "seed": 20261112,
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "解码"
+    },
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "7",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存"
+    },
+    "inputs": {
+      "images": [
+        "9",
+        0
+      ],
+      "filename_prefix": "zimage_test"
+    }
+  }
+}

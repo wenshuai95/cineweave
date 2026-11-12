@@ -1,0 +1,12 @@
+{
+  "workflow": "framepack-i2v",
+  "defaults": { "width": 608, "height": 640, "duration": 3, "fps": 30, "steps": 30, "negativePrompt": "" },
+  "mapping": [
+    { "nodeId": "1", "input": "image", "from": "image" },
+    { "nodeId": "6", "input": "text", "from": "prompt" },
+    { "nodeId": "11", "input": "seed", "from": "seed", "type": "number" },
+    { "nodeId": "11", "input": "total_second_length", "from": "duration", "type": "number" },
+    { "nodeId": "11", "input": "steps", "from": "steps", "type": "number" },
+    { "nodeId": "13", "input": "fps", "from": "fps", "type": "number" }
+  ]
+}

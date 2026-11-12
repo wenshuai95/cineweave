@@ -1,0 +1,14 @@
+{
+  "workflow": "wan22-t2v",
+  "defaults": { "width": 832, "height": 480, "duration": 5.06, "fps": 16, "negativePrompt": "" },
+  "mapping": [
+    { "nodeId": "8", "input": "text", "from": "prompt" },
+    { "nodeId": "9", "input": "text", "from": "negativePrompt" },
+    { "nodeId": "6", "input": "width", "from": "width", "type": "number" },
+    { "nodeId": "6", "input": "height", "from": "height", "type": "number" },
+    { "nodeId": "6", "input": "length", "from": "frames", "type": "number" },
+    { "nodeId": "11", "input": "noise_seed", "from": "seed", "type": "number" },
+    { "nodeId": "12", "input": "noise_seed", "from": "seed", "type": "number" },
+    { "nodeId": "16", "input": "fps", "from": "fps", "type": "number" }
+  ]
+}

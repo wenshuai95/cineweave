@@ -1,0 +1,14 @@
+{
+  "workflow": "ltx23-t2v",
+  "defaults": { "width": 640, "height": 384, "duration": 2.7, "fps": 24, "negativePrompt": "" },
+  "mapping": [
+    { "nodeId": "3", "input": "text", "from": "prompt" },
+    { "nodeId": "4", "input": "text", "from": "negativePrompt" },
+    { "nodeId": "5", "input": "width", "from": "width", "type": "number" },
+    { "nodeId": "5", "input": "height", "from": "height", "type": "number" },
+    { "nodeId": "5", "input": "length", "from": "frames", "type": "number" },
+    { "nodeId": "7", "input": "noise_seed", "from": "seed", "type": "number" },
+    { "nodeId": "10", "input": "frame_rate", "from": "fps", "type": "number" },
+    { "nodeId": "14", "input": "fps", "from": "fps", "type": "number" }
+  ]
+}

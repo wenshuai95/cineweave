@@ -103,6 +103,14 @@ const FLUX_T2I_MAPPING = [
   { nodeId: '7', input: 'seed', from: 'seed', type: 'number' },
 ];
 
+const ZIMAGE_T2I_MAPPING = [
+  { nodeId: '4', input: 'text', from: 'prompt' },
+  { nodeId: '5', input: 'text', from: 'negativePrompt' },
+  { nodeId: '6', input: 'width', from: 'width', type: 'number' },
+  { nodeId: '6', input: 'height', from: 'height', type: 'number' },
+  { nodeId: '8', input: 'seed', from: 'seed', type: 'number' },
+];
+
 const SDXL_I2I_MAPPING = [
   { nodeId: '4', input: 'text', from: 'prompt' },
   { nodeId: '5', input: 'text', from: 'negativePrompt' },
@@ -759,12 +767,24 @@ async function runComfyEditJob(jobId, input, mode) {
   });
 }
 
+const VIDEO_WORKFLOWS = {
+  h3: { t2v: 'h3-t2v', i2v: 'h3-i2v', label: 'H3' },
+  wan22: { t2v: 'wan22-t2v', i2v: 'wan22-t2v', label: 'Wan 2.2' },
+  ltx23: { t2v: 'ltx23-t2v', i2v: 'ltx23-t2v', label: 'LTX-2.3' },
+  framepack: { t2v: 'framepack-i2v', i2v: 'framepack-i2v', label: 'FramePack' },
+};
+
 async function runComfyVideoJob(jobId, input) {
   const config = await loadConfig();
   const hasImage = Boolean(input.imageUrl);
-  const name = hasImage
-    ? (config.comfyui.videoWorkflowI2v || 'h3-i2v')
-    : (config.comfyui.videoWorkflow || 'h3-t2v');
+  const requestedModel = String(input.model || input.workflow || '').trim();
+  const spec = VIDEO_WORKFLOWS[requestedModel] || null;
+  if (requestedModel === 'framepack' && !hasImage) throw jobError('FramePack 需要首帧参考图，请先连接一张图片');
+  const name = spec
+    ? (hasImage ? spec.i2v : spec.t2v)
+    : hasImage
+      ? (config.comfyui.videoWorkflowI2v || 'h3-i2v')
+      : (config.comfyui.videoWorkflow || 'h3-t2v');
   const workflowPath = join(WORKFLOW_DIR, `${name}.json`);
   const mappingPath = join(WORKFLOW_DIR, `${name}.mapping.json`);
   try {
@@ -774,19 +794,23 @@ async function runComfyVideoJob(jobId, input) {
     throw jobError(`未配置 ComfyUI 视频 workflow：generation/workflows/${name}.json 与 ${name}.mapping.json（等待 Windows 侧 H3 API 导出）`);
   }
   const template = JSON.parse(await readFile(workflowPath, 'utf8'));
-  const spec = JSON.parse(await readFile(mappingPath, 'utf8'));
+  const mappingSpec = JSON.parse(await readFile(mappingPath, 'utf8'));
   const prompt = String(input.prompt || '').trim();
   if (!prompt) throw jobError('生成提示词不能为空');
-  const defaults = spec.defaults || {};
-  const width = clampInt(input.width, 256, 1536, defaults.width || 640);
-  const height = clampInt(input.height, 256, 1536, defaults.height || 352);
+  const defaults = mappingSpec.defaults || {};
+  const width = clampInt(input.width, 256, 1536, defaults.width || 832);
+  const height = clampInt(input.height, 256, 1536, defaults.height || 480);
   const duration = Number(input.duration) > 0 ? Number(input.duration) : (defaults.duration || 5);
-  const fps = Number(defaults.fps) > 0 ? Number(defaults.fps) : 24;
+  const fps = Number(input.fps) > 0 ? Number(input.fps) : (Number(defaults.fps) > 0 ? Number(defaults.fps) : 16);
+  let frames = Number(input.frames) > 0 ? Math.round(Number(input.frames)) : Math.round(duration * fps);
+  // Wan 2.2 要求 4n+1 帧；LTX 要求 8n+1 帧。就近取整，避免出畸形画面。
+  if (name.startsWith('wan22')) frames = Math.max(9, Math.round((frames - 1) / 4) * 4 + 1);
+  else if (name.startsWith('ltx23')) frames = Math.max(9, Math.round((frames - 1) / 8) * 8 + 1);
   const values = {
     prompt,
     negativePrompt: input.negativePrompt || defaults.negativePrompt || '',
-    width, height, duration,
-    frames: Math.round(duration * fps),
+    width, height, duration, frames, fps,
+    steps: Number(input.steps) > 0 ? Math.round(Number(input.steps)) : (Number(defaults.steps) > 0 ? Math.round(Number(defaults.steps)) : 30),
     seed: Number.isFinite(Number(input.seed)) ? Number(input.seed) : Math.floor(Math.random() * 1e9),
   };
   const provider = createComfyUIProvider({ baseUrl: config.comfyui.baseUrl, timeoutMs: config.comfyui.timeoutMs || 30000 });
@@ -805,14 +829,16 @@ async function runComfyVideoJob(jobId, input) {
     values.image = uploaded.subfolder ? `${uploaded.subfolder}/${uploaded.name}` : uploaded.name;
     jobs.update(jobId, { progress: 8, message: '参考图已上传', meta: { image: uploaded.name } });
   }
-  const { workflow } = applyInputMapping(template, spec.mapping || [], values);
-  jobs.update(jobId, { status: 'running', progress: 10, message: '提交到 ComfyUI（视频）…' });
+  const { workflow } = applyInputMapping(template, mappingSpec.mapping || [], values);
+  const label = spec?.label || (hasImage ? 'H3 图生视频' : 'H3');
+  jobs.update(jobId, { status: 'running', progress: 10, message: `提交到 ComfyUI（${label}）…` });
   const submitted = await provider.submit(workflow);
-  jobs.update(jobId, { progress: 20, message: '已排队，H3 生成中…', meta: { promptId: submitted.promptId } });
+  jobs.update(jobId, { progress: 20, message: `已排队，${label} 生成中…`, meta: { promptId: submitted.promptId, model: requestedModel || 'h3' } });
+  const timeoutMs = requestedModel === 'framepack' ? 60 * 60 * 1000 : 30 * 60 * 1000;
   const { outputs } = await provider.waitFor(submitted.promptId, {
     intervalMs: 3000,
-    timeoutMs: 20 * 60 * 1000,
-    onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(90, 20 + Math.round(elapsedMs / 2000)), message: 'H3 生成中…' }),
+    timeoutMs,
+    onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(90, 20 + Math.round(elapsedMs / 3000)), message: `${label} 生成中…` }),
   });
   const video = outputs.find((item) => item.isVideo) || outputs.find((item) => /\.(mp4|webm|gif)$/i.test(item.filename || '')) || outputs[0];
   if (!video?.filename) throw jobError('ComfyUI 没有返回视频');
@@ -1044,7 +1070,7 @@ async function runComfyImageJob(jobId, input) {
   const mapping = useControlNet ? CONTROLNET_MAPPING
     : useIPAdapter ? IPADAPTER_MAPPING
     : hasImage ? SDXL_I2I_MAPPING
-    : workflowName.includes('flux') ? FLUX_T2I_MAPPING : SDXL_T2I_MAPPING;
+    : workflowName.includes('flux') ? FLUX_T2I_MAPPING : workflowName.includes('zimage') ? ZIMAGE_T2I_MAPPING : SDXL_T2I_MAPPING;
   let workflow;
   if (hasImage) {
     const assetName = basename(String(input.imageUrl).split('?')[0]);

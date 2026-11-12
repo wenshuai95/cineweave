@@ -787,9 +787,15 @@ function updateSelectionUi() {
       app.querySelector('#dockRes').style.display = 'none';
     }
     if (single.type === 'video' && providerForRes === 'comfyui') {
-      const h3 = single.generation?.h3Size === '480P' ? '480P · 848×480' : '360P · 640×352';
+      const model = single.generation?.model || 'h3';
+      const labels = {
+        wan22: 'Wan 2.2 · 832×480 · 16fps',
+        ltx23: 'LTX-2.3 · 640×384 · 24fps',
+        framepack: 'FramePack · 首帧 · 30fps',
+        h3: single.generation?.h3Size === '480P' ? 'H3 480P · 848×480' : 'H3 360P · 640×352',
+      };
       const resPill = app.querySelector('#dockRes');
-      resPill.textContent = `H3 ${h3}`;
+      resPill.textContent = labels[model] || labels.h3;
       resPill.disabled = false;
     } else {
       const resPill = app.querySelector('#dockRes');
@@ -842,8 +848,10 @@ function updateSelectionUi() {
       }
     } else if (single.type === 'video') {
       const provider = single.generation?.backend?.provider || 'dreamina';
+      const videoModel = single.generation?.model || 'h3';
+      const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢' };
       cost.textContent = provider === 'comfyui'
-        ? 'ComfyUI 视频 · 免费（H3 · Windows 本机）'
+        ? `ComfyUI 视频 · 免费（${videoLabels[videoModel] || videoLabels.h3} · Windows）`
         : '即梦 CLI · 报价后确认扣积分';
       cost.classList.remove('cv-warn');
     } else if (single.type === 'audio') {
@@ -1888,7 +1896,7 @@ function toggleVideoBackend() {
   if (node.type === 'audio') { toast('音频只有即梦 API，没有 ComfyUI 后端'); return; }
   const current = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
   const next = current === 'comfyui' ? 'dreamina' : 'comfyui';
-  doc = updateNode(doc, node.id, { generation: { backend: { provider: next, instance: next === 'comfyui' ? 'comfyui' : 'dreamina' } } });
+  doc = updateNode(doc, node.id, { generation: { backend: { provider: next, instance: next === 'comfyui' ? 'comfyui' : 'dreamina' }, ...(next === 'comfyui' && node.type === 'video' ? { model: 'h3', durationSeconds: 5 } : {}) } });
   render();
   const label = node.type === 'image' ? '图片' : '视频';
   toast(next === 'comfyui' ? `已切换到 ComfyUI ${label}后端` : `已切换到即梦 API ${label}后端`);
@@ -1949,8 +1957,13 @@ function modelLabel(node) {
   }
   if (node.type === 'image') {
     const wf = node.generation?.imageWorkflow || '';
+    if (wf === 'zimage-turbo') return 'Z-Image Turbo';
     return wf === 'photoreal-juggernaut' ? 'Juggernaut' : wf === 'photoreal-realvis' ? 'RealVis' : 'Flux';
   }
+  const videoModel = node.generation?.model || 'h3';
+  if (videoModel === 'wan22') return 'Wan 2.2';
+  if (videoModel === 'ltx23') return 'LTX-2.3';
+  if (videoModel === 'framepack') return 'FramePack';
   return 'H3';
 }
 
@@ -1965,9 +1978,10 @@ function modelOptions(node) {
         ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })],
       ]
       : [
+        ['Z-Image Turbo（快，1024²）', () => setGeneration({ imageWorkflow: 'zimage-turbo' })],
         ['Flux', () => setGeneration({ imageWorkflow: 'flux-t2i' })],
-        ['Juggernaut', () => setGeneration({ imageWorkflow: 'photoreal-juggernaut' })],
-        ['RealVis', () => setGeneration({ imageWorkflow: 'photoreal-realvis' })],
+        ['Juggernaut（写实）', () => setGeneration({ imageWorkflow: 'photoreal-juggernaut' })],
+        ['RealVis（写实）', () => setGeneration({ imageWorkflow: 'photoreal-realvis' })],
       ];
   }
   return provider === 'dreamina'
@@ -1975,7 +1989,12 @@ function modelOptions(node) {
       ['Seedance 2.5', () => setGeneration({ model: 'seedance_2.5_draft' })],
       ['Seedance 2.5 Pro', () => setGeneration({ model: 'seedance_2.5_pro' })],
     ]
-    : [['H3', () => setGeneration({ model: 'h3' })]];
+    : [
+      ['H3（快，640×352）', () => setGeneration({ model: 'h3', durationSeconds: 5, h3Size: '360P' })],
+      ['Wan 2.2（质量，832×480）', () => setGeneration({ model: 'wan22', durationSeconds: 5, resolution: '480P' })],
+      ['LTX-2.3（快，640×384）', () => setGeneration({ model: 'ltx23', durationSeconds: 2.7, resolution: '384P' })],
+      ['FramePack（长镜头，需首帧）', () => setGeneration({ model: 'framepack', durationSeconds: 3, resolution: '640P' })],
+    ];
 }
 
 function setGeneration(patch) {
@@ -2166,22 +2185,31 @@ async function startComfyVideo(node) {
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
-  if ((node.generation?.references || []).length && !frames.first) {
+  const model = ['h3', 'wan22', 'ltx23', 'framepack'].includes(node.generation?.model) ? node.generation.model : 'h3';
+  if ((model === 'h3' || model === 'framepack') && (node.generation?.references || []).length && !frames.first) {
     toast('参考图节点还没有生成图片');
     return;
   }
-  const imageUrl = frames.first?.resource?.url;
-  if (frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
-  const [videoWidth, videoHeight] = node.generation?.h3Size === '480P' ? [848, 480] : [640, 352];
+  if (model === 'framepack' && !frames.first?.resource?.url) { toast('FramePack 需要先连接一张图片作为首帧'); return; }
+  const imageUrl = model === 'h3' || model === 'framepack' ? frames.first?.resource?.url : undefined;
+  if (frames.last && model !== 'h3') toast('这个视频模型只使用首帧，尾帧会忽略');
+  if (model === 'h3' && frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
+  const specs = {
+    h3: { width: node.generation?.h3Size === '480P' ? 848 : 640, height: node.generation?.h3Size === '480P' ? 480 : 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
+    wan22: { width: 832, height: 480, fps: 16, duration: node.generation?.durationSeconds || 5 },
+    ltx23: { width: 640, height: 384, fps: 24, duration: node.generation?.durationSeconds || 2.7 },
+    framepack: { width: 608, height: 640, fps: 30, duration: node.generation?.durationSeconds || 3 },
+  };
+  const spec = specs[model];
   doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
   render();
   try {
     const response = await fetch('/api/generation/jobs', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        kind: 'comfyui-video', prompt,
-        width: videoWidth, height: videoHeight,
-        duration: node.generation?.durationSeconds || 5,
+        kind: 'comfyui-video', prompt, model,
+        width: spec.width, height: spec.height, fps: spec.fps,
+        duration: spec.duration,
         imageUrl,
       }),
     });
