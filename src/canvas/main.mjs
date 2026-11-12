@@ -792,6 +792,7 @@ function updateSelectionUi() {
         wan22: 'Wan 2.2 · 832×480 · 16fps',
         ltx23: 'LTX-2.3 · 640×384 · 24fps',
         framepack: 'FramePack · 首帧 · 30fps',
+        'h3-ref2v': 'H3 Ref2VA · 640×352 · 参考生视频',
         h3: single.generation?.h3Size === '480P' ? 'H3 480P · 848×480' : 'H3 360P · 640×352',
       };
       const resPill = app.querySelector('#dockRes');
@@ -849,7 +850,7 @@ function updateSelectionUi() {
     } else if (single.type === 'video') {
       const provider = single.generation?.backend?.provider || 'dreamina';
       const videoModel = single.generation?.model || 'h3';
-      const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢' };
+      const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢', 'h3-ref2v': 'H3 Ref2VA · 多模态参考 · 约 3 分钟' };
       cost.textContent = provider === 'comfyui'
         ? `ComfyUI 视频 · 免费（${videoLabels[videoModel] || videoLabels.h3} · Windows）`
         : '即梦 CLI · 报价后确认扣积分';
@@ -1964,6 +1965,7 @@ function modelLabel(node) {
   if (videoModel === 'wan22') return 'Wan 2.2';
   if (videoModel === 'ltx23') return 'LTX-2.3';
   if (videoModel === 'framepack') return 'FramePack';
+  if (videoModel === 'h3-ref2v') return 'H3 Ref2VA';
   return 'H3';
 }
 
@@ -1994,6 +1996,7 @@ function modelOptions(node) {
       ['Wan 2.2（质量，832×480）', () => setGeneration({ model: 'wan22', durationSeconds: 5, resolution: '480P' })],
       ['LTX-2.3（快，640×384）', () => setGeneration({ model: 'ltx23', durationSeconds: 2.7, resolution: '384P' })],
       ['FramePack（长镜头，需首帧）', () => setGeneration({ model: 'framepack', durationSeconds: 3, resolution: '640P' })],
+      ['H3 多模态参考（Ref2VA）', () => setGeneration({ model: 'h3-ref2v', durationSeconds: 5, resolution: '352P' })],
     ];
 }
 
@@ -2181,16 +2184,29 @@ function videoFrameRefs(node) {
   return { first, last };
 }
 
+function videoReferenceAssets(node) {
+  return (node.generation?.references || [])
+    .map((ref) => ({ ref, node: findNode(doc, ref.id) }))
+    .filter((entry) => entry.node?.resources?.[0]?.url)
+    .sort((a, b) => (Number(a.ref.index) || 0) - (Number(b.ref.index) || 0))
+    .map((entry) => ({ ...entry.node.resources[0], nodeType: entry.node.type, role: entry.ref.role || '' }));
+}
+
 async function startComfyVideo(node) {
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
-  const model = ['h3', 'wan22', 'ltx23', 'framepack'].includes(node.generation?.model) ? node.generation.model : 'h3';
+  const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v'].includes(node.generation?.model) ? node.generation.model : 'h3';
   if ((model === 'h3' || model === 'framepack') && (node.generation?.references || []).length && !frames.first) {
     toast('参考图节点还没有生成图片');
     return;
   }
   if (model === 'framepack' && !frames.first?.resource?.url) { toast('FramePack 需要先连接一张图片作为首帧'); return; }
+  const referenceAssets = videoReferenceAssets(node);
+  const refImages = referenceAssets.filter((item) => item.nodeType === 'image' || item.type === 'image');
+  const refVideos = referenceAssets.filter((item) => item.nodeType === 'video' && item.type !== 'image');
+  const refAudios = referenceAssets.filter((item) => item.nodeType === 'audio');
+  if (model === 'h3-ref2v' && !refImages.length && !refVideos.length && !refAudios.length) { toast('H3 多模态参考：先连接参考图 / 视频 / 音频节点'); return; }
   const imageUrl = model === 'h3' || model === 'framepack' ? frames.first?.resource?.url : undefined;
   if (frames.last && model !== 'h3') toast('这个视频模型只使用首帧，尾帧会忽略');
   if (model === 'h3' && frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
@@ -2199,6 +2215,7 @@ async function startComfyVideo(node) {
     wan22: { width: 832, height: 480, fps: 16, duration: node.generation?.durationSeconds || 5 },
     ltx23: { width: 640, height: 384, fps: 24, duration: node.generation?.durationSeconds || 2.7 },
     framepack: { width: 608, height: 640, fps: 30, duration: node.generation?.durationSeconds || 3 },
+    'h3-ref2v': { width: 640, height: 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
   };
   const spec = specs[model];
   doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
@@ -2211,6 +2228,9 @@ async function startComfyVideo(node) {
         width: spec.width, height: spec.height, fps: spec.fps,
         duration: spec.duration,
         imageUrl,
+        refImages: model === 'h3-ref2v' ? refImages.slice(0, 9).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
+        refVideos: model === 'h3-ref2v' ? refVideos.slice(0, 3).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
+        refAudios: model === 'h3-ref2v' ? refAudios.slice(0, 3).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
       }),
     });
     const data = await response.json();

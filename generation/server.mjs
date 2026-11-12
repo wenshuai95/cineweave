@@ -772,7 +772,40 @@ const VIDEO_WORKFLOWS = {
   wan22: { t2v: 'wan22-t2v', i2v: 'wan22-t2v', label: 'Wan 2.2' },
   ltx23: { t2v: 'ltx23-t2v', i2v: 'ltx23-t2v', label: 'LTX-2.3' },
   framepack: { t2v: 'framepack-i2v', i2v: 'framepack-i2v', label: 'FramePack' },
+  'h3-ref2v': { t2v: 'h3-ref2v', i2v: 'h3-ref2v', label: 'H3 Ref2VA' },
 };
+
+async function readReferenceBytes(url, type = 'image') {
+  const raw = String(url || '').trim();
+  if (!raw) throw jobError('参考素材 URL 为空');
+  let pathname = '';
+  try { pathname = decodeURIComponent(new URL(raw, 'http://127.0.0.1').pathname); } catch { pathname = raw; }
+  const name = basename(pathname);
+  if (name && pathname.includes('/api/generation/assets/')) {
+    try { return await readFile(join(ASSETS_DIR, name)); } catch { /* 继续尝试 HTTP */ }
+  }
+  if (/^https?:/i.test(raw)) {
+    const response = await fetch(raw);
+    if (!response.ok) throw jobError(`下载参考素材失败：HTTP ${response.status}`);
+    return Buffer.from(await response.arrayBuffer());
+  }
+  // 画布相对地址：交给本地主服务读取（生成服务与主服务同机）。
+  const base = process.env.DIRECTOR_CANVAS_BASE || `http://127.0.0.1:${process.env.PORT || 41974}`;
+  const response = await fetch(new URL(raw, base));
+  if (!response.ok) throw jobError(`读取参考素材失败：HTTP ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+function referenceFilename(item, index, type) {
+  const raw = String(item?.url || item?.filename || '');
+  let name = '';
+  try { name = basename(decodeURIComponent(new URL(raw, 'http://127.0.0.1').pathname)); } catch { name = basename(raw); }
+  if (!name || !extname(name)) {
+    const ext = type === 'video' ? '.mp4' : type === 'audio' ? '.wav' : '.png';
+    name = `ref_${type}_${index + 1}${ext}`;
+  }
+  return name;
+}
 
 async function runComfyVideoJob(jobId, input) {
   const config = await loadConfig();
@@ -813,7 +846,31 @@ async function runComfyVideoJob(jobId, input) {
     steps: Number(input.steps) > 0 ? Math.round(Number(input.steps)) : (Number(defaults.steps) > 0 ? Math.round(Number(defaults.steps)) : 30),
     seed: Number.isFinite(Number(input.seed)) ? Number(input.seed) : Math.floor(Math.random() * 1e9),
   };
+  const isRef2v = requestedModel === 'h3-ref2v';
+  const refImages = isRef2v ? (Array.isArray(input.refImages) ? input.refImages.filter(Boolean).slice(0, 9) : []) : [];
+  const refVideos = isRef2v ? (Array.isArray(input.refVideos) ? input.refVideos.filter(Boolean).slice(0, 3) : []) : [];
+  const refAudios = isRef2v ? (Array.isArray(input.refAudios) ? input.refAudios.filter(Boolean).slice(0, 3) : []) : [];
+  if (isRef2v && !refImages.length && !refVideos.length && !refAudios.length) throw jobError('H3 多模态参考至少需要一张参考图、一段参考视频或一段参考音频');
   const provider = createComfyUIProvider({ baseUrl: config.comfyui.baseUrl, timeoutMs: config.comfyui.timeoutMs || 30000 });
+  if (isRef2v) {
+    const uploads = [
+      ...refImages.map((item, index) => ({ item, type: 'image', target: `refImage${index + 1}` })),
+      ...refVideos.map((item, index) => ({ item, type: 'video', target: `refVideo${index + 1}` })),
+      ...refAudios.map((item, index) => ({ item, type: 'audio', target: `refAudio${index + 1}` })),
+    ];
+    for (let i = 0; i < uploads.length; i += 1) {
+      const { item, type, target } = uploads[i];
+      const url = typeof item === 'string' ? item : item.url;
+      jobs.update(jobId, { status: 'running', progress: Math.min(12, 3 + i), message: `上传参考素材 ${i + 1}/${uploads.length}…` });
+      const bytes = await readReferenceBytes(url, type);
+      const uploaded = await provider.uploadImage(bytes, referenceFilename(item, i, type), { type: 'input', overwrite: true });
+      values[target] = uploaded.subfolder ? `${uploaded.subfolder}/${uploaded.name}` : uploaded.name;
+    }
+    values.refImageCount = refImages.length;
+    values.refVideoCount = refVideos.length;
+    values.refAudioCount = refAudios.length;
+    values.outputPrefix = defaults.outputPrefix || 'video/h3_ref2v';
+  }
   if (hasImage) {
     // 画布参考图：/api/generation/assets/<file> → 读本地资产 → 上传到 ComfyUI → 注入 LoadImage.image
     const assetName = basename(String(input.imageUrl).split('?')[0]);
@@ -829,7 +886,17 @@ async function runComfyVideoJob(jobId, input) {
     values.image = uploaded.subfolder ? `${uploaded.subfolder}/${uploaded.name}` : uploaded.name;
     jobs.update(jobId, { progress: 8, message: '参考图已上传', meta: { image: uploaded.name } });
   }
-  const { workflow } = applyInputMapping(template, mappingSpec.mapping || [], values);
+  let mapping = mappingSpec.mapping || [];
+  if (isRef2v) {
+    mapping = mapping.filter((item) => {
+      if (!item.from) return true;
+      if (/^refImage\d+$/.test(item.from)) return Number(item.from.slice(8)) <= refImages.length;
+      if (/^refVideo\d+$/.test(item.from)) return Number(item.from.slice(8)) <= refVideos.length;
+      if (/^refAudio\d+$/.test(item.from)) return Number(item.from.slice(8)) <= refAudios.length;
+      return true;
+    });
+  }
+  const { workflow } = applyInputMapping(template, mapping, values);
   const label = spec?.label || (hasImage ? 'H3 图生视频' : 'H3');
   jobs.update(jobId, { status: 'running', progress: 10, message: `提交到 ComfyUI（${label}）…` });
   const submitted = await provider.submit(workflow);

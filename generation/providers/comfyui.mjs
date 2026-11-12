@@ -119,7 +119,7 @@ export function applyInputMapping(workflow, mapping = [], values = {}) {
     if (!node || typeof node !== 'object') throw providerError('COMFY_MAPPING_NODE', `workflow has no node ${item.nodeId}`);
     node.inputs = node.inputs || {};
     let value;
-    if (item.from === 'custom') value = item.value;
+    if (item.from === 'custom' || (item.value !== undefined && !item.from)) value = item.value;
     else value = values[item.from];
     if (value === undefined || value === null) {
       throw providerError('COMFY_MAPPING_VALUE', `missing value for ${item.from}`);
