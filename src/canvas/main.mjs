@@ -35,6 +35,7 @@ import { minimapBounds, paintMinimap, minimapTransform } from './minimap.mjs';
 import { createNodeActions } from './node-actions.mjs';
 import { createPromptTools } from './prompt-tools.mjs';
 import { createStyleTools } from './style-tools.mjs';
+import { createTrimTools } from './trim-tools.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
@@ -1166,9 +1167,6 @@ function showImageToolMenu(node) {
 }
 
 const waveCache = new Map();
-let trimNode = null;
-let trimPeaks = null;
-let trimDuration = 0;
 
 async function peaksFor(url) {
   if (waveCache.has(url)) return waveCache.get(url);
@@ -1227,118 +1225,24 @@ function renderAudioWaveforms() {
   }
 }
 
-let videoTrimNode = null;
 
-function openVideoTrim(node) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('先生成视频'); return; }
-  videoTrimNode = node;
-  const preview = app.querySelector('#videoTrimPreview');
-  preview.src = media.url;
-  app.querySelector('#videoTrimModal').classList.add('open');
-  const start = app.querySelector('#videoTrimStart');
-  const end = app.querySelector('#videoTrimEnd');
-  preview.onloadedmetadata = () => {
-    const duration = Number.isFinite(preview.duration) ? preview.duration : 5;
-    start.max = String(duration);
-    end.max = String(duration);
-    start.value = '0';
-    end.value = String(duration);
-    drawVideoTrimInfo();
-  };
-  preview.load();
-}
+const trimTools = createTrimTools({
+  app,
+  getNode: (id) => findNode(doc, id),
+  commitResource,
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  render,
+  toast,
+  peaksFor,
+  drawWave,
+});
 
-function drawVideoTrimInfo() {
-  const preview = app.querySelector('#videoTrimPreview');
-  const start = Number(app.querySelector('#videoTrimStart').value) || 0;
-  const end = Number(app.querySelector('#videoTrimEnd').value) || preview.duration || 0;
-  app.querySelector('#videoTrimInfo').textContent = `保留 ${start.toFixed(1)}s – ${end.toFixed(1)}s（共 ${(preview.duration || 0).toFixed(1)}s）`;
-  try { preview.currentTime = start; } catch { /* ignore */ }
-}
-
-async function confirmVideoTrim() {
-  if (!videoTrimNode) return;
-  const media = videoTrimNode.resources?.[0];
-  const start = Number(app.querySelector('#videoTrimStart').value) || 0;
-  const end = Number(app.querySelector('#videoTrimEnd').value) || 0;
-  if (end <= start + 0.3) { toast('终点要大于起点'); return; }
-  app.querySelector('#videoTrimModal').classList.remove('open');
-  try {
-    const response = await fetch('/api/generation/video/trim', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ videoUrl: media.url, start, end }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '修剪失败');
-    commitResource(videoTrimNode.id, { id: data.filename, type: 'video', url: data.url, source: 'trim' });
-    doc = updateNode(doc, videoTrimNode.id, { status: 'success' });
-    render();
-    toast('视频已修剪');
-  } catch (error) {
-    toast(error.message || String(error), true);
-  }
-}
-
-async function openAudioTrim(node) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('先生成音频'); return; }
-  trimNode = node;
-  const modal = app.querySelector('#audioTrimModal');
-  modal.classList.add('open');
-  app.querySelector('#trimInfo').textContent = '读取波形…';
-  try {
-    const result = await peaksFor(media.url);
-    trimPeaks = result.peaks;
-    trimDuration = result.duration;
-    const canvas = app.querySelector('#trimWave');
-    canvas.width = 600;
-    canvas.height = 90;
-    const start = app.querySelector('#trimStart');
-    const end = app.querySelector('#trimEnd');
-    start.max = String(trimDuration);
-    end.max = String(trimDuration);
-    start.value = '0';
-    end.value = String(trimDuration);
-    drawTrimWave();
-  } catch (error) {
-    app.querySelector('#trimInfo').textContent = `读取失败：${error.message}`;
-  }
-}
-
-function drawTrimWave() {
-  if (!trimPeaks) return;
-  const start = Number(app.querySelector('#trimStart').value) || 0;
-  const end = Number(app.querySelector('#trimEnd').value) || trimDuration;
-  const canvas = app.querySelector('#trimWave');
-  drawWave(canvas, trimPeaks, start, end, trimDuration);
-  app.querySelector('#trimInfo').textContent = `保留 ${start.toFixed(1)}s – ${end.toFixed(1)}s（共 ${trimDuration.toFixed(1)}s）`;
-}
-
-async function confirmAudioTrim() {
-  if (!trimNode) return;
-  const media = trimNode.resources?.[0];
-  const start = Number(app.querySelector('#trimStart').value) || 0;
-  const end = Number(app.querySelector('#trimEnd').value) || trimDuration;
-  if (end <= start + 0.2) { toast('终点要大于起点'); return; }
-  app.querySelector('#audioTrimModal').classList.remove('open');
-  try {
-    const response = await fetch('/api/generation/audio/trim', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ audioUrl: media.url, start, end }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '裁剪失败');
-    doc = updateNode(doc, trimNode.id, {
-      status: 'success',
-      resources: [{ id: data.filename, type: 'audio', url: data.url, source: 'trim' }],
-    });
-    render();
-    toast('已裁剪');
-  } catch (error) {
-    toast(error.message || String(error), true);
-  }
-}
+function openVideoTrim(node) { return trimTools.openVideo(node); }
+function drawVideoTrimInfo() { return trimTools.drawVideoInfo(); }
+function confirmVideoTrim() { return trimTools.confirmVideo(); }
+function openAudioTrim(node) { return trimTools.openAudio(node); }
+function drawTrimWave() { return trimTools.drawAudioInfo(); }
+function confirmAudioTrim() { return trimTools.confirmAudio(); }
 
 let maskNode = null;
 let maskRects = [];

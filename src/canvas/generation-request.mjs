@@ -57,3 +57,21 @@ export async function translatePromptRequest(body, { fetchImpl = fetch } = {}) {
   if (!response.ok) throw new Error(data.error || '翻译失败');
   return data;
 }
+
+export async function trimVideoRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/video/trim', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '修剪失败');
+  return data;
+}
+
+export async function trimAudioRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/audio/trim', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '裁剪失败');
+  return data;
+}
