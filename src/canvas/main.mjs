@@ -38,6 +38,7 @@ import { createStyleTools } from './style-tools.mjs';
 import { createTrimTools } from './trim-tools.mjs';
 import { createVoicePicker } from './voice-picker.mjs';
 import { createMaskEditor } from './mask-editor.mjs';
+import { createVersionsView, downloadNodeResource } from './versions-view.mjs';
 import { createMediaExtract } from './media-extract.mjs';
 import { reorderReferences, applyReferenceRole, findReferenceEdge, mentionMode } from './reference-actions.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
@@ -2376,24 +2377,8 @@ function saveTimeline() {
   toast('时间线已保存');
 }
 
-function openVersions(node) {
-  const grid = app.querySelector('#versionsGrid');
-  const items = [];
-  if (node.resources?.[0]?.url) items.push({ ...node.resources[0], current: true });
-  items.push(...(node.versions || []));
-  grid.innerHTML = items.length ? items.map((item, index) => `<button class="cv-version${item.current ? ' current' : ''}" data-index="${index}">${item.type === 'video' ? '<video src="' + item.url + '" muted></video>' : item.type === 'audio' ? '<span class="cv-version-audio">♪</span>' : '<img src="' + item.url + '" alt="">'}<span>${item.current ? '当前' : new Date(item.createdAt || Date.now()).toLocaleTimeString()}</span></button>`).join('') : '<div class="cv-status">还没有生成结果</div>';
-  grid.querySelectorAll('[data-index]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const item = items[Number(button.dataset.index)];
-      if (!item || item.current) return;
-      commitResource(node.id, { id: item.id, type: item.type, url: item.url, source: item.source || 'version' });
-      app.querySelector('#versionsModal').classList.remove('open');
-      render();
-      toast('已切换版本');
-    });
-  });
-  app.querySelector('#versionsModal').classList.add('open');
-}
+const versionsView = createVersionsView({ app, commitResource, render, toast });
+function openVersions(node) { return versionsView.open(node); }
 
 function collectAssets() {
   const map = new Map();
@@ -2478,14 +2463,7 @@ function showContextMenu(items, x, y) {
   });
 }
 
-function downloadNode(node) {
-  const media = node?.resources?.[0];
-  if (!media?.url) { toast('还没有生成结果'); return; }
-  const link = document.createElement('a');
-  link.href = media.url;
-  link.download = media.id || 'canvas-result';
-  link.click();
-}
+function downloadNode(node) { return downloadNodeResource(node, toast); }
 
 function onContextMenu(event) {
   event.preventDefault();
