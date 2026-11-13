@@ -508,3 +508,4 @@ body.timeline-open .cv-timeline-overlay{box-shadow:none}
 .cv-job-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 .cv-job-actions button{padding:3px 9px;font-size:11px;border-radius:5px;background:#232a33;border-color:#3b4756;color:#cfd9e6}
 .cv-job-actions button:hover{background:#2f3945}
+.cv-tl-clip em{font-style:normal;font-size:10px;opacity:.68;margin-left:4px}

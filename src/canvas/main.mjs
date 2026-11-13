@@ -13,6 +13,7 @@ import {
 } from './generation-catalog.mjs';
 import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, dragTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
+import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -3017,24 +3018,11 @@ function renderTimelineRows() {
   const total = timelineTotalDuration(timelineDraft);
   const assets = timelineAssetNodes().filter((node) => timelineAssetFilter === 'all' || node.type === timelineAssetFilter);
   const assetHost = app.querySelector('#timelineAssets');
-  assetHost.innerHTML = assets.length ? assets.map((node) => `<button class="cv-timeline-asset" data-asset="${node.id}">${node.resources?.[0]?.url && node.type !== 'audio' ? `<img src="${escapeHtml(node.resources[0].url)}" alt="">` : '<span class="cv-timeline-asset-audio">♫</span>'}<b>${escapeHtml(node.title || node.type)}</b><em>${node.type === 'video' ? '视频' : node.type === 'audio' ? '音频' : '图片'}</em></button>`).join('') : '<div class="cv-timeline-asset-empty">将文件拖至此处添加</div>';
+  assetHost.innerHTML = timelineAssetsHtml(assets);
   assetHost.querySelectorAll('[data-asset]').forEach((button) => button.addEventListener('click', () => addAssetToTimeline(findNode(doc, button.dataset.asset))));
-  const ruler = app.querySelector('#timelineRuler');
-  const step = total > 30 ? 5 : total > 12 ? 2 : 1;
-  const ticks = [];
-  for (let t = 0; t <= total; t += step) ticks.push(`<span style="left:${(t / total) * 100}%">${formatTimelineTime(t)}</span>`);
-  ruler.innerHTML = ticks.join('');
-  const lanes = ['video', 'audio'];
+  app.querySelector('#timelineRuler').innerHTML = timelineRulerHtml(total);
   const host = app.querySelector('#timelineLanes');
-  host.innerHTML = lanes.map((type) => {
-    const clips = timelineDraft.filter((item) => (type === 'video' ? (item.type === 'video' || item.type === 'image') : item.type === 'audio')).map((item) => {
-      const left = ((Number(item.start) || 0) / total) * 100;
-      const width = Math.max(1, ((Number(item.duration) || 0) / total) * 100);
-      const selected = timelineSelected === item.id ? ' selected' : '';
-      return `<div class="cv-tl-clip ${type}${selected}" data-item="${item.id}" style="left:${left}%;width:${width}%"><span class="handle left" data-edge="start"></span><b>${escapeHtml(item.label || item.type)}</b><span class="handle right" data-edge="end"></span></div>`;
-    }).join('');
-    return `<div class="cv-timeline-lane"><div class="cv-timeline-lane-label">${type === 'video' ? '视频' : '音频'}</div><div class="cv-timeline-lane-track">${clips}<button class="cv-timeline-add" title="添加素材">+</button></div></div>`;
-  }).join('');
+  host.innerHTML = timelineLanesHtml(timelineDraft, total, timelineSelected);
   const totalSeconds = timelineDraft.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
   app.querySelector('#timelineTotal').textContent = `${timelineDraft.length} 个片段 · ${totalSeconds.toFixed(1)}s`;
   host.querySelectorAll('.cv-timeline-add').forEach((button) => button.addEventListener('click', () => { const first = timelineAssetNodes()[0]; if (first) addAssetToTimeline(first); }));
