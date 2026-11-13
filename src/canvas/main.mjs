@@ -19,6 +19,7 @@ import { createTimelineDragController } from './timeline-editor.mjs';
 import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
 import { aiContextLabel, buildAIContext, renderAIMessagesHtml } from './ai-context.mjs';
 import { jobsListHtml } from './job-view.mjs';
+import { buildDockViewModel } from './dock-view.mjs';
 import { ICONS, toolIcon, typeLabel, statusLabel } from './canvas-icons.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
@@ -782,118 +783,48 @@ function updateSelectionUi() {
   const single = selection.size === 1 ? findNode(doc, [...selection][0]) : null;
   dock.classList.toggle('open', Boolean(single));
   if (selection.size > 1) renderMultiTools(); else renderNodeTools(single);
-  if (single) {
-    renderDockChips(single);
-    app.querySelector('#dockTitle').textContent = single.title || single.type;
-    app.querySelector('#dockMeta').textContent = `${typeLabel(single.type)}${single.generation ? ` · ${single.generation.mode}` : ''}`;
-    app.querySelector('#dockState').textContent = statusLabel(single.status);
-    promptEl.value = single.generation?.prompt ?? single.text ?? '';
-    app.querySelector('#dockRatio').textContent = single.generation?.ratio || '16:9';
-    const providerForRes = single.generation?.backend?.provider;
-    const modelPill = app.querySelector('#dockModel');
-    const ratioPill = app.querySelector('#dockRatio');
-    const countPill = app.querySelector('#dockCount');
-    if (single.generation) {
-      modelPill.style.display = '';
-      modelPill.textContent = `模型：${modelLabel(single)}`;
-      const showLayout = ['image', 'video'].includes(single.type);
-      ratioPill.style.display = showLayout ? '' : 'none';
-      countPill.style.display = showLayout ? '' : 'none';
-      app.querySelector('#dockRes').style.display = showLayout ? '' : 'none';
-    } else {
-      modelPill.style.display = 'none';
-      ratioPill.style.display = 'none';
-      countPill.style.display = 'none';
-      app.querySelector('#dockRes').style.display = 'none';
-    }
-    if (single.type === 'video' && providerForRes === 'comfyui') {
-      const model = single.generation?.model || 'h3';
-      const labels = {
-        wan22: 'Wan 2.2 · 832×480 · 16fps',
-        ltx23: 'LTX-2.3 · 640×384 · 24fps',
-        framepack: 'FramePack · 首帧 · 30fps',
-        'h3-ref2v': 'H3 Ref2VA · 640×352 · 参考生视频',
-        'h3-ultimate': 'H3 Ultimate · 640×352 · 0.22MP',
-        h3: single.generation?.h3Size === '480P' ? 'H3 480P · 848×480' : 'H3 360P · 640×352',
-      };
-      const resPill = app.querySelector('#dockRes');
-      resPill.textContent = labels[model] || labels.h3;
-      resPill.disabled = false;
-    } else {
-      const resPill = app.querySelector('#dockRes');
-      resPill.textContent = single.generation?.resolution || '分辨率';
-      resPill.disabled = !single.generation;
-    }
-    const imageProvider = single.generation?.backend?.provider || (single.type === 'image' ? 'comfyui' : 'dreamina');
-    const imageModelPill = app.querySelector('#dockImageModel');
-    imageModelPill.style.display = 'none';
-    const refPill = app.querySelector('#dockRefMode');
-    const hasImageRefs = (single.generation?.references || []).some((ref) => findNode(doc, ref.id)?.type === 'image');
-    if (single.type === 'image' && hasImageRefs && imageProvider !== 'dreamina') {
-      const labels = { '': 'i2i', i2i: 'i2i', depth: 'ControlNet 深度', canny: 'ControlNet 线稿', openpose: 'ControlNet 姿态', ipadapter: 'IPAdapter 风格' };
-      refPill.style.display = '';
-      refPill.textContent = `参考：${labels[single.generation?.refMode || ''] || 'i2i'}`;
-    } else {
-      refPill.style.display = 'none';
-    }
-    const durationPill = app.querySelector('#dockDuration');
-    if (single.type === 'video') {
-      durationPill.style.display = '';
-      durationPill.textContent = `${single.generation?.durationSeconds || 5}s`;
-    } else {
-      durationPill.style.display = 'none';
-    }
-    app.querySelector('#dockCount').textContent = `${single.generation?.outputCount || 1} 个`;
-    const backendMode = app.querySelector('#dockBackendMode');
-    if (single.generation && ['image', 'video', 'audio'].includes(single.type)) {
-      backendMode.style.display = '';
-      if (single.type === 'audio') {
-        backendMode.textContent = '生成后端：即梦 API（唯一） ▾';
-        backendMode.disabled = false;
-      } else {
-        const provider = single.generation?.backend?.provider || (single.type === 'image' ? 'comfyui' : 'dreamina');
-        backendMode.textContent = `生成后端：${provider === 'comfyui' ? 'ComfyUI（本地/远程）' : '即梦 API'} ▾`;
-        backendMode.disabled = false;
-      }
-    } else {
-      backendMode.style.display = 'none';
-    }
-    const cost = app.querySelector('#dockCost');
-    if ((single.generation?.mode === 't2i' || single.generation?.mode === 'i2i') && single.type === 'image') {
-      const provider = single.generation?.backend?.provider || 'comfyui';
-      if (provider === 'dreamina') {
-        cost.textContent = '即梦 Seedream API · 报价后确认扣积分';
-        cost.classList.remove('cv-warn');
-      } else {
-        cost.textContent = `${hasCJK(promptEl.value) ? 'ComfyUI（Flux/SDXL）对中文理解弱，建议英文' : 'ComfyUI · 免费'}${estimateFor(single) ? ` · ${estimateFor(single)}` : ''}`;
-        cost.classList.toggle('cv-warn', hasCJK(promptEl.value));
-      }
-    } else if (single.type === 'video') {
-      const provider = single.generation?.backend?.provider || 'dreamina';
-      const videoModel = single.generation?.model || 'h3';
-      const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢', 'h3-ref2v': 'H3 Ref2VA · 多模态参考 · 约 3 分钟', 'h3-ultimate': 'H3 Ultimate · 0.45 实例 · 约 3–5 分钟' };
-      cost.textContent = provider === 'comfyui'
-        ? `ComfyUI 视频 · 免费（${videoLabels[videoModel] || videoLabels.h3} · Windows）${estimateFor(single) ? ` · ${estimateFor(single)}` : ''}`
-        : '即梦 CLI · 报价后确认扣积分';
-      cost.classList.remove('cv-warn');
-    } else if (single.type === 'audio') {
-      const voiceName = single.generation?.voiceName;
-      cost.textContent = `即梦 TTS${voiceName ? ` · 音色：${voiceName}` : ''} · 报价后确认扣积分`;
-      cost.classList.remove('cv-warn');
-    } else if (single.generation) {
-      cost.textContent = '这个节点暂未接生成后端';
-      cost.classList.remove('cv-warn');
-    } else if (single.type === 'text') {
-      cost.textContent = '文本节点 · 可在左侧工具栏新建图片 / 视频 / 音频节点';
-      cost.classList.remove('cv-warn');
-    } else {
-      cost.textContent = '选择节点后显示生成参数';
-      cost.classList.remove('cv-warn');
-    }
-    app.querySelector('#dockSend').disabled = !single.generation;
-  } else {
-    renderDockChips(null);
-  }
+  if (!single) { renderDockChips(null); return; }
+  renderDockChips(single);
+  promptEl.value = single.generation?.prompt ?? single.text ?? '';
+  const hasImageRefs = (single.generation?.references || []).some((ref) => findNode(doc, ref.id)?.type === 'image');
+  const view = buildDockViewModel({
+    node: single,
+    prompt: promptEl.value,
+    modelLabel: modelLabel(single),
+    hasImageRefs,
+    promptHasCJK: hasCJK(promptEl.value),
+    estimate: estimateFor(single),
+  });
+  app.querySelector('#dockTitle').textContent = view.title;
+  app.querySelector('#dockMeta').textContent = view.meta;
+  app.querySelector('#dockState').textContent = view.state;
+  app.querySelector('#dockRatio').textContent = view.ratio;
+  const modelPill = app.querySelector('#dockModel');
+  modelPill.style.display = view.showModel ? '' : 'none';
+  modelPill.textContent = view.modelText;
+  const ratioPill = app.querySelector('#dockRatio');
+  const countPill = app.querySelector('#dockCount');
+  const resPill = app.querySelector('#dockRes');
+  ratioPill.style.display = view.showLayout ? '' : 'none';
+  countPill.style.display = view.showLayout ? '' : 'none';
+  resPill.style.display = view.showRes ? '' : 'none';
+  resPill.textContent = view.resText;
+  resPill.disabled = view.resDisabled;
+  const refPill = app.querySelector('#dockRefMode');
+  refPill.style.display = view.showRef ? '' : 'none';
+  refPill.textContent = view.refText;
+  const durationPill = app.querySelector('#dockDuration');
+  durationPill.style.display = view.showDuration ? '' : 'none';
+  durationPill.textContent = view.durationText;
+  countPill.textContent = view.countText;
+  const backendMode = app.querySelector('#dockBackendMode');
+  backendMode.style.display = view.showBackend ? '' : 'none';
+  backendMode.textContent = view.backendText;
+  backendMode.disabled = view.backendDisabled;
+  const cost = app.querySelector('#dockCost');
+  cost.textContent = view.costText;
+  cost.classList.toggle('cv-warn', view.costWarn);
+  app.querySelector('#dockSend').disabled = view.sendDisabled;
 }
 
 function updateDock() { /* 由 updateSelectionUi 负责，保留占位 */ }
