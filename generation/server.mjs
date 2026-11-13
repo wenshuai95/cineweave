@@ -13,6 +13,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { loadConfig, saveConfig, DATA_DIR, ASSETS_DIR as CONFIG_ASSETS_DIR } from './config.mjs';
 import { createJobStore } from './jobs.mjs';
+import { allowedCorsOrigin, assertAllowedAssetUrl, assertUploadSize } from './security.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO = join(ROOT, '..');
@@ -308,10 +309,16 @@ async function cancelJob(job) {
 }
 
 async function handle(req, res, url) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin || '';
+  const cors = allowedCorsOrigin(origin, process.env.GENERATION_ALLOWED_ORIGINS || '');
+  if (cors) res.setHeader('Access-Control-Allow-Origin', cors);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+  if (req.method === 'OPTIONS') {
+    if (origin && !cors) { res.writeHead(403); res.end(); return; }
+    res.writeHead(204); res.end(); return;
+  }
 
   if (req.method === 'GET' && url.pathname === '/api/generation/health') {
     const config = await loadConfig();
@@ -996,6 +1003,12 @@ const VIDEO_WORKFLOWS = {
 async function readReferenceBytes(url, type = 'image') {
   const raw = String(url || '').trim();
   if (!raw) throw jobError('参考素材 URL 为空');
+  try {
+    const config = await loadConfig();
+    assertAllowedAssetUrl(raw, { comfyBaseUrl: config.comfyui.baseUrl, extraHosts: process.env.GENERATION_ASSET_HOSTS || '' });
+  } catch (error) {
+    throw jobError(error.message);
+  }
   let pathname = '';
   try { pathname = decodeURIComponent(new URL(raw, 'http://127.0.0.1').pathname); } catch { pathname = raw; }
   const name = basename(pathname);
@@ -1005,13 +1018,19 @@ async function readReferenceBytes(url, type = 'image') {
   if (/^https?:/i.test(raw)) {
     const response = await fetch(raw);
     if (!response.ok) throw jobError(`下载参考素材失败：HTTP ${response.status}`);
-    return Buffer.from(await response.arrayBuffer());
+    const declared = Number(response.headers.get('content-length')) || 0;
+    if (declared > 100 * 1024 * 1024) throw jobError('参考素材超过 100MB 限制');
+    const buffer = Buffer.from(await response.arrayBuffer());
+    assertUploadSize(buffer, 100 * 1024 * 1024);
+    return buffer;
   }
   // 画布相对地址：交给本地主服务读取（生成服务与主服务同机）。
   const base = process.env.DIRECTOR_CANVAS_BASE || `http://127.0.0.1:${process.env.PORT || 41974}`;
   const response = await fetch(new URL(raw, base));
   if (!response.ok) throw jobError(`读取参考素材失败：HTTP ${response.status}`);
-  return Buffer.from(await response.arrayBuffer());
+  const localBuffer = Buffer.from(await response.arrayBuffer());
+  assertUploadSize(localBuffer, 100 * 1024 * 1024);
+  return localBuffer;
 }
 
 function referenceFilename(item, index, type) {
