@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { submitJob, requestQuote, uploadDataUrl } from '../src/canvas/generation-request.mjs';
+import { submitJob, requestQuote, uploadDataUrl, askAssistant } from '../src/canvas/generation-request.mjs';
 
 const response = (data, ok = true, status = 200) => ({ ok, status, json: async () => data });
 
@@ -35,4 +35,13 @@ test('uploadDataUrl posts dataUrl and returns url', async () => {
 
 test('upload error is actionable', async () => {
   await assert.rejects(() => uploadDataUrl('x', { fetchImpl: async () => response({ error: '图片过大' }, false, 400) }), /图片过大/);
+});
+
+test('askAssistant returns reply', async () => {
+  let body;
+  const data = await askAssistant({ messages: [{ role: 'user', content: 'hi' }], context: { selection: null } }, {
+    fetchImpl: async (_url, options) => { body = options.body; return response({ reply: '你好' }); },
+  });
+  assert.equal(data.reply, '你好');
+  assert.match(body, /hi/);
 });

@@ -14,9 +14,10 @@ import {
 import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
-import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
+import { submitJob, requestQuote, uploadDataUrl, askAssistant } from './generation-request.mjs';
 import { createTimelineDragController } from './timeline-editor.mjs';
 import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
+import { aiContextLabel, buildAIContext, renderAIMessagesHtml } from './ai-context.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -3217,11 +3218,6 @@ function switchOptimizeLang(lang) {
 let aiMessages = [];
 let aiBusy = false;
 
-function aiContextLabel() {
-  const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
-  if (!node) return 'DeepSeek · 未选中节点';
-  return `DeepSeek · 上下文：${node.title || node.type}`;
-}
 
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return; } catch { /* fallback */ }
@@ -3244,11 +3240,8 @@ function openAIPanel() {
 
 function renderAIMessages() {
   const host = app.querySelector('#aiMessages');
-  if (!aiMessages.length) {
-    host.innerHTML = '<div class="cv-ai-hint">可以问：这场戏怎么分镜？/ 帮我写一段雨夜追车的提示词 / 这个镜头用什么景别？</div>';
-    return;
-  }
-  host.innerHTML = aiMessages.map((message, index) => `<div class="cv-ai-msg ${message.role}">${escapeHtml(message.content).replace(/\n/g, '<br>')}${`<button data-ai-copy="${index}">复制</button>`}${message.role === 'assistant' ? `<button data-ai-insert="${index}">插入提示词</button><button data-ai-apply="${index}">应用到节点</button>` : ''}</div>`).join('');
+  host.innerHTML = renderAIMessagesHtml(aiMessages);
+  if (!aiMessages.length) return;
   host.querySelectorAll('[data-ai-copy]').forEach((button) => {
     button.addEventListener('click', async () => {
       const message = aiMessages[Number(button.dataset.aiCopy)];
@@ -3284,20 +3277,7 @@ function renderAIMessages() {
 
 function aiContext() {
   const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
-  return {
-    canvas: { nodes: doc.nodes.length, boards: boardList.length, projectId: boardProjectId },
-    selection: node ? {
-      type: node.type,
-      title: node.title,
-      status: node.status,
-      prompt: node.generation?.prompt || node.text || '',
-      mode: node.generation?.mode,
-      model: node.generation?.model,
-      ratio: node.generation?.ratio,
-      resolution: node.generation?.resolution,
-      references: (node.generation?.references || []).map((ref) => ({ type: ref.type, role: ref.role || '通用', title: findNode(doc, ref.id)?.title })),
-    } : null,
-  };
+  return buildAIContext({ doc, node, boardList, boardProjectId });
 }
 
 async function sendAIMessage() {
@@ -3312,12 +3292,7 @@ async function sendAIMessage() {
   send.disabled = true;
   send.textContent = '思考中…';
   try {
-    const response = await fetch('/api/generation/assistant', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ messages: aiMessages, context: aiContext() }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'AI 助手失败');
+    const data = await askAssistant({ messages: aiMessages, context: aiContext() });
     aiMessages.push({ role: 'assistant', content: data.reply });
   } catch (error) {
     aiMessages.push({ role: 'assistant', content: `出错了：${error.message}` });

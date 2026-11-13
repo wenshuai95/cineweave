@@ -30,3 +30,12 @@ export async function uploadDataUrl(dataUrl, { fetchImpl = fetch } = {}) {
   if (!response.ok) throw new Error(data.error || '上传失败');
   return data;
 }
+
+export async function askAssistant({ messages = [], context = null } = {}, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/assistant', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages, context }),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || 'AI 助手失败');
+  return data;
+}
