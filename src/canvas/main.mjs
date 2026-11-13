@@ -21,6 +21,7 @@ import { aiContextLabel, buildAIContext, renderAIMessagesHtml } from './ai-conte
 import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
+import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { ICONS, toolIcon, typeLabel, statusLabel } from './canvas-icons.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
@@ -3307,16 +3308,12 @@ function insertReference(label) {
 function showContextMenu(items, x, y) {
   menuOpenedAt = Date.now();
   const menu = app.querySelector('#ctxMenu');
-  menu.innerHTML = items.map(([label, action, heading, disabled]) => {
-    if (label === 'sep') return '<div class="cv-menu-sep"></div>';
-    if (heading) return `<div class="cv-menu-label">${label}</div>`;
-    return `<button data-action="${label}" ${disabled ? 'disabled' : ''}>${label}</button>`;
-  }).join('');
+  menu.innerHTML = contextMenuHtml(items);
   menu.style.left = `${x}px`;
   menu.style.top = `${y}px`;
   menu.classList.add('open');
   menu.querySelectorAll('button').forEach((button, index) => {
-    const entry = items.filter((item) => item[1] && !item[2])[index];
+    const entry = actionableMenuEntries(items)[index];
     if (!entry || entry[3]) return;
     button.addEventListener('click', () => { hideContextMenu(); entry[1](); });
   });
