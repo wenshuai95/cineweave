@@ -12,6 +12,7 @@ import {
   promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
 } from './generation-catalog.mjs';
 import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, dragTimelineItem } from './timeline-model.mjs';
+import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -2544,9 +2545,7 @@ async function refreshJobsPanel() {
   const host = app.querySelector('#jobsList');
   if (!host) return;
   try {
-    const response = await fetch('/api/generation/jobs?limit=30');
-    const data = await response.json();
-    const list = Array.isArray(data.jobs) ? data.jobs : [];
+    const list = await listJobs({ limit: 30 });
     const labels = { prepare: '准备', sampling: '生成中', finalize: '收尾', done: '结束' };
     host.innerHTML = list.length ? list.map((job) => {
       const terminal = ['success', 'failed', 'canceled'].includes(job.status);
@@ -2566,14 +2565,14 @@ async function refreshJobsPanel() {
     host.querySelectorAll('[data-job-cancel]').forEach((button) => button.addEventListener('click', async () => {
       const row = button.closest('[data-job]');
       button.disabled = true;
-      await fetch(`/api/generation/jobs/${encodeURIComponent(row.dataset.job)}/cancel`, { method: 'POST' }).catch(() => null);
+      await cancelJob(row.dataset.job).catch(() => null);
       await refreshJobsPanel();
     }));
     host.querySelectorAll('[data-job-retry]').forEach((button) => button.addEventListener('click', async () => {
       const row = button.closest('[data-job]');
       button.disabled = true;
-      const response = await fetch(`/api/generation/jobs/${encodeURIComponent(row.dataset.job)}/retry`, { method: 'POST' }).catch(() => null);
-      if (response && !response.ok) toast('重试失败', true);
+      const result = await retryJob(row.dataset.job).catch(() => null);
+      if (!result) toast('重试失败', true);
       await refreshJobsPanel();
     }));
   } catch {
@@ -2600,29 +2599,33 @@ async function pollJob(jobId, nodeId) {
   if (pollingJobs.has(jobId)) return;
   pollingJobs.add(jobId);
   doc = updateNode(doc, nodeId, { jobId });
+  let missing = false;
   try {
-  for (;;) {
-    const response = await fetch(`/api/generation/jobs/${jobId}`);
-    const job = await response.json();
-    const node = findNode(doc, nodeId);
-    if (!node) return;
-    if (job.status === 'success') {
+    const job = await waitForJob(jobId, {
+      onUpdate: (current) => {
+        if (!findNode(doc, nodeId)) { missing = true; return; }
+        if (['success', 'failed', 'canceled'].includes(current.status)) return;
+        doc = updateNode(doc, nodeId, { status: 'running', progress: current.progress || 0 });
+        render();
+      },
+    });
+    if (missing || !findNode(doc, nodeId)) return;
+    if (job.status === 'success' && job.result) {
       commitResource(nodeId, { id: job.result.filename, type: job.result.type || 'image', url: job.result.url, source: job.result.provider || 'comfyui' });
       doc = updateNode(doc, nodeId, { status: 'success', progress: 100 });
       render();
       toast('生成完成');
-      return;
-    }
-    if (job.status === 'failed' || job.status === 'canceled') {
-      doc = updateNode(doc, nodeId, { status: 'failed', error: job.message || job.error?.message || '生成失败' });
+    } else {
+      doc = updateNode(doc, nodeId, { status: job.status === 'canceled' ? 'canceled' : 'failed', error: job.message || job.error?.message || '生成失败' });
       render();
-      toast(job.message || '生成失败', true);
-      return;
+      toast(job.message || '生成失败', job.status !== 'canceled');
     }
-    doc = updateNode(doc, nodeId, { status: 'running', progress: job.progress || 0 });
-    render();
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-  }
+  } catch (error) {
+    if (findNode(doc, nodeId)) {
+      doc = updateNode(doc, nodeId, { status: 'failed', error: error.message || String(error) });
+      render();
+      toast(error.message || String(error), true);
+    }
   } finally { pollingJobs.delete(jobId); }
 }
 
@@ -2633,9 +2636,8 @@ async function resumePendingJobs() {
   for (const node of pending) {
     if (pollingJobs.has(node.jobId)) continue;
     try {
-      const response = await fetch(`/api/generation/jobs/${node.jobId}`);
-      if (!response.ok) { doc = updateNode(doc, node.id, { status: 'failed', error: '任务已失效' }); render(); continue; }
-      const job = await response.json();
+      const job = await getJob(node.jobId);
+      if (!job) { doc = updateNode(doc, node.id, { status: 'failed', error: '任务已失效' }); render(); continue; }
       if (job.status === 'success' && job.result) {
         commitResource(node.id, { id: job.result.filename, type: job.result.type || 'image', url: job.result.url, source: job.result.provider || 'comfyui' });
         doc = updateNode(doc, node.id, { status: 'success', progress: 100 });
