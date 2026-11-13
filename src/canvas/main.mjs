@@ -23,6 +23,7 @@ import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
 import { createGenerationFlow } from './generation-flow.mjs';
 import { createImageActions } from './image-actions.mjs';
+import { createPicturePopover } from './picture-popover.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -473,10 +474,10 @@ app.querySelector('#dockBackendMode').addEventListener('click', openBackendMenu)
 app.querySelector('#dockImageModel').addEventListener('click', toggleImageModel);
 app.querySelector('#dockRefMode').addEventListener('click', openRefModeMenu);
 app.querySelector('#dockDuration').addEventListener('click', openDurationMenu);
-app.querySelector('#dockRes').addEventListener('click', openPicturePopover);
+app.querySelector('#dockRes').addEventListener('click', () => picturePopover.open());
 app.querySelector('#dockModel').addEventListener('click', () => openParamMenu('model'));
-app.querySelector('#dockRatio').addEventListener('click', openPicturePopover);
-app.querySelector('#dockCount').addEventListener('click', openPicturePopover);
+app.querySelector('#dockRatio').addEventListener('click', () => picturePopover.open());
+app.querySelector('#dockCount').addEventListener('click', () => picturePopover.open());
 app.querySelector('#picturePopover').addEventListener('click', (event) => event.stopPropagation());
 app.querySelector('#timelineCancel').addEventListener('click', closeTimelineView);
 app.querySelector('#timelineCancel').addEventListener('pointerdown', () => { if (document.body.classList.contains('timeline-open')) { closeTimelineView(); } });
@@ -503,7 +504,7 @@ stage.addEventListener('contextmenu', onContextMenu);
 document.addEventListener('click', (event) => {
   if (Date.now() - menuOpenedAt < 80) return; // 本次点击刚刚打开菜单，不要立刻关掉
   if (!event.target.closest('#ctxMenu')) hideContextMenu();
-  if (!event.target.closest('#picturePopover') && !event.target.closest('#dockRatio') && !event.target.closest('#dockRes') && !event.target.closest('#dockCount')) closePicturePopover();
+  if (!event.target.closest('#picturePopover') && !event.target.closest('#dockRatio') && !event.target.closest('#dockRes') && !event.target.closest('#dockCount')) picturePopover.close();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') { hideContextMenu(); closeSettings(); if (document.body.classList.contains('timeline-open')) closeTimelineView(); }
@@ -1952,25 +1953,6 @@ function openRefModeMenu() {
   }]), rect.left, Math.max(80, rect.top - 190));
 }
 
-let pictureOpenedAt = 0;
-
-function closePicturePopover() {
-  app.querySelector('#picturePopover')?.classList.remove('open');
-}
-
-function openPicturePopover() {
-  const id = [...selection][0];
-  const node = id ? findNode(doc, id) : null;
-  if (!node?.generation) { toast('先选中一个生成节点'); return; }
-  pictureOpenedAt = Date.now();
-  renderPicturePopover(node);
-  const pop = app.querySelector('#picturePopover');
-  const dockRect = dock.getBoundingClientRect();
-  pop.style.left = `${Math.max(16, Math.min(window.innerWidth - 650, dockRect.left + (dockRect.width - 620) / 2))}px`;
-  pop.style.bottom = `${Math.max(12, window.innerHeight - dockRect.top + 8)}px`;
-  pop.classList.add('open');
-}
-
 function pictureResolutions(node) {
   const provider = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
   if (provider === 'dreamina') {
@@ -1982,42 +1964,29 @@ function pictureResolutions(node) {
   return ['标准'];
 }
 
-function renderPicturePopover(node) {
-  const gen = node.generation || {};
-  const ratios = ['智能', '1:1', '3:4', '16:9', '4:3', '9:16', '2:3', '3:2', '21:9'];
-  app.querySelector('#picRatios').innerHTML = ratios.map((ratio) => {
-    const active = (gen.ratio || '16:9') === ratio ? ' active' : '';
-    let shape = '<span class="cv-ratio-shape smart">✦</span>';
-    if (ratio !== '智能') {
-      const [w, h] = ratio.split(':').map(Number);
-      const bw = 30;
-      const bh = Math.max(10, Math.min(30, Math.round(bw * h / w)));
-      shape = `<span class="cv-ratio-shape" style="width:${bw}px;height:${bh}px"></span>`;
-    }
-    return `<button class="cv-pic-ratio${active}" data-ratio="${ratio}">${shape}<span>${ratio}</span></button>`;
-  }).join('');
-  const resolutions = pictureResolutions(node);
-  app.querySelector('#picRes').innerHTML = resolutions.map((value) => `<button class="cv-pic-res-btn${(gen.resolution || resolutions[0]) === value ? ' active' : ''}" data-res="${value}">${value}</button>`).join('');
-  const maxCount = node.type === 'image' ? dreaminaRange(node, '--count', 1, 8).max : dreaminaRange(node, '--count', 1, 4).max;
-  const minCount = node.type === 'image' ? dreaminaRange(node, '--count', 1, 8).min : 1;
-  const counts = Array.from({ length: Math.max(0, maxCount - minCount + 1) }, (_, index) => index + minCount);
-  app.querySelector('#picCounts').innerHTML = counts.map((value) => `<button class="cv-pic-count${(gen.outputCount || 1) === value ? ' active' : ''}" data-count="${value}">${value}</button>`).join('');
-  app.querySelector('#picRatios').querySelectorAll('[data-ratio]').forEach((button) => button.addEventListener('click', () => {
-    doc = updateNode(doc, node.id, { generation: { ratio: button.dataset.ratio } });
-    render();
-    renderPicturePopover(findNode(doc, node.id));
-  }));
-  app.querySelector('#picRes').querySelectorAll('[data-res]').forEach((button) => button.addEventListener('click', () => {
-    doc = updateNode(doc, node.id, { generation: { resolution: button.dataset.res, h3Size: node.type === 'video' ? button.dataset.res : node.generation?.h3Size } });
-    render();
-    renderPicturePopover(findNode(doc, node.id));
-  }));
-  app.querySelector('#picCounts').querySelectorAll('[data-count]').forEach((button) => button.addEventListener('click', () => {
-    doc = updateNode(doc, node.id, { generation: { outputCount: Number(button.dataset.count) } });
-    render();
-    renderPicturePopover(findNode(doc, node.id));
-  }));
+function pictureCountRange(node) {
+  const max = dreaminaRange(node, '--count', 1, node.type === 'image' ? 8 : 4).max;
+  const min = dreaminaRange(node, '--count', 1, 8).min;
+  return { min, max };
 }
+
+const picturePopover = createPicturePopover({
+  app,
+  dock,
+  getNode: () => {
+    const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
+    return node?.generation ? node : null;
+  },
+  toast,
+  resolutionOptions: pictureResolutions,
+  countRange: pictureCountRange,
+  onChange: (node, patch) => {
+    doc = updateNode(doc, node.id, { generation: patch });
+    render();
+    const next = findNode(doc, node.id);
+    if (next) picturePopover.render(next);
+  },
+});
 
 function openParamMenu(kind) {
   const id = [...selection][0];
