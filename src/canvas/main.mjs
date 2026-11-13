@@ -14,10 +14,11 @@ import {
 import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
-import { submitJob, requestQuote, uploadDataUrl, askAssistant } from './generation-request.mjs';
+import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
 import { createTimelineDragController } from './timeline-editor.mjs';
 import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
-import { aiContextLabel, buildAIContext, renderAIMessagesHtml } from './ai-context.mjs';
+import { buildAIContext } from './ai-context.mjs';
+import { createAIPanel } from './ai-panel.mjs';
 import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
@@ -439,10 +440,6 @@ app.querySelector('#cvJobsBtn').addEventListener('click', openJobsPanel);
 app.querySelector('#jobsClose').addEventListener('click', closeJobsPanel);
 app.querySelector('#jobsRefresh').addEventListener('click', refreshJobsPanel);
 app.querySelector('#shortcutsBtn').addEventListener('click', () => app.querySelector('#shortcutsModal').classList.add('open'));
-app.querySelector('#aiDockBtn').addEventListener('click', openAIPanel);
-app.querySelector('#aiClose').addEventListener('click', () => app.querySelector('#aiPanel').classList.remove('open'));
-app.querySelector('#aiSend').addEventListener('click', sendAIMessage);
-app.querySelector('#aiInput').addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendAIMessage(); } });
 app.querySelector('#shortcutsClose').addEventListener('click', () => app.querySelector('#shortcutsModal').classList.remove('open'));
 app.querySelector('#assetsClose').addEventListener('click', () => app.querySelector('#assetsModal').classList.remove('open'));
 app.querySelector('#assetsUpload').addEventListener('click', () => { app.querySelector('#assetsModal').classList.remove('open'); app.querySelector('#cvFileInput').click(); });
@@ -3044,94 +3041,32 @@ function switchOptimizeLang(lang) {
   app.querySelectorAll('#optimizeLangs [data-lang]').forEach((button) => button.classList.toggle('active', button.dataset.lang === lang));
 }
 
-let aiMessages = [];
-let aiBusy = false;
-
-
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); return; } catch { /* fallback */ }
-  const area = document.createElement('textarea');
-  area.value = text;
-  area.style.position = 'fixed';
-  area.style.opacity = '0';
-  document.body.appendChild(area);
-  area.select();
-  document.execCommand('copy');
-  area.remove();
-}
-
-function openAIPanel() {
-  app.querySelector('#aiPanel').classList.add('open');
-  app.querySelector('#aiContext').textContent = aiContextLabel();
-  app.querySelector('#aiInput').focus();
-  renderAIMessages();
-}
-
-function renderAIMessages() {
-  const host = app.querySelector('#aiMessages');
-  host.innerHTML = renderAIMessagesHtml(aiMessages);
-  if (!aiMessages.length) return;
-  host.querySelectorAll('[data-ai-copy]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const message = aiMessages[Number(button.dataset.aiCopy)];
-      if (!message) return;
-      try { await copyText(message.content); toast('已复制'); }
-      catch { toast('复制失败，请手动选中复制', true); }
-    });
-  });
-  host.querySelectorAll('[data-ai-insert]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const message = aiMessages[Number(button.dataset.aiInsert)];
-      if (!message) return;
-      promptEl.value = `${promptEl.value ? promptEl.value + '\n' : ''}${message.content}`;
-      onPromptInput();
-      toast('已插入提示词');
-    });
-  });
-  host.querySelectorAll('[data-ai-apply]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const message = aiMessages[Number(button.dataset.aiApply)];
-      const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
-      if (!message) return;
-      if (!node) { toast('先选中一个节点'); return; }
-      if (node.generation) doc = updateNode(doc, node.id, { generation: { prompt: message.content } });
-      else if (node.type === 'text') doc = updateNode(doc, node.id, { text: message.content });
-      promptEl.value = message.content;
-      render();
-      toast('已写入选中节点');
-    });
-  });
-  host.scrollTop = host.scrollHeight;
-}
-
 function aiContext() {
   const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
   return buildAIContext({ doc, node, boardList, boardProjectId });
 }
 
-async function sendAIMessage() {
-  const input = app.querySelector('#aiInput');
-  const text = input.value.trim();
-  if (!text || aiBusy) return;
-  aiBusy = true;
-  aiMessages.push({ role: 'user', content: text });
-  input.value = '';
-  renderAIMessages();
-  const send = app.querySelector('#aiSend');
-  send.disabled = true;
-  send.textContent = '思考中…';
-  try {
-    const data = await askAssistant({ messages: aiMessages, context: aiContext() });
-    aiMessages.push({ role: 'assistant', content: data.reply });
-  } catch (error) {
-    aiMessages.push({ role: 'assistant', content: `出错了：${error.message}` });
-  } finally {
-    aiBusy = false;
-    send.disabled = false;
-    send.textContent = '发送';
-    renderAIMessages();
-  }
-}
+const aiPanel = createAIPanel({
+  app,
+  getSelectedNode: () => ([...selection][0] ? findNode(doc, [...selection][0]) : null),
+  getContext: aiContext,
+  onInsertPrompt: (content) => {
+    promptEl.value = `${promptEl.value ? promptEl.value + '\n' : ''}${content}`;
+    onPromptInput();
+    toast('已插入提示词');
+  },
+  onApplyPrompt: (content) => {
+    const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
+    if (!node) { toast('先选中一个节点'); return; }
+    if (node.generation) doc = updateNode(doc, node.id, { generation: { prompt: content } });
+    else if (node.type === 'text') doc = updateNode(doc, node.id, { text: content });
+    promptEl.value = content;
+    render();
+    toast('已写入选中节点');
+  },
+  toast,
+});
+aiPanel.bind();
 
 function applyPromptTemplate(text) {
   promptEl.value = text;
