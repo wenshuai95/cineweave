@@ -28,6 +28,7 @@ import { createClipboardActions } from './clipboard-actions.mjs';
 import { computeSnap, guidesHtml } from './snap-view.mjs';
 import { createAssetsPanel } from './assets-view.mjs';
 import { applyNodeSelection, marqueeWorldBox, selectionAfterMarquee } from './selection-model.mjs';
+import { createHistory } from './history.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -106,8 +107,6 @@ let marquee = null;
 let selectedEdge = null;
 let spaceHeld = false;
 let dragPositions = null;
-let history = [];
-let future = [];
 let clipboard = null;
 const HISTORY_LIMIT = 60;
 
@@ -1102,27 +1101,17 @@ function onKeyDown(event) {
   if (meta && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); return; }
 }
 
-function pushHistory() {
-  history.push(JSON.stringify(doc));
-  if (history.length > HISTORY_LIMIT) history.shift();
-  future = [];
-}
+const historyState = createHistory({
+  limit: HISTORY_LIMIT,
+  getDoc: () => doc,
+  setDoc: (next) => { doc = next; },
+  onRestore: () => { selection = new Set(); render(); },
+  toast,
+});
 
-function undo() {
-  if (!history.length) { toast('没有可撤销的操作'); return; }
-  future.push(JSON.stringify(doc));
-  doc = JSON.parse(history.pop());
-  selection = new Set();
-  render();
-}
-
-function redo() {
-  if (!future.length) { toast('没有可重做的操作'); return; }
-  history.push(JSON.stringify(doc));
-  doc = JSON.parse(future.pop());
-  selection = new Set();
-  render();
-}
+function pushHistory() { historyState.push(); }
+function undo() { historyState.undo(); }
+function redo() { historyState.redo(); }
 
 const clipboardActions = createClipboardActions({
   getSelectedNode: () => {
@@ -3065,8 +3054,8 @@ function onContextMenu(event) {
       ['下载', () => downloadNode(node), false, !node.resources?.length],
       ['保存到其他画布', () => saveNodeToOtherBoard(node), false, false],
       ['sep'],
-      ['重做', redo, false, !future.length],
-      ['撤销', undo, false, !history.length],
+      ['重做', redo, false, !historyState.canRedo],
+      ['撤销', undo, false, !historyState.canUndo],
       ['删除', () => { pushHistory(); doc = removeNode(doc, node.id); selection = new Set(); render(); }, false, false],
     ], event.clientX, event.clientY);
     return;
@@ -3074,8 +3063,8 @@ function onContextMenu(event) {
   const rect = stage.getBoundingClientRect();
   const world = screenToWorld({ x: event.clientX - rect.left, y: event.clientY - rect.top }, doc.viewport);
   showContextMenu([
-    ['撤销', undo, false, !history.length],
-    ['重做', redo, false, !future.length],
+    ['撤销', undo, false, !historyState.canUndo],
+    ['重做', redo, false, !historyState.canRedo],
     ['粘贴', pasteNode, false, !clipboard],
     ['sep'],
     ['新建节点', null, true],
@@ -3462,8 +3451,7 @@ function initBoards(projectId, incomingDoc, incomingBoards = null) {
     saveBoardState();
     updateBoardButton();
     selection = new Set();
-    history = [];
-    future = [];
+    historyState.clear();
     render();
     postBoards();
     window.setTimeout(resumePendingJobs, 400);
@@ -3485,8 +3473,7 @@ function initBoards(projectId, incomingDoc, incomingBoards = null) {
   }
   updateBoardButton();
   selection = new Set();
-  history = [];
-  future = [];
+  historyState.clear();
   render();
   postBoards();
   window.setTimeout(resumePendingJobs, 400);
@@ -3501,8 +3488,7 @@ function switchBoard(id) {
   localStorage.setItem(boardCurrentKey(), id);
   doc = next;
   selection = new Set();
-  history = [];
-  future = [];
+  historyState.clear();
   updateBoardButton();
   render();
   persist(false);
@@ -3517,8 +3503,7 @@ function makeBoard(name = '新画布') {
   currentBoardId = id;
   doc = createCanvasDocument({ viewport: { x: 520, y: 300, zoom: 0.8 } });
   selection = new Set();
-  history = [];
-  future = [];
+  historyState.clear();
   updateBoardButton();
   saveBoardState();
   render();
@@ -3535,8 +3520,7 @@ function duplicateBoard() {
   currentBoardId = id;
   doc = structuredClone(doc);
   selection = new Set();
-  history = [];
-  future = [];
+  historyState.clear();
   updateBoardButton();
   saveBoardState();
   render();
@@ -3574,8 +3558,7 @@ function deleteBoard() {
   currentBoardId = boardList[0].id;
   doc = readBoardDoc(currentBoardId) || createCanvasDocument();
   selection = new Set();
-  history = [];
-  future = [];
+  historyState.clear();
   updateBoardButton();
   saveBoardState();
   render();
