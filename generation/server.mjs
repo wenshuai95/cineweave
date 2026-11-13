@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { createComfyUIProvider, applyInputMapping } from './providers/comfyui.mjs';
 import { createDreaminaCliProvider } from './providers/dreamina-cli.mjs';
+import { loadCapabilities, getModel, resolveEndpoint, resolveModelMode, validateModelInputs, describeCapabilities } from './capabilities.mjs';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -268,6 +269,28 @@ async function handle(req, res, url) {
       comfyui.error = error.message;
     }
     sendJson(res, 200, { comfyui, dreamina: { command: config.dreamina.command } });
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/generation/capabilities') {
+    const config = await loadConfig();
+    try {
+      const capabilities = await loadCapabilities();
+      const endpoints = {};
+      for (const name of Object.keys(capabilities.endpoints || {})) {
+        endpoints[name] = resolveEndpoint(capabilities, name, config);
+      }
+      const models = describeCapabilities(capabilities).map((model) => ({
+        ...model,
+        modes: model.modes.map((mode) => ({
+          ...mode,
+          available: Boolean(mode.workflow && mode.mapping),
+        })),
+      }));
+      sendJson(res, 200, { version: capabilities.version || 1, endpoints, models });
+    } catch (error) {
+      sendJson(res, 200, { version: 0, endpoints: {}, models: [], error: error.message || String(error) });
+    }
     return;
   }
 
@@ -903,16 +926,6 @@ function referenceFilename(item, index, type) {
   return name;
 }
 
-function derive045Base(config) {
-  if (config.comfyui.baseUrl045) return config.comfyui.baseUrl045;
-  try {
-    const url = new URL(config.comfyui.baseUrl);
-    url.port = '8190';
-    return url.toString().replace(/\/$/, '');
-  } catch {
-    return config.comfyui.baseUrl;
-  }
-}
 
 async function uploadComfyInput(provider, url, fallbackName, jobId, label) {
   const bytes = await readReferenceBytes(url, 'image');
@@ -926,15 +939,17 @@ async function runH3UltimateJob(jobId, input, config) {
   const hasLast = Boolean(input.lastFrameUrl);
   const refs = Array.isArray(input.refImages) ? input.refImages.filter(Boolean) : [];
   const sourceVideo = input.sourceVideoUrl || '';
-  const mode = sourceVideo ? 'extend' : (hasFirst && hasLast ? 'flf' : refs.length >= 2 ? 'r2v' : hasFirst ? 'i2v' : 't2v');
-  if (mode === 'extend' && !sourceVideo) throw jobError('H3 Ultimate 续写需要源视频');
-  if (mode === 'flf' && (!hasFirst || !hasLast)) throw jobError('H3 Ultimate 首尾帧需要同时提供首帧和尾帧');
-  if (mode === 'r2v' && refs.length < 2) throw jobError('H3 Ultimate R2V 至少需要两张参考图');
+  const capabilities = await loadCapabilities();
+  const capability = getModel(capabilities, 'h3-ultimate');
+  const mode = resolveModelMode(capability, { firstFrame: hasFirst, lastFrame: hasLast, refImageCount: refs.length, sourceVideo });
+  const validation = validateModelInputs(capability, mode, { firstFrame: hasFirst, lastFrame: hasLast, refImages: refs, sourceVideo });
+  if (!validation.ok) throw jobError(`H3 Ultimate ${mode}：${validation.error}`);
+  const endpoint = resolveEndpoint(capabilities, capability.endpoint, config);
   const mappingFile = JSON.parse(await readFile(join(WORKFLOW_DIR, 'h3-ultimate.mapping.json'), 'utf8'));
   const spec = mappingFile.mapping?.[mode];
   if (!spec?.file) throw jobError(`H3 Ultimate 缺少 ${mode} 映射`);
   const template = JSON.parse(await readFile(join(WORKFLOW_DIR, spec.file), 'utf8'));
-  const provider = createComfyUIProvider({ baseUrl: derive045Base(config), timeoutMs: config.comfyui.timeoutMs || 30000 });
+  const provider = createComfyUIProvider({ baseUrl: endpoint.url, timeoutMs: config.comfyui.timeoutMs || 30000 });
   const values = {
     prompt: String(input.prompt || '').trim(),
     seed: Number.isFinite(Number(input.seed)) ? Number(input.seed) : Math.floor(Math.random() * 1e9),
@@ -1276,12 +1291,15 @@ async function runQwen21Job(jobId, input, config) {
   const spec = mappingFile.mapping?.[mode];
   if (!spec?.file) throw jobError(`Qwen Image 2.1 缺少 ${mode} 映射`);
   const template = JSON.parse(await readFile(join(WORKFLOW_DIR, spec.file), 'utf8'));
-  const provider = createComfyUIProvider({ baseUrl: derive045Base(config), timeoutMs: config.comfyui.timeoutMs || 30000 });
+  const capabilities = await loadCapabilities();
+  const capability = getModel(capabilities, 'qwen21');
+  const endpoint = resolveEndpoint(capabilities, capability.endpoint, config);
+  const provider = createComfyUIProvider({ baseUrl: endpoint.url, timeoutMs: config.comfyui.timeoutMs || 30000 });
   const values = {
     prompt: String(input.prompt || '').trim(),
     seed: Number.isFinite(Number(input.seed)) ? Number(input.seed) : Math.floor(Math.random() * 1e9),
     megapixels: Number(input.megapixels) > 0 ? Number(input.megapixels) : 1,
-    aspect: mode === 't2i' ? '1:1 (Square)' : '1:1 (Square)',
+    aspect: '1:1 (Square)',
     outputPrefix: 'qwen21/Qwen21_ultimate',
   };
   if (mode !== 'rmbg' && !values.prompt) throw jobError('生成提示词不能为空');
