@@ -38,6 +38,8 @@ import { createVoicePicker } from './voice-picker.mjs';
 import { createMaskEditor } from './mask-editor.mjs';
 import { createVersionsView, downloadNodeResource } from './versions-view.mjs';
 import { createTimelineUI } from './timeline-ui.mjs';
+import { createGenerationSubmit } from './generation-submit.mjs';
+import { createComfyVideoSubmit } from './comfy-video.mjs';
 import { createMediaExtract } from './media-extract.mjs';
 import { reorderReferences, applyReferenceRole, findReferenceEdge, mentionMode } from './reference-actions.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
@@ -1305,61 +1307,28 @@ async function startRelight(node, variant) { return imageActions.relight(node, v
 async function startMatte(node) { return imageActions.matte(node); }
 async function startPostProcess(node, mode) { return imageActions.postProcess(node, mode); }
 
+const generationSubmit = createGenerationSubmit({
+  getNodeById: (id) => findNode(doc, id),
+  getPrompt: () => promptEl.value,
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  render,
+  toast,
+  submitJob,
+  pollJob,
+  probeProviders,
+  setSendDisabled: (disabled) => { app.querySelector('#dockSend').disabled = disabled; },
+  frameRefs: videoFrameRefs,
+  comfyImageSize,
+  rememberModelParams,
+  startAudioQuote,
+  startVideoQuote,
+  startComfyVideo,
+  startImageQuote,
+});
+
 async function generateSelected() {
-  const id = [...selection][0];
-  const node = id ? findNode(doc, id) : null;
-  if (!node) { toast('先选中一个节点'); return; }
-  if (!node.generation) { toast('这个节点没有生成配置'); return; }
-  if (node.type === 'audio') { await startAudioQuote(node); return; }
-  if (node.type === 'video') {
-    const provider = node.generation?.backend?.provider || 'dreamina';
-    if (provider === 'comfyui') { await startComfyVideo(node); return; }
-    await startVideoQuote(node);
-    return;
-  }
-  if (node.type !== 'image') { toast('这个节点暂不支持生成'); return; }
-  const provider = node.generation?.backend?.provider || 'comfyui';
-  if (provider === 'dreamina') {
-    const imageRefs = (node.generation?.references || [])
-      .map((ref) => findNode(doc, ref.id))
-      .filter((refNode) => refNode?.type === 'image');
-    if (imageRefs.length) { toast('即梦 API 图片暂不支持本地参考图，请切回 ComfyUI'); return; }
-    await startImageQuote(node);
-    return;
-  }
-  const imageWorkflow = node.generation?.imageWorkflow || '';
-  rememberModelParams(node);
-  const prompt = promptEl.value.trim();
-  if (!prompt && imageWorkflow !== 'qwen21-rmbg') { toast('先写提示词'); return; }
-  const frames = videoFrameRefs(node);
-  if ((node.generation?.references || []).length && !frames.first) {
-    toast('参考图节点还没有生成图片');
-    return;
-  }
-  const imageUrl = frames.first?.resource?.url;
-  if (qwenModeNeedsImage(imageWorkflow) && !imageUrl) { toast('先连接一张参考图，再生成 Qwen 编辑/控制模式'); return; }
-  if (frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
-  const send = app.querySelector('#dockSend');
-  send.disabled = true;
-  doc = updateNode(doc, id, { status: 'running', progress: 0 });
-  render();
-  try {
-    const data = await submitJob({
-        kind: 'comfyui-image', prompt, width: comfyImageSize(node).width, height: comfyImageSize(node).height, imageUrl,
-        workflow: node.generation?.imageWorkflow || undefined,
-        megapixels: node.generation?.imageWorkflow?.startsWith('qwen21-') ? 1 : undefined,
-        refMode: imageUrl ? (node.generation?.refMode || 'i2i') : undefined,
-      });
-    toast('已提交 ComfyUI');
-    pollJob(data.id, id);
-  } catch (error) {
-    doc = updateNode(doc, id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  } finally {
-    send.disabled = false;
-    probeProviders();
-  }
+  const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
+  return generationSubmit.generate(node);
 }
 
 function openBackendMenu() {
@@ -1695,69 +1664,20 @@ function videoReferenceAssets(node) {
     .map((entry) => ({ ...entry.node.resources[0], nodeType: entry.node.type, role: entry.ref.role || '' }));
 }
 
-async function startComfyVideo(node) {
-  const prompt = promptEl.value.trim();
-  rememberModelParams(node);
-  if (!prompt) { toast('先写提示词'); return; }
-  const frames = videoFrameRefs(node);
-  const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v', 'h3-ultimate'].includes(node.generation?.model) ? node.generation.model : 'h3';
-  if (requiresH3Sections(model)) {
-    const missing = missingH3Sections(prompt);
-    if (missing.length) toast(`H3 提示词建议补齐六段结构（缺：${missing.join('、')}），可点「模板」`, true);
-  }
-  if ((model === 'h3' || model === 'framepack') && (node.generation?.references || []).length && !frames.first) {
-    toast('参考图节点还没有生成图片');
-    return;
-  }
-  if (model === 'framepack' && !frames.first?.resource?.url) { toast('FramePack 需要先连接一张图片作为首帧'); return; }
-  const referenceAssets = videoReferenceAssets(node);
-  const refImages = referenceAssets.filter((item) => item.nodeType === 'image' || item.type === 'image');
-  const refVideos = referenceAssets.filter((item) => item.nodeType === 'video' && item.type !== 'image');
-  const refAudios = referenceAssets.filter((item) => item.nodeType === 'audio');
-  const sourceVideo = refVideos[0]?.url || '';
-  const imageRefEntries = (node.generation?.references || []).map((ref) => ({ ref, node: findNode(doc, ref.id) })).filter((entry) => entry.node?.resources?.[0]?.url && entry.node.type === 'image');
-  const explicitFirst = imageRefEntries.find((entry) => entry.ref.role === '首帧')?.node.resources[0]?.url || '';
-  const explicitLast = imageRefEntries.find((entry) => entry.ref.role === '尾帧')?.node.resources[0]?.url || '';
-  if (model === 'h3-ultimate' && !refImages.length && !refVideos.length) { toast('H3 Ultimate：先连接首帧/首尾帧/参考图，或源视频'); return; }
-  if (model === 'h3-ultimate' && !frames.first?.resource?.url && !sourceVideo && refImages.length < 2) { toast('H3 Ultimate：首帧、首尾帧、双参考或源视频任选一种'); return; }
-  if (model === 'h3-ref2v' && !refImages.length && !refVideos.length && !refAudios.length) { toast('H3 多模态参考：先连接参考图 / 视频 / 音频节点'); return; }
-  const imageUrl = model === 'h3' || model === 'framepack' ? frames.first?.resource?.url : undefined;
-  if (frames.last && model !== 'h3') toast('这个视频模型只使用首帧，尾帧会忽略');
-  if (model === 'h3' && frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
-  const specs = {
-    h3: { width: node.generation?.h3Size === '480P' ? 848 : 640, height: node.generation?.h3Size === '480P' ? 480 : 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
-    wan22: { width: 832, height: 480, fps: 16, duration: node.generation?.durationSeconds || 5 },
-    ltx23: { width: 640, height: 384, fps: 24, duration: node.generation?.durationSeconds || 2.7 },
-    framepack: { width: 608, height: 640, fps: 30, duration: node.generation?.durationSeconds || 3 },
-    'h3-ref2v': { width: 640, height: 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
-    'h3-ultimate': { width: 640, height: 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
-  };
-  const spec = specs[model];
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
-  render();
-  try {
-    const data = await submitJob({
-        kind: 'comfyui-video', prompt, model,
-        width: spec.width, height: spec.height, fps: spec.fps,
-        duration: spec.duration,
-        imageUrl,
-        refImages: model === 'h3-ref2v' ? refImages.slice(0, 9).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
-        refVideos: model === 'h3-ref2v' ? refVideos.slice(0, 3).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
-        refAudios: model === 'h3-ref2v' ? refAudios.slice(0, 3).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
-        firstFrameUrl: model === 'h3-ultimate' ? (explicitFirst || frames.first?.resource?.url || refImages[0]?.url) : undefined,
-        lastFrameUrl: model === 'h3-ultimate' ? (explicitLast || undefined) : undefined,
-        refImages: model === 'h3-ultimate' && !explicitLast ? refImages.slice(0, 2).map((item) => item.url) : undefined,
-        sourceVideoUrl: model === 'h3-ultimate' ? sourceVideo : undefined,
-        megapixels: model === 'h3-ultimate' ? (Number(node.generation?.megapixels) > 0 ? Number(node.generation.megapixels) : 0.22) : undefined,
-      });
-    toast('已提交 ComfyUI 视频任务');
-    pollJob(data.id, node.id);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
-}
+const comfyVideoSubmit = createComfyVideoSubmit({
+  getPrompt: () => promptEl.value,
+  rememberModelParams,
+  toast,
+  getFrames: videoFrameRefs,
+  getReferenceAssets: videoReferenceAssets,
+  getImageRefEntries: (node) => (node.generation?.references || []).map((ref) => ({ ref, node: findNode(doc, ref.id) })).filter((entry) => entry.node?.resources?.[0]?.url && entry.node.type === 'image'),
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  render,
+  submitJob,
+  pollJob,
+});
+
+async function startComfyVideo(node) { return comfyVideoSubmit.start(node); }
 
 function buildImageQuotePayload(node, prompt) {
   const allowed = dreaminaValues(node, '--resolution');
