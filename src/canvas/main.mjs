@@ -23,6 +23,7 @@ import { buildDockViewModel } from './dock-view.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
+import { edgePathsHtml } from './edge-view.mjs';
 import { ICONS, toolIcon, typeLabel, statusLabel } from './canvas-icons.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
@@ -587,28 +588,13 @@ function renderNodes() {
 
 
 function renderEdges() {
-  const paths = [];
-  const positionOf = (id) => {
-    const node = findNode(doc, id);
-    if (!node) return null;
-    if (dragPositions && dragPositions.has(id)) return { ...nodeRect(node), x: dragPositions.get(id).x, y: dragPositions.get(id).y };
-    if (dragPos && dragPos.id === id) return { ...nodeRect(node), x: dragPos.x, y: dragPos.y };
-    return nodeRect(node);
-  };
-  for (const edge of doc.edges) {
-    const from = positionOf(edge.from);
-    const to = positionOf(edge.to);
-    if (!from || !to) continue;
-    const selected = selectedEdge === edge.id ? ' class="selected"' : '';
-    paths.push(`<path${selected} d="${edgePath({ x: from.x + from.width, y: from.y + from.height / 2 }, { x: to.x, y: to.y + to.height / 2 })}" data-edge="${edge.id}"></path>`);
+  const positions = new Map();
+  for (const node of doc.nodes) {
+    const rect = nodeRect(node);
+    const moved = (dragPositions && dragPositions.get(node.id)) || (dragPos && dragPos.id === node.id ? dragPos : null);
+    positions.set(node.id, moved ? { ...rect, x: moved.x, y: moved.y } : rect);
   }
-  if (tempLink) {
-    const from = positionOf(tempLink.from);
-    if (from) {
-      paths.push(`<path class="cv-edge-temp" d="${edgePath({ x: from.x + from.width, y: from.y + from.height / 2 }, tempLink.to)}"></path>`);
-    }
-  }
-  edgesSvg.innerHTML = paths.join('');
+  edgesSvg.innerHTML = edgePathsHtml({ edges: doc.edges, positions, selectedEdge, tempLink });
 }
 
 function clearGuides() {
