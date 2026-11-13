@@ -150,3 +150,15 @@ server.mjs         本地静态服务与 API 入口
 - v1.27.0：生成历史、失败恢复、键盘与紧凑 UI 收尾，验收见 [RELEASE-ACCEPTANCE-1.27.0.md](docs/RELEASE-ACCEPTANCE-1.27.0.md)
 - 更新日志：[CHANGELOG.md](CHANGELOG.md)
 - v1.25.4 历史验收：[RELEASE-ACCEPTANCE-1.25.4.md](docs/RELEASE-ACCEPTANCE-1.25.4.md)
+
+## CLI（供其他智能体调用）
+
+启动桌面应用后：
+
+```bash
+node bin/zaomeng.mjs health
+node bin/zaomeng.mjs capabilities --pretty
+node bin/zaomeng.mjs relayvsr --video /api/generation/assets/xxx.mp4 --wait
+```
+
+完整命令见 `docs/cli.md`。

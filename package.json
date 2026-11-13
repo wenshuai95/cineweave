@@ -12,7 +12,8 @@
     "test:win32": "node tests/run-win32-branch-test.mjs",
     "package:mac": "npm run build && node desktop/package-mac.mjs",
     "package:dmg": "npm run package:mac && node desktop/make-dmg.mjs",
-    "package:win": "npm run build && node desktop/prepare-windows.mjs && electron-builder --config electron-builder.windows.json --win nsis --x64"
+    "package:win": "npm run build && node desktop/prepare-windows.mjs && electron-builder --config electron-builder.windows.json --win nsis --x64",
+    "cli": "node bin/zaomeng.mjs"
   },
   "dependencies": {
     "three": "0.180.0"
@@ -23,5 +24,8 @@
     "electron-builder": "26.15.3",
     "fake-indexeddb": "^6.2.5",
     "vite": "6.4.4"
+  },
+  "bin": {
+    "zaomeng": "bin/zaomeng.mjs"
   }
 }
