@@ -865,7 +865,7 @@ function updateSelectionUi() {
         cost.textContent = '即梦 Seedream API · 报价后确认扣积分';
         cost.classList.remove('cv-warn');
       } else {
-        cost.textContent = hasCJK(promptEl.value) ? 'ComfyUI（Flux/SDXL）对中文理解弱，建议英文；中文可用即梦 API' : 'ComfyUI · 免费';
+        cost.textContent = `${hasCJK(promptEl.value) ? 'ComfyUI（Flux/SDXL）对中文理解弱，建议英文' : 'ComfyUI · 免费'}${estimateFor(single) ? ` · ${estimateFor(single)}` : ''}`;
         cost.classList.toggle('cv-warn', hasCJK(promptEl.value));
       }
     } else if (single.type === 'video') {
@@ -873,7 +873,7 @@ function updateSelectionUi() {
       const videoModel = single.generation?.model || 'h3';
       const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢', 'h3-ref2v': 'H3 Ref2VA · 多模态参考 · 约 3 分钟', 'h3-ultimate': 'H3 Ultimate · 0.45 实例 · 约 3–5 分钟' };
       cost.textContent = provider === 'comfyui'
-        ? `ComfyUI 视频 · 免费（${videoLabels[videoModel] || videoLabels.h3} · Windows）`
+        ? `ComfyUI 视频 · 免费（${videoLabels[videoModel] || videoLabels.h3} · Windows）${estimateFor(single) ? ` · ${estimateFor(single)}` : ''}`
         : '即梦 CLI · 报价后确认扣积分';
       cost.classList.remove('cv-warn');
     } else if (single.type === 'audio') {
@@ -1855,6 +1855,7 @@ async function generateSelected() {
     return;
   }
   const imageWorkflow = node.generation?.imageWorkflow || '';
+  rememberModelParams(node);
   const prompt = promptEl.value.trim();
   if (!prompt && imageWorkflow !== 'qwen21-rmbg') { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
@@ -2024,7 +2025,7 @@ function chooseDreaminaModel(spec, type) {
   if (resolutions.length) patch.resolution = resolutions[0];
   if (type === 'video') patch.durationSeconds = Number(duration?.min) >= 4 ? Math.min(5, Number(duration.max) || 5) : 5;
   if (count) patch.outputCount = Math.min(Number(count.max) || 1, 4);
-  setGeneration(patch);
+  setGeneration(withSavedParams(`${type}:dreamina:${spec.model}`, patch));
 }
 
 function modelLabel(node) {
@@ -2072,12 +2073,12 @@ function modelOptions(node) {
           ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })],
         ])
       : [
-        ['Qwen 2.1 · 文生图（1MP/2K）', () => setGeneration({ imageWorkflow: 'qwen21-t2i', resolution: '1024 高清' })],
-        ['Qwen 2.1 · 图片编辑', () => setGeneration({ imageWorkflow: 'qwen21-edit', resolution: '1024 高清' })],
-        ['Qwen 2.1 · 去背景', () => setGeneration({ imageWorkflow: 'qwen21-rmbg', resolution: '1024 高清' })],
-        ['Qwen 2.1 · 姿态', () => setGeneration({ imageWorkflow: 'qwen21-pose', resolution: '1024 高清' })],
-        ['Qwen 2.1 · 深度', () => setGeneration({ imageWorkflow: 'qwen21-depth', resolution: '1024 高清' })],
-        ['Qwen 2.1 · 线稿', () => setGeneration({ imageWorkflow: 'qwen21-edges', resolution: '1024 高清' })],
+        ['Qwen 2.1 · 文生图（1MP/2K）', () => setGeneration(withSavedParams('image:comfyui:qwen21-t2i', { imageWorkflow: 'qwen21-t2i', resolution: '1024 高清' }))],
+        ['Qwen 2.1 · 图片编辑', () => setGeneration(withSavedParams('image:comfyui:qwen21-edit', { imageWorkflow: 'qwen21-edit', resolution: '1024 高清' }))],
+        ['Qwen 2.1 · 去背景', () => setGeneration(withSavedParams('image:comfyui:qwen21-rmbg', { imageWorkflow: 'qwen21-rmbg', resolution: '1024 高清' }))],
+        ['Qwen 2.1 · 姿态', () => setGeneration(withSavedParams('image:comfyui:qwen21-pose', { imageWorkflow: 'qwen21-pose', resolution: '1024 高清' }))],
+        ['Qwen 2.1 · 深度', () => setGeneration(withSavedParams('image:comfyui:qwen21-depth', { imageWorkflow: 'qwen21-depth', resolution: '1024 高清' }))],
+        ['Qwen 2.1 · 线稿', () => setGeneration(withSavedParams('image:comfyui:qwen21-edges', { imageWorkflow: 'qwen21-edges', resolution: '1024 高清' }))],
         ['Z-Image Turbo（快，1024²）', () => setGeneration({ imageWorkflow: 'zimage-turbo' })],
         ['Flux', () => setGeneration({ imageWorkflow: 'flux-t2i' })],
         ['Juggernaut（写实）', () => setGeneration({ imageWorkflow: 'photoreal-juggernaut' })],
@@ -2093,13 +2094,68 @@ function modelOptions(node) {
         ['Seedance 2.5 VIP', () => setGeneration({ model: 'seedance_2.5' })],
       ])
     : [
-      ['H3（快，640×352）', () => setGeneration({ model: 'h3', durationSeconds: 5, h3Size: '360P' })],
-      ['Wan 2.2（质量，832×480）', () => setGeneration({ model: 'wan22', durationSeconds: 5, resolution: '480P' })],
-      ['LTX-2.3（快，640×384）', () => setGeneration({ model: 'ltx23', durationSeconds: 2.7, resolution: '384P' })],
-      ['FramePack（长镜头，需首帧）', () => setGeneration({ model: 'framepack', durationSeconds: 3, resolution: '640P' })],
-      ['H3 多模态参考（Ref2VA）', () => setGeneration({ model: 'h3-ref2v', durationSeconds: 5, resolution: '352P' })],
-      ['H3 Ultimate（首尾帧/续写）', () => setGeneration({ model: 'h3-ultimate', durationSeconds: 5, resolution: '352P', megapixels: 0.22 })],
+      ['H3（快，640×352）', () => setGeneration(withSavedParams('video:comfyui:h3', { model: 'h3', durationSeconds: 5, h3Size: '360P' }))],
+      ['Wan 2.2（质量，832×480）', () => setGeneration(withSavedParams('video:comfyui:wan22', { model: 'wan22', durationSeconds: 5, resolution: '480P' }))],
+      ['LTX-2.3（快，640×384）', () => setGeneration(withSavedParams('video:comfyui:ltx23', { model: 'ltx23', durationSeconds: 2.7, resolution: '384P' }))],
+      ['FramePack（长镜头，需首帧）', () => setGeneration(withSavedParams('video:comfyui:framepack', { model: 'framepack', durationSeconds: 3, resolution: '640P' }))],
+      ['H3 多模态参考（Ref2VA）', () => setGeneration(withSavedParams('video:comfyui:h3-ref2v', { model: 'h3-ref2v', durationSeconds: 5, resolution: '352P' }))],
+      ['H3 Ultimate（首尾帧/续写）', () => setGeneration(withSavedParams('video:comfyui:h3-ultimate', { model: 'h3-ultimate', durationSeconds: 5, resolution: '352P', megapixels: 0.22 }))],
     ];
+}
+
+const MODEL_DEFAULTS_KEY = 'zaomeng-canvas2:model-defaults';
+const MODEL_ESTIMATES = {
+  'video:comfyui:h3': '约 2–3 分钟 · 显存 ~6G',
+  'video:comfyui:h3-ref2v': '约 2–4 分钟 · 显存 ~6G',
+  'video:comfyui:h3-ultimate': '约 2–3 分钟 · 显存 4.5G / 内存 28G',
+  'video:comfyui:wan22': '约 3–6 分钟 · 显存 ~9G',
+  'video:comfyui:ltx23': '约 2 分钟 · 显存 ~10G',
+  'video:comfyui:framepack': '约 16–26 分钟 · 显存 ~6G',
+  'image:comfyui:qwen21-t2i': '约 30–60 秒 · 显存 ~4.5G / 内存 26G',
+  'image:comfyui:qwen21-edit': '约 45 秒 · 显存 ~6G / 内存 27G',
+  'image:comfyui:qwen21-rmbg': '约 45 秒 · 显存 ~6G',
+  'image:comfyui:qwen21-pose': '约 45 秒 · 显存 ~7G',
+  'image:comfyui:qwen21-depth': '约 50 秒 · 显存 ~11G（勿并行）',
+  'image:comfyui:qwen21-edges': '约 45 秒 · 显存 ~8G',
+};
+
+function readModelDefaults() {
+  try { return JSON.parse(localStorage.getItem(MODEL_DEFAULTS_KEY) || '{}'); } catch { return {}; }
+}
+
+function defaultsKey(node) {
+  const provider = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
+  const selector = node.type === 'image' ? (node.generation?.imageWorkflow || node.generation?.model) : (node.generation?.model || 'default');
+  return `${node.type}:${provider}:${selector || 'default'}`;
+}
+
+function savedParamsFor(key) {
+  const saved = readModelDefaults()[key];
+  if (!saved || typeof saved !== 'object') return {};
+  const allowed = ['ratio', 'resolution', 'durationSeconds', 'outputCount', 'megapixels'];
+  return Object.fromEntries(Object.entries(saved).filter(([name]) => allowed.includes(name)));
+}
+
+function rememberModelParams(node) {
+  if (!node?.generation) return;
+  const key = defaultsKey(node);
+  const all = readModelDefaults();
+  all[key] = {
+    ratio: node.generation.ratio,
+    resolution: node.generation.resolution,
+    durationSeconds: node.generation.durationSeconds,
+    outputCount: node.generation.outputCount,
+    megapixels: node.generation.megapixels,
+  };
+  try { localStorage.setItem(MODEL_DEFAULTS_KEY, JSON.stringify(all)); } catch { /* 忽略 */ }
+}
+
+function withSavedParams(key, patch) {
+  return { ...patch, ...savedParamsFor(key) };
+}
+
+function estimateFor(node) {
+  return MODEL_ESTIMATES[defaultsKey(node)] || '';
 }
 
 function setGeneration(patch) {
@@ -2302,6 +2358,7 @@ function videoReferenceAssets(node) {
 
 async function startComfyVideo(node) {
   const prompt = promptEl.value.trim();
+  rememberModelParams(node);
   if (!prompt) { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
   const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v', 'h3-ultimate'].includes(node.generation?.model) ? node.generation.model : 'h3';
@@ -2369,6 +2426,7 @@ async function startComfyVideo(node) {
 }
 
 async function startImageQuote(node) {
+  rememberModelParams(node);
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '报价中…' });
@@ -2398,6 +2456,7 @@ async function startImageQuote(node) {
 }
 
 async function startVideoQuote(node) {
+  rememberModelParams(node);
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '报价中…' });
