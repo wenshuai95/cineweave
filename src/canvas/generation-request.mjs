@@ -39,3 +39,21 @@ export async function askAssistant({ messages = [], context = null } = {}, { fet
   if (!response.ok) throw new Error(data.error || 'AI 助手失败');
   return data;
 }
+
+export async function optimizePromptRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/prompt/optimize', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '优化失败');
+  return data;
+}
+
+export async function translatePromptRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/prompt/translate', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '翻译失败');
+  return data;
+}

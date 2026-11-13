@@ -33,6 +33,7 @@ import { createBoardManager } from './board-manager.mjs';
 import { alignPositions, stackPositions } from './layout-actions.mjs';
 import { minimapBounds, paintMinimap, minimapTransform } from './minimap.mjs';
 import { createNodeActions } from './node-actions.mjs';
+import { createPromptTools } from './prompt-tools.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
@@ -455,12 +456,12 @@ app.querySelector('#shortcutsClose').addEventListener('click', () => app.querySe
 app.querySelector('#assetsClose').addEventListener('click', () => app.querySelector('#assetsModal').classList.remove('open'));
 app.querySelector('#assetsUpload').addEventListener('click', () => { app.querySelector('#assetsModal').classList.remove('open'); app.querySelector('#cvFileInput').click(); });
 app.querySelector('#dockMention').addEventListener('click', openMentionMenu);
-app.querySelector('#dockOptimize').addEventListener('click', optimizePrompt);
-app.querySelector('#dockTranslate').addEventListener('click', translatePrompt);
+app.querySelector('#dockOptimize').addEventListener('click', () => promptTools.optimize());
+app.querySelector('#dockTranslate').addEventListener('click', () => promptTools.translate());
 app.querySelector('#dockTemplate').addEventListener('click', openPromptTemplateMenu);
-app.querySelectorAll('#optimizeLangs [data-lang]').forEach((button) => button.addEventListener('click', () => switchOptimizeLang(button.dataset.lang)));
+app.querySelectorAll('#optimizeLangs [data-lang]').forEach((button) => button.addEventListener('click', () => promptTools.switchLang(button.dataset.lang)));
 app.querySelector('#optimizeCancel').addEventListener('click', () => app.querySelector('#optimizeModal').classList.remove('open'));
-app.querySelector('#optimizeApply').addEventListener('click', applyOptimizedPrompt);
+app.querySelector('#optimizeApply').addEventListener('click', () => promptTools.apply());
 app.querySelector('#camCancel').addEventListener('click', () => app.querySelector('#cameraModal').classList.remove('open'));
 app.querySelector('#camConfirm').addEventListener('click', applyCamera);
 app.querySelector('#paletteCancel').addEventListener('click', () => app.querySelector('#paletteModal').classList.remove('open'));
@@ -2755,134 +2756,17 @@ const assetsPanel = createAssetsPanel({
 
 function openAssetsPanel() { assetsPanel.open(); }
 
-let optimizeVersions = { zh: '', en: '' };
-let optimizeLang = 'zh';
-
-function switchOptimizeLang(lang) {
-  const textarea = app.querySelector('#optimizeText');
-  optimizeVersions[optimizeLang] = textarea.value;
-  optimizeLang = lang;
-  textarea.value = optimizeVersions[lang] || '';
-  app.querySelectorAll('#optimizeLangs [data-lang]').forEach((button) => button.classList.toggle('active', button.dataset.lang === lang));
-}
-
-function aiContext() {
-  const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
-  return buildAIContext({ doc, node, boardList, boardProjectId });
-}
-
-const aiPanel = createAIPanel({
+const promptTools = createPromptTools({
   app,
-  getSelectedNode: () => ([...selection][0] ? findNode(doc, [...selection][0]) : null),
-  getContext: aiContext,
-  onInsertPrompt: (content) => {
-    promptEl.value = `${promptEl.value ? promptEl.value + '\n' : ''}${content}`;
-    onPromptInput();
-    toast('已插入提示词');
-  },
-  onApplyPrompt: (content) => {
-    const node = [...selection][0] ? findNode(doc, [...selection][0]) : null;
-    if (!node) { toast('先选中一个节点'); return; }
-    if (node.generation) doc = updateNode(doc, node.id, { generation: { prompt: content } });
-    else if (node.type === 'text') doc = updateNode(doc, node.id, { text: content });
-    promptEl.value = content;
-    render();
-    toast('已写入选中节点');
-  },
+  getPrompt: () => promptEl.value,
+  getNodeType: () => findNode(doc, [...selection][0])?.type,
   toast,
-});
-aiPanel.bind();
-
-function applyPromptTemplate(text) {
-  promptEl.value = text;
-  onPromptInput();
-  promptEl.focus();
-  toast('已套用提示词模板');
-}
-
-function openPromptTemplateMenu() {
-  const id = [...selection][0];
-  const node = id ? findNode(doc, id) : null;
-  if (!node?.generation) { toast('先选中一个生成节点'); return; }
-  const template = promptTemplateFor({
-    type: node.type,
-    model: node.generation?.model || '',
-    workflow: node.generation?.imageWorkflow || '',
-  });
-  const items = [[template.label, () => applyPromptTemplate(template.text)]];
-  const button = app.querySelector('#dockTemplate');
-  const rect = button.getBoundingClientRect();
-  showContextMenu(items, rect.left, Math.max(80, rect.top - 100));
-}
-
-async function optimizePrompt() {
-  const prompt = promptEl.value.trim();
-  if (!prompt) { toast('先写提示词'); return; }
-  const node = findNode(doc, [...selection][0]);
-  const button = app.querySelector('#dockOptimize');
-  button.disabled = true;
-  const original = button.textContent;
-  button.textContent = '优化中…';
-  const modal = app.querySelector('#optimizeModal');
-  const status = app.querySelector('#optimizeStatus');
-  const textarea = app.querySelector('#optimizeText');
-  modal.classList.add('open');
-  textarea.value = prompt;
-  status.textContent = '正在调用 DeepSeek…';
-  status.classList.remove('bad');
-  try {
-    const response = await fetch('/api/generation/prompt/optimize', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt, mode: node?.type === 'video' ? 'video' : node?.type === 'audio' ? 'audio' : 'image' }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '优化失败');
-    optimizeVersions = { zh: data.optimized || prompt, en: data.optimizedEn || '' };
-    optimizeLang = /[\u3400-\u9fff]/.test(prompt) ? 'zh' : 'en';
-    textarea.value = optimizeVersions[optimizeLang];
-    app.querySelectorAll('#optimizeLangs [data-lang]').forEach((button) => button.classList.toggle('active', button.dataset.lang === optimizeLang));
-    status.textContent = `已由 ${data.model || 'DeepSeek'} 优化${optimizeVersions.en ? '（中文/英文双版）' : ''}`;
-  } catch (error) {
-    status.textContent = `优化失败：${error.message}`;
-    status.classList.add('bad');
-  } finally {
-    button.disabled = false;
-    button.textContent = original;
-  }
-}
-
-async function translatePrompt() {
-  const prompt = promptEl.value.trim();
-  if (!prompt) { toast('先写提示词'); return; }
-  const button = app.querySelector('#dockTranslate');
-  button.disabled = true;
-  try {
-    const response = await fetch('/api/generation/prompt/translate', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '翻译失败');
-    promptEl.value = data.translated;
+  onApply: (text, options = {}) => {
+    promptEl.value = text;
     onPromptInput();
-    toast('已翻译成英文');
-  } catch (error) {
-    toast(error.message || String(error), true);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-function applyOptimizedPrompt() {
-  optimizeVersions[optimizeLang] = app.querySelector('#optimizeText').value;
-  const text = app.querySelector('#optimizeText').value.trim();
-  if (!text) { toast('优化结果为空'); return; }
-  promptEl.value = text;
-  onPromptInput();
-  app.querySelector('#optimizeModal').classList.remove('open');
-  toast('已应用优化后的提示词');
-  promptEl.focus();
-}
+    if (options.optimized) promptEl.focus();
+  },
+});
 
 function moveReference(node, referenceId, direction) {
   const refs = [...(node.generation?.references || [])];
