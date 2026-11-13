@@ -16,6 +16,7 @@ import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.
 import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
 import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
 import { createTimelineDragController } from './timeline-editor.mjs';
+import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -1355,14 +1356,6 @@ async function probeProviders() {
   }
 }
 
-const IMAGE_PRESETS = {
-  '场景俯视图': '俯视全景视角，清晰展示空间布局与人物站位，电影感布光',
-  '连续分镜图': '同一角色连续动作分镜，保持人物与场景一致，电影分镜风格',
-  '多机位九宫格': '九宫格多机位构图，同一场景九个不同机位，统一光线与色调',
-  '人物三视图': '角色三视图：正面、侧面、背面，统一服装与比例，干净背景',
-  '面部三视图': '角色面部三视图：正面、四分之三侧、侧面，细节一致',
-  '产品三视图': '产品三视图：正面、侧面、背面，棚拍布光，干净背景',
-};
 
 function showPresetMenu(node) {
   showContextMenu(Object.keys(IMAGE_PRESETS).map((label) => [label, () => {
@@ -2037,44 +2030,17 @@ function modelOptions(node) {
     const list = dreaminaCatalog.audio.filter((spec) => (spec.modes || []).some((mode) => mode.name === 'tts'));
     return list.length ? list.map((spec) => [spec.displayName, () => setGeneration({ model: spec.model })]) : [['SeedAudio 1.0', () => setGeneration({ model: 'legacy_tts' })]];
   }
-  if (node.type === 'image') {
-    return provider === 'dreamina'
-      ? (dreaminaCatalog.image.length
-        ? dreaminaCatalog.image.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'image')])
-        : [
-          ['Seedream 5.0 Flash', () => setGeneration({ model: 'high_aes_general_v50_flash' })],
-          ['Seedream 4.1', () => setGeneration({ model: 'seedream_4.1' })],
-          ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })],
-        ])
-      : [
-        ['Qwen 2.1 · 文生图（1MP/2K）', () => setGeneration(withSavedParams('image:comfyui:qwen21-t2i', { imageWorkflow: 'qwen21-t2i', resolution: '1024 高清' }))],
-        ['Qwen 2.1 · 图片编辑', () => setGeneration(withSavedParams('image:comfyui:qwen21-edit', { imageWorkflow: 'qwen21-edit', resolution: '1024 高清' }))],
-        ['Qwen 2.1 · 去背景', () => setGeneration(withSavedParams('image:comfyui:qwen21-rmbg', { imageWorkflow: 'qwen21-rmbg', resolution: '1024 高清' }))],
-        ['Qwen 2.1 · 姿态', () => setGeneration(withSavedParams('image:comfyui:qwen21-pose', { imageWorkflow: 'qwen21-pose', resolution: '1024 高清' }))],
-        ['Qwen 2.1 · 深度', () => setGeneration(withSavedParams('image:comfyui:qwen21-depth', { imageWorkflow: 'qwen21-depth', resolution: '1024 高清' }))],
-        ['Qwen 2.1 · 线稿', () => setGeneration(withSavedParams('image:comfyui:qwen21-edges', { imageWorkflow: 'qwen21-edges', resolution: '1024 高清' }))],
-        ['Z-Image Turbo（快，1024²）', () => setGeneration({ imageWorkflow: 'zimage-turbo' })],
-        ['Flux', () => setGeneration({ imageWorkflow: 'flux-t2i' })],
-        ['Juggernaut（写实）', () => setGeneration({ imageWorkflow: 'photoreal-juggernaut' })],
-        ['RealVis（写实）', () => setGeneration({ imageWorkflow: 'photoreal-realvis' })],
-      ];
+  if (provider !== 'dreamina') {
+    return buildModelOptions({ type: node.type, provider }).map((option) => [option.label, () => setGeneration(withSavedParams(option.key, option.patch))]);
   }
-  return provider === 'dreamina'
-    ? (dreaminaCatalog.video.length
-      ? dreaminaCatalog.video.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'video')])
-      : [
-        ['Seedance 2.5', () => setGeneration({ model: 'seedance_2.5_draft' })],
-        ['Seedance 2.5 Flash', () => setGeneration({ model: 'seedance_2.5_flash' })],
-        ['Seedance 2.5 VIP', () => setGeneration({ model: 'seedance_2.5' })],
-      ])
-    : [
-      ['H3（快，640×352）', () => setGeneration(withSavedParams('video:comfyui:h3', { model: 'h3', durationSeconds: 5, h3Size: '360P' }))],
-      ['Wan 2.2（质量，832×480）', () => setGeneration(withSavedParams('video:comfyui:wan22', { model: 'wan22', durationSeconds: 5, resolution: '480P' }))],
-      ['LTX-2.3（快，640×384）', () => setGeneration(withSavedParams('video:comfyui:ltx23', { model: 'ltx23', durationSeconds: 2.7, resolution: '384P' }))],
-      ['FramePack（长镜头，需首帧）', () => setGeneration(withSavedParams('video:comfyui:framepack', { model: 'framepack', durationSeconds: 3, resolution: '640P' }))],
-      ['H3 多模态参考（Ref2VA）', () => setGeneration(withSavedParams('video:comfyui:h3-ref2v', { model: 'h3-ref2v', durationSeconds: 5, resolution: '352P' }))],
-      ['H3 Ultimate（首尾帧/续写）', () => setGeneration(withSavedParams('video:comfyui:h3-ultimate', { model: 'h3-ultimate', durationSeconds: 5, resolution: '352P', megapixels: 0.22 }))],
-    ];
+  if (node.type === 'image') {
+    return dreaminaCatalog.image.length
+      ? dreaminaCatalog.image.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'image')])
+      : [['Seedream 5.0 Flash', () => setGeneration({ model: 'high_aes_general_v50_flash' })], ['Seedream 4.1', () => setGeneration({ model: 'seedream_4.1' })], ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })]];
+  }
+  return dreaminaCatalog.video.length
+    ? dreaminaCatalog.video.map((spec) => [`${spec.displayName}`, () => chooseDreaminaModel(spec, 'video')])
+    : [['Seedance 2.5', () => setGeneration({ model: 'seedance_2.5_draft' })], ['Seedance 2.5 Flash', () => setGeneration({ model: 'seedance_2.5_flash' })], ['Seedance 2.5 VIP', () => setGeneration({ model: 'seedance_2.5' })]];
 }
 
 const MODEL_DEFAULTS_KEY = 'zaomeng-canvas2:model-defaults';
