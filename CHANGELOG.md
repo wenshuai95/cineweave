@@ -58,6 +58,7 @@
 - 抽出 `src/canvas/selection-model.mjs`（选择/框选几何），新增 3 条单测。
 - 抽出 `src/canvas/history.mjs`（撤销/重做状态机），新增 3 条单测。
 - 抽出 `src/canvas/board-manager.mjs`（多画布管理），新增 3 条单测。
+- 抽出 layout-actions / node-actions / dreamina-model / minimap，新增 7 条单测；main.mjs 降到 3500 行内。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -93,6 +94,7 @@
 - 抽出 `src/canvas/selection-model.mjs`（选择/框选几何），新增 3 条单测。
 - 抽出 `src/canvas/history.mjs`（撤销/重做状态机），新增 3 条单测。
 - 抽出 `src/canvas/board-manager.mjs`（多画布管理），新增 3 条单测。
+- 抽出 layout-actions / node-actions / dreamina-model / minimap，新增 7 条单测；main.mjs 降到 3500 行内。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
