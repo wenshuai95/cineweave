@@ -1,0 +1,280 @@
+{
+  "workflow": "h3-ultimate",
+  "workflowVersion": "The_frizzy1 v2.3.0",
+  "generatedAt": "2026-11-13",
+  "model": "MiniMax H3 FL2VA + Ref2VA (pruned int8 convrot)",
+  "comfy": "http://192.168.3.27:8190",
+  "comfyVersion": "0.45.0",
+  "defaults": {
+    "seconds": 5,
+    "aspect": "16:9 (Widescreen)",
+    "megapixels": 0.4,
+    "fps": 24,
+    "seed": 20261112,
+    "turbo": true,
+    "outputPrefix": "video/h3_ultimate"
+  },
+  "notes": {
+    "subgraph": "原版是 UI 格式带 frontend subgraph，不能直接 POST /prompt；本目录下 .json 已展平为 API 格式。",
+    "loadVideo": "所有模式都保留 LoadVideo 节点（指向 input/dummy.mp4），因为 ComfySwitchNode 校验需要它。只有 extend / pose 会真正读取；Mac 侧需在 input 放一个任意短 mp4 作占位。",
+    "mode": "mode 由 CustomCombo.choice 驱动，改模式必须同时换对应 workflow 文件（不同模式图结构不同）。",
+    "uploads": "POST /upload/image 原样写字节，png/mp4/wav 通用；重名会被改名，必须用响应里的 name 回填。",
+    "negativePrompt": "不支持。BasicGuider 无 CFG，UI 上应隐藏负向提示词。",
+    "audio": "成片自带 AAC 32kHz 立体声音轨，不要二次转码丢音轨。"
+  },
+  "variants": {
+    "h3-ultimate-t2v.json": "T2V",
+    "h3-ultimate-i2v.json": "I2V (first frame)",
+    "h3-ultimate-flf.json": "First + last frame",
+    "h3-ultimate-r2v.json": "R2V (references)",
+    "h3-ultimate-extend.json": "Extend (continue a clip)"
+  },
+  "mapping": {
+    "t2v": {
+      "file": "h3-ultimate-t2v.json",
+      "nodes": 83,
+      "modeValue": "T2V",
+      "params": [
+        {
+          "nodeId": "38",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "6",
+          "input": "noise_seed",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        },
+        {
+          "nodeId": "20",
+          "input": "choice",
+          "value": "T2V",
+          "type": "enum",
+          "readonly": true
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "file",
+          "value": "dummy.mp4",
+          "type": "placeholder",
+          "note": "占位，不需要替换；Mac 侧 input 目录需预置任意短 mp4"
+        }
+      ]
+    },
+    "i2v": {
+      "file": "h3-ultimate-i2v.json",
+      "nodes": 84,
+      "modeValue": "I2V (first frame)",
+      "params": [
+        {
+          "nodeId": "39",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "7",
+          "input": "noise_seed",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "3",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        },
+        {
+          "nodeId": "21",
+          "input": "choice",
+          "value": "I2V (first frame)",
+          "type": "enum",
+          "readonly": true
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "firstFrame",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "first_frame.png"
+        },
+        {
+          "nodeId": "2",
+          "input": "file",
+          "value": "dummy.mp4",
+          "type": "placeholder",
+          "note": "占位，不需要替换；Mac 侧 input 目录需预置任意短 mp4"
+        }
+      ]
+    },
+    "flf": {
+      "file": "h3-ultimate-flf.json",
+      "nodes": 85,
+      "modeValue": "First + last frame",
+      "params": [
+        {
+          "nodeId": "40",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "8",
+          "input": "noise_seed",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "4",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        },
+        {
+          "nodeId": "22",
+          "input": "choice",
+          "value": "First + last frame",
+          "type": "enum",
+          "readonly": true
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "firstFrame",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "first_frame.png"
+        },
+        {
+          "nodeId": "2",
+          "input": "image",
+          "from": "lastFrame",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "last_frame.png"
+        },
+        {
+          "nodeId": "3",
+          "input": "file",
+          "value": "dummy.mp4",
+          "type": "placeholder",
+          "note": "占位，不需要替换；Mac 侧 input 目录需预置任意短 mp4"
+        }
+      ]
+    },
+    "r2v": {
+      "file": "h3-ultimate-r2v.json",
+      "nodes": 85,
+      "modeValue": "R2V (references)",
+      "params": [
+        {
+          "nodeId": "40",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "8",
+          "input": "noise_seed",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "4",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        },
+        {
+          "nodeId": "22",
+          "input": "choice",
+          "value": "R2V (references)",
+          "type": "enum",
+          "readonly": true
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "refImage1",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "ref_1.png"
+        },
+        {
+          "nodeId": "2",
+          "input": "image",
+          "from": "refImage2",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "ref_2.png"
+        },
+        {
+          "nodeId": "3",
+          "input": "file",
+          "value": "dummy.mp4",
+          "type": "placeholder",
+          "note": "占位，不需要替换；Mac 侧 input 目录需预置任意短 mp4"
+        }
+      ]
+    },
+    "extend": {
+      "file": "h3-ultimate-extend.json",
+      "nodes": 83,
+      "modeValue": "Extend (continue a clip)",
+      "params": [
+        {
+          "nodeId": "38",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "6",
+          "input": "noise_seed",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        },
+        {
+          "nodeId": "20",
+          "input": "choice",
+          "value": "Extend (continue a clip)",
+          "type": "enum",
+          "readonly": true
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "file",
+          "from": "sourceVideo",
+          "type": "video",
+          "uploadsTo": "input",
+          "placeholder": "source_clip.mp4"
+        }
+      ]
+    }
+  }
+}

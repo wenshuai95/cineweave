@@ -21,7 +21,7 @@ function defaultDreaminaCommand() {
 }
 
 export const DEFAULT_CONFIG = {
-  comfyui: { baseUrl: process.env.COMFYUI_BASE_URL || 'http://127.0.0.1:8188', workflow: 'sdxl-t2i', i2iWorkflow: 'sdxl-i2i', videoWorkflow: 'h3-t2v', videoWorkflowI2v: 'h3-i2v', photoWorkflow: 'photoreal-juggernaut', upscaleWorkflow: 'upscale-usdu', detailWorkflow: 'detail-face', controlnetDepthWorkflow: 'controlnet-depth', controlnetCannyWorkflow: 'controlnet-canny', controlnetOpenposeWorkflow: 'controlnet-openpose', ipadapterWorkflow: 'ipadapter-sdxl', inpaintWorkflow: 'inpaint-sdxl', outpaintWorkflow: 'outpaint-sdxl', matteWorkflow: 'matte-birefnet', relightFgWorkflow: 'iclight-relight-fg', relightLightWorkflow: 'iclight-relight', timeoutMs: 30000 },
+  comfyui: { baseUrl: process.env.COMFYUI_BASE_URL || 'http://127.0.0.1:8188', baseUrl045: '', workflow: 'sdxl-t2i', i2iWorkflow: 'sdxl-i2i', videoWorkflow: 'h3-t2v', videoWorkflowI2v: 'h3-i2v', photoWorkflow: 'photoreal-juggernaut', upscaleWorkflow: 'upscale-usdu', detailWorkflow: 'detail-face', controlnetDepthWorkflow: 'controlnet-depth', controlnetCannyWorkflow: 'controlnet-canny', controlnetOpenposeWorkflow: 'controlnet-openpose', ipadapterWorkflow: 'ipadapter-sdxl', inpaintWorkflow: 'inpaint-sdxl', outpaintWorkflow: 'outpaint-sdxl', matteWorkflow: 'matte-birefnet', relightFgWorkflow: 'iclight-relight-fg', relightLightWorkflow: 'iclight-relight', timeoutMs: 30000 },
   dreamina: { command: defaultDreaminaCommand(), profile: '', projectId: '', videoModel: 'seedance_2.5_draft' },
   defaults: { image: 'comfyui', video: 'dreamina', audio: 'dreamina' },
   // 中文提示词自动翻译（可选）：key 也可以放在 ~/.zaomeng/deepseek.key（600 权限）。

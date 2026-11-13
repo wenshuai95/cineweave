@@ -795,6 +795,7 @@ function updateSelectionUi() {
         ltx23: 'LTX-2.3 · 640×384 · 24fps',
         framepack: 'FramePack · 首帧 · 30fps',
         'h3-ref2v': 'H3 Ref2VA · 640×352 · 参考生视频',
+        'h3-ultimate': 'H3 Ultimate · 640×352 · 0.22MP',
         h3: single.generation?.h3Size === '480P' ? 'H3 480P · 848×480' : 'H3 360P · 640×352',
       };
       const resPill = app.querySelector('#dockRes');
@@ -852,7 +853,7 @@ function updateSelectionUi() {
     } else if (single.type === 'video') {
       const provider = single.generation?.backend?.provider || 'dreamina';
       const videoModel = single.generation?.model || 'h3';
-      const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢', 'h3-ref2v': 'H3 Ref2VA · 多模态参考 · 约 3 分钟' };
+      const videoLabels = { h3: 'H3', wan22: 'Wan 2.2 · 约 5 分钟/5 秒', ltx23: 'LTX-2.3 · 约 2 分钟', framepack: 'FramePack · 长镜头 · 较慢', 'h3-ref2v': 'H3 Ref2VA · 多模态参考 · 约 3 分钟', 'h3-ultimate': 'H3 Ultimate · 0.45 实例 · 约 3–5 分钟' };
       cost.textContent = provider === 'comfyui'
         ? `ComfyUI 视频 · 免费（${videoLabels[videoModel] || videoLabels.h3} · Windows）`
         : '即梦 CLI · 报价后确认扣积分';
@@ -1855,6 +1856,7 @@ async function generateSelected() {
       body: JSON.stringify({
         kind: 'comfyui-image', prompt, width: comfyImageSize(node).width, height: comfyImageSize(node).height, imageUrl,
         workflow: node.generation?.imageWorkflow || undefined,
+        megapixels: node.generation?.imageWorkflow?.startsWith('qwen21-') ? 1 : undefined,
         refMode: imageUrl ? (node.generation?.refMode || 'i2i') : undefined,
       }),
     });
@@ -2020,6 +2022,7 @@ function modelLabel(node) {
   }
   if (node.type === 'image') {
     const wf = node.generation?.imageWorkflow || '';
+    if (wf.startsWith('qwen21-')) return { 'qwen21-t2i': 'Qwen 2.1 T2I', 'qwen21-edit': 'Qwen 2.1 编辑', 'qwen21-rmbg': 'Qwen 2.1 去背景', 'qwen21-pose': 'Qwen 2.1 姿态', 'qwen21-depth': 'Qwen 2.1 深度', 'qwen21-edges': 'Qwen 2.1 线稿' }[wf] || 'Qwen 2.1';
     if (wf === 'zimage-turbo') return 'Z-Image Turbo';
     return wf === 'photoreal-juggernaut' ? 'Juggernaut' : wf === 'photoreal-realvis' ? 'RealVis' : 'Flux';
   }
@@ -2028,6 +2031,7 @@ function modelLabel(node) {
   if (videoModel === 'ltx23') return 'LTX-2.3';
   if (videoModel === 'framepack') return 'FramePack';
   if (videoModel === 'h3-ref2v') return 'H3 Ref2VA';
+  if (videoModel === 'h3-ultimate') return 'H3 Ultimate';
   return 'H3';
 }
 
@@ -2047,6 +2051,12 @@ function modelOptions(node) {
           ['即梦 ImageMax 1.0', () => setGeneration({ model: 'jimeng_smart_image_v1' })],
         ])
       : [
+        ['Qwen 2.1 · 文生图（1MP/2K）', () => setGeneration({ imageWorkflow: 'qwen21-t2i', resolution: '1024 高清' })],
+        ['Qwen 2.1 · 图片编辑', () => setGeneration({ imageWorkflow: 'qwen21-edit', resolution: '1024 高清' })],
+        ['Qwen 2.1 · 去背景', () => setGeneration({ imageWorkflow: 'qwen21-rmbg', resolution: '1024 高清' })],
+        ['Qwen 2.1 · 姿态', () => setGeneration({ imageWorkflow: 'qwen21-pose', resolution: '1024 高清' })],
+        ['Qwen 2.1 · 深度', () => setGeneration({ imageWorkflow: 'qwen21-depth', resolution: '1024 高清' })],
+        ['Qwen 2.1 · 线稿', () => setGeneration({ imageWorkflow: 'qwen21-edges', resolution: '1024 高清' })],
         ['Z-Image Turbo（快，1024²）', () => setGeneration({ imageWorkflow: 'zimage-turbo' })],
         ['Flux', () => setGeneration({ imageWorkflow: 'flux-t2i' })],
         ['Juggernaut（写实）', () => setGeneration({ imageWorkflow: 'photoreal-juggernaut' })],
@@ -2067,6 +2077,7 @@ function modelOptions(node) {
       ['LTX-2.3（快，640×384）', () => setGeneration({ model: 'ltx23', durationSeconds: 2.7, resolution: '384P' })],
       ['FramePack（长镜头，需首帧）', () => setGeneration({ model: 'framepack', durationSeconds: 3, resolution: '640P' })],
       ['H3 多模态参考（Ref2VA）', () => setGeneration({ model: 'h3-ref2v', durationSeconds: 5, resolution: '352P' })],
+      ['H3 Ultimate（首尾帧/续写）', () => setGeneration({ model: 'h3-ultimate', durationSeconds: 5, resolution: '352P', megapixels: 0.22 })],
     ];
 }
 
@@ -2272,7 +2283,7 @@ async function startComfyVideo(node) {
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
-  const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v'].includes(node.generation?.model) ? node.generation.model : 'h3';
+  const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v', 'h3-ultimate'].includes(node.generation?.model) ? node.generation.model : 'h3';
   if ((model === 'h3' || model === 'framepack') && (node.generation?.references || []).length && !frames.first) {
     toast('参考图节点还没有生成图片');
     return;
@@ -2282,6 +2293,12 @@ async function startComfyVideo(node) {
   const refImages = referenceAssets.filter((item) => item.nodeType === 'image' || item.type === 'image');
   const refVideos = referenceAssets.filter((item) => item.nodeType === 'video' && item.type !== 'image');
   const refAudios = referenceAssets.filter((item) => item.nodeType === 'audio');
+  const sourceVideo = refVideos[0]?.url || '';
+  const imageRefEntries = (node.generation?.references || []).map((ref) => ({ ref, node: findNode(doc, ref.id) })).filter((entry) => entry.node?.resources?.[0]?.url && entry.node.type === 'image');
+  const explicitFirst = imageRefEntries.find((entry) => entry.ref.role === '首帧')?.node.resources[0]?.url || '';
+  const explicitLast = imageRefEntries.find((entry) => entry.ref.role === '尾帧')?.node.resources[0]?.url || '';
+  if (model === 'h3-ultimate' && !refImages.length && !refVideos.length) { toast('H3 Ultimate：先连接首帧/首尾帧/参考图，或源视频'); return; }
+  if (model === 'h3-ultimate' && !frames.first?.resource?.url && !sourceVideo && refImages.length < 2) { toast('H3 Ultimate：首帧、首尾帧、双参考或源视频任选一种'); return; }
   if (model === 'h3-ref2v' && !refImages.length && !refVideos.length && !refAudios.length) { toast('H3 多模态参考：先连接参考图 / 视频 / 音频节点'); return; }
   const imageUrl = model === 'h3' || model === 'framepack' ? frames.first?.resource?.url : undefined;
   if (frames.last && model !== 'h3') toast('这个视频模型只使用首帧，尾帧会忽略');
@@ -2292,6 +2309,7 @@ async function startComfyVideo(node) {
     ltx23: { width: 640, height: 384, fps: 24, duration: node.generation?.durationSeconds || 2.7 },
     framepack: { width: 608, height: 640, fps: 30, duration: node.generation?.durationSeconds || 3 },
     'h3-ref2v': { width: 640, height: 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
+    'h3-ultimate': { width: 640, height: 352, fps: 24, duration: node.generation?.durationSeconds || 5 },
   };
   const spec = specs[model];
   doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
@@ -2307,6 +2325,11 @@ async function startComfyVideo(node) {
         refImages: model === 'h3-ref2v' ? refImages.slice(0, 9).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
         refVideos: model === 'h3-ref2v' ? refVideos.slice(0, 3).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
         refAudios: model === 'h3-ref2v' ? refAudios.slice(0, 3).map((item) => ({ url: item.url, filename: item.id || item.filename })) : undefined,
+        firstFrameUrl: model === 'h3-ultimate' ? (explicitFirst || frames.first?.resource?.url || refImages[0]?.url) : undefined,
+        lastFrameUrl: model === 'h3-ultimate' ? (explicitLast || undefined) : undefined,
+        refImages: model === 'h3-ultimate' && !explicitLast ? refImages.slice(0, 2).map((item) => item.url) : undefined,
+        sourceVideoUrl: model === 'h3-ultimate' ? sourceVideo : undefined,
+        megapixels: model === 'h3-ultimate' ? (Number(node.generation?.megapixels) > 0 ? Number(node.generation.megapixels) : 0.22) : undefined,
       }),
     });
     const data = await response.json();

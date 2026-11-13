@@ -903,10 +903,91 @@ function referenceFilename(item, index, type) {
   return name;
 }
 
+function derive045Base(config) {
+  if (config.comfyui.baseUrl045) return config.comfyui.baseUrl045;
+  try {
+    const url = new URL(config.comfyui.baseUrl);
+    url.port = '8190';
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return config.comfyui.baseUrl;
+  }
+}
+
+async function uploadComfyInput(provider, url, fallbackName, jobId, label) {
+  const bytes = await readReferenceBytes(url, 'image');
+  const name = basename(decodeURIComponent(new URL(String(url), 'http://127.0.0.1').pathname)) || fallbackName;
+  const uploaded = await provider.uploadImage(bytes, name, { type: 'input', overwrite: true });
+  return uploaded.subfolder ? `${uploaded.subfolder}/${uploaded.name}` : uploaded.name;
+}
+
+async function runH3UltimateJob(jobId, input, config) {
+  const hasFirst = Boolean(input.firstFrameUrl || input.imageUrl);
+  const hasLast = Boolean(input.lastFrameUrl);
+  const refs = Array.isArray(input.refImages) ? input.refImages.filter(Boolean) : [];
+  const sourceVideo = input.sourceVideoUrl || '';
+  const mode = sourceVideo ? 'extend' : (hasFirst && hasLast ? 'flf' : refs.length >= 2 ? 'r2v' : hasFirst ? 'i2v' : 't2v');
+  if (mode === 'extend' && !sourceVideo) throw jobError('H3 Ultimate 续写需要源视频');
+  if (mode === 'flf' && (!hasFirst || !hasLast)) throw jobError('H3 Ultimate 首尾帧需要同时提供首帧和尾帧');
+  if (mode === 'r2v' && refs.length < 2) throw jobError('H3 Ultimate R2V 至少需要两张参考图');
+  const mappingFile = JSON.parse(await readFile(join(WORKFLOW_DIR, 'h3-ultimate.mapping.json'), 'utf8'));
+  const spec = mappingFile.mapping?.[mode];
+  if (!spec?.file) throw jobError(`H3 Ultimate 缺少 ${mode} 映射`);
+  const template = JSON.parse(await readFile(join(WORKFLOW_DIR, spec.file), 'utf8'));
+  const provider = createComfyUIProvider({ baseUrl: derive045Base(config), timeoutMs: config.comfyui.timeoutMs || 30000 });
+  const values = {
+    prompt: String(input.prompt || '').trim(),
+    seed: Number.isFinite(Number(input.seed)) ? Number(input.seed) : Math.floor(Math.random() * 1e9),
+    outputPrefix: 'video/h3_ultimate',
+    megapixels: Number(input.megapixels) > 0 ? Number(input.megapixels) : 0.22,
+  };
+  if (!values.prompt) throw jobError('生成提示词不能为空');
+  const uploaded = [];
+  const uploadSpecs = spec.uploads || [];
+  for (let i = 0; i < uploadSpecs.length; i += 1) {
+    const item = uploadSpecs[i];
+    const from = item.from;
+    if (!from) continue;
+    const url = from === 'firstFrame' ? (input.firstFrameUrl || input.imageUrl)
+      : from === 'lastFrame' ? input.lastFrameUrl
+      : from === 'sourceVideo' ? sourceVideo
+      : from === 'refImage1' ? refs[0]
+      : from === 'refImage2' ? refs[1]
+      : null;
+    if (!url) throw jobError(`H3 Ultimate ${mode} 缺少 ${from}`);
+    jobs.update(jobId, { status: 'running', progress: Math.min(10, 3 + i), message: `上传 ${from}…` });
+    const name = await uploadComfyInput(provider, url, `${from}.png`, jobId, from);
+    uploaded.push({ nodeId: item.nodeId, input: item.input, from, value: name });
+  }
+  const resolutionNode = { t2v: '39', i2v: '40', flf: '41', r2v: '41', extend: '39' }[mode];
+  const mapping = [...(spec.params || []), ...uploaded];
+  if (resolutionNode) mapping.push({ nodeId: resolutionNode, input: 'megapixels', from: 'megapixels', type: 'number' });
+  const { workflow } = applyInputMapping(template, mapping, values);
+  jobs.update(jobId, { status: 'running', progress: 12, message: '提交到 ComfyUI 0.45（H3 Ultimate）…' });
+  const submitted = await provider.submit(workflow);
+  jobs.update(jobId, { progress: 20, message: '已排队，H3 Ultimate 生成中…', meta: { promptId: submitted.promptId, model: 'h3-ultimate', mode } });
+  const { outputs } = await provider.waitFor(submitted.promptId, {
+    intervalMs: 3000,
+    timeoutMs: 35 * 60 * 1000,
+    onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(90, 20 + Math.round(elapsedMs / 3000)), message: `H3 Ultimate ${mode} 生成中…` }),
+  });
+  const video = outputs.find((item) => item.isVideo) || outputs.find((item) => /\.(mp4|webm|gif)$/i.test(item.filename || '')) || outputs[0];
+  if (!video?.filename) throw jobError('ComfyUI 没有返回视频');
+  const bytes = await provider.download(video);
+  await mkdir(ASSETS_DIR, { recursive: true, mode: 0o700 });
+  const filename = `${jobId}.mp4`;
+  await writeFile(join(ASSETS_DIR, filename), bytes);
+  jobs.update(jobId, {
+    status: 'success', progress: 100, message: '完成',
+    result: { url: `/api/generation/assets/${filename}`, filename, type: 'video', provider: 'comfyui', promptId: submitted.promptId, sourceName: video.filename, model: 'h3-ultimate', mode },
+  });
+}
+
 async function runComfyVideoJob(jobId, input) {
   const config = await loadConfig();
   const hasImage = Boolean(input.imageUrl);
   const requestedModel = String(input.model || input.workflow || '').trim();
+  if (requestedModel === 'h3-ultimate') return runH3UltimateJob(jobId, input, config);
   const spec = VIDEO_WORKFLOWS[requestedModel] || null;
   if (requestedModel === 'framepack' && !hasImage) throw jobError('FramePack 需要首帧参考图，请先连接一张图片');
   const name = spec
@@ -1188,8 +1269,56 @@ async function translatePromptToEnglish(prompt, config) {
   return text;
 }
 
+async function runQwen21Job(jobId, input, config) {
+  const workflowName = String(input.workflow || 'qwen21-t2i').trim();
+  const mode = workflowName.replace(/^qwen21-/, '');
+  const mappingFile = JSON.parse(await readFile(join(WORKFLOW_DIR, 'qwen21.mapping.json'), 'utf8'));
+  const spec = mappingFile.mapping?.[mode];
+  if (!spec?.file) throw jobError(`Qwen Image 2.1 缺少 ${mode} 映射`);
+  const template = JSON.parse(await readFile(join(WORKFLOW_DIR, spec.file), 'utf8'));
+  const provider = createComfyUIProvider({ baseUrl: derive045Base(config), timeoutMs: config.comfyui.timeoutMs || 30000 });
+  const values = {
+    prompt: String(input.prompt || '').trim(),
+    seed: Number.isFinite(Number(input.seed)) ? Number(input.seed) : Math.floor(Math.random() * 1e9),
+    megapixels: Number(input.megapixels) > 0 ? Number(input.megapixels) : 1,
+    aspect: mode === 't2i' ? '1:1 (Square)' : '1:1 (Square)',
+    outputPrefix: 'qwen21/Qwen21_ultimate',
+  };
+  if (mode !== 'rmbg' && !values.prompt) throw jobError('生成提示词不能为空');
+  const uploaded = [];
+  const uploadSpecs = spec.uploads || [];
+  for (let i = 0; i < uploadSpecs.length; i += 1) {
+    const item = uploadSpecs[i];
+    if (!item.from) continue;
+    if (!input.imageUrl) throw jobError('Qwen 图片编辑需要一张参考图');
+    jobs.update(jobId, { status: 'running', progress: Math.min(10, 3 + i), message: '上传参考图…' });
+    const name = await uploadComfyInput(provider, input.imageUrl, `${item.from}.png`, jobId, item.from);
+    uploaded.push({ nodeId: item.nodeId, input: item.input, from: item.from, value: name });
+  }
+  const { workflow } = applyInputMapping(template, [...(spec.params || []), ...uploaded], values);
+  jobs.update(jobId, { status: 'running', progress: 12, message: '提交到 ComfyUI 0.45（Qwen 2.1）…' });
+  const submitted = await provider.submit(workflow);
+  jobs.update(jobId, { progress: 20, message: `Qwen 2.1 ${mode} 生成中…`, meta: { promptId: submitted.promptId } });
+  const { outputs } = await provider.waitFor(submitted.promptId, {
+    intervalMs: 1500,
+    timeoutMs: 15 * 60 * 1000,
+    onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(90, 20 + Math.round(elapsedMs / 1000)), message: `Qwen 2.1 ${mode} 生成中…` }),
+  });
+  const image = outputs.find((item) => !item.isVideo) || outputs[0];
+  if (!image?.filename) throw jobError('ComfyUI 没有返回图片');
+  const bytes = await provider.download(image);
+  await mkdir(ASSETS_DIR, { recursive: true, mode: 0o700 });
+  const filename = `${jobId}.png`;
+  await writeFile(join(ASSETS_DIR, filename), bytes);
+  jobs.update(jobId, {
+    status: 'success', progress: 100, message: '完成',
+    result: { url: `/api/generation/assets/${filename}`, filename, type: 'image', provider: 'comfyui', promptId: submitted.promptId, sourceName: image.filename, model: `qwen21-${mode}`, alpha: true },
+  });
+}
+
 async function runComfyImageJob(jobId, input) {
   const config = await loadConfig();
+  if (String(input.workflow || '').startsWith('qwen21-')) return runQwen21Job(jobId, input, config);
   const provider = createComfyUIProvider({
     baseUrl: config.comfyui.baseUrl,
     timeoutMs: config.comfyui.timeoutMs || 30000,
