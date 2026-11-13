@@ -142,6 +142,7 @@ app.innerHTML = `
       <button class="cv-pill" id="dockMention" title="引用节点">@</button>
       <button class="cv-pill" id="dockOptimize" title="用 DeepSeek 优化提示词">✨ 优化</button>
       <button class="cv-pill" id="dockTranslate" title="翻译成英文">译</button>
+      <button class="cv-pill" id="dockTemplate" title="按模型插入提示词模板">模板</button>
       <span class="cv-cost" id="dockCost">M1 画布原型 · 后端在 M4 接入</span>
       <button class="cv-send" id="dockSend" title="生成">${ICONS.send}</button>
     </div>
@@ -443,6 +444,7 @@ app.querySelector('#assetsUpload').addEventListener('click', () => { app.querySe
 app.querySelector('#dockMention').addEventListener('click', openMentionMenu);
 app.querySelector('#dockOptimize').addEventListener('click', optimizePrompt);
 app.querySelector('#dockTranslate').addEventListener('click', translatePrompt);
+app.querySelector('#dockTemplate').addEventListener('click', openPromptTemplateMenu);
 app.querySelectorAll('#optimizeLangs [data-lang]').forEach((button) => button.addEventListener('click', () => switchOptimizeLang(button.dataset.lang)));
 app.querySelector('#optimizeCancel').addEventListener('click', () => app.querySelector('#optimizeModal').classList.remove('open'));
 app.querySelector('#optimizeApply').addEventListener('click', applyOptimizedPrompt);
@@ -1852,14 +1854,17 @@ async function generateSelected() {
     await startImageQuote(node);
     return;
   }
+  const imageWorkflow = node.generation?.imageWorkflow || '';
   const prompt = promptEl.value.trim();
-  if (!prompt) { toast('先写提示词'); return; }
+  if (!prompt && imageWorkflow !== 'qwen21-rmbg') { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
   if ((node.generation?.references || []).length && !frames.first) {
     toast('参考图节点还没有生成图片');
     return;
   }
   const imageUrl = frames.first?.resource?.url;
+  const qwenNeedsImage = ['qwen21-edit', 'qwen21-rmbg', 'qwen21-pose', 'qwen21-depth', 'qwen21-edges'].includes(imageWorkflow);
+  if (qwenNeedsImage && !imageUrl) { toast('先连接一张参考图，再生成 Qwen 编辑/控制模式'); return; }
   if (frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
   const send = app.querySelector('#dockSend');
   send.disabled = true;
@@ -2300,6 +2305,10 @@ async function startComfyVideo(node) {
   if (!prompt) { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
   const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v', 'h3-ultimate'].includes(node.generation?.model) ? node.generation.model : 'h3';
+  if (['h3-ref2v', 'h3-ultimate'].includes(model)) {
+    const missing = missingH3Sections(prompt);
+    if (missing.length) toast(`H3 提示词建议补齐六段结构（缺：${missing.join('、')}），可点「模板」`, true);
+  }
   if ((model === 'h3' || model === 'framepack') && (node.generation?.references || []).length && !frames.first) {
     toast('参考图节点还没有生成图片');
     return;
@@ -3381,6 +3390,53 @@ async function sendAIMessage() {
     send.textContent = '发送';
     renderAIMessages();
   }
+}
+
+const H3_PROMPT_TEMPLATE = `subject_definitions: <Subject 1> 是 <Picture 1> 中的……（人物/服装/场景）；<Subject 2> 是 <Picture 2> 中的……。
+summary: 一句话说明本镜头要发生什么。
+retention_analysis: <Subject 1> 的面部、发型、服装与 <Picture 1> 保持一致；<Subject 2> 与 <Picture 2> 保持一致，不得互换或融合。
+detailed_description: [Shot 1] 景别、机位、主体动作、环境与光线；[Shot 2] 如有分镜继续写。
+overall_soundscape: 环境声、动作声、对白有无。
+non_diegetic_music: 配乐或无配乐。`;
+
+const QWEN_EDIT_TEMPLATE = '把画面中的……改成……；保留人物身份、发型、服装、构图和光线；不要改变没有提到的部分。';
+const IMAGE_TEMPLATE = '电影感画面：主体……；动作/状态……；环境……；镜头……；光线……；材质与色调……；不要文字、水印、畸形。';
+const VIDEO_TEMPLATE = '主体：……；动作：……；镜头：……；环境：……；光线：……；风格：……；声音：……。';
+
+function missingH3Sections(prompt) {
+  const text = String(prompt || '');
+  return ['subject_definitions', 'summary', 'retention_analysis', 'detailed_description', 'overall_soundscape', 'non_diegetic_music'].filter((key) => !new RegExp(`(^|\\n)\\s*${key}\\s*:`, 'i').test(text));
+}
+
+function applyPromptTemplate(text) {
+  promptEl.value = text;
+  onPromptInput();
+  promptEl.focus();
+  toast('已套用提示词模板');
+}
+
+function openPromptTemplateMenu() {
+  const id = [...selection][0];
+  const node = id ? findNode(doc, id) : null;
+  if (!node?.generation) { toast('先选中一个生成节点'); return; }
+  const workflow = node.generation?.imageWorkflow || '';
+  const model = node.generation?.model || '';
+  const h3 = ['h3', 'h3-ref2v', 'h3-ultimate'].includes(model);
+  const qwenEdit = ['qwen21-edit', 'qwen21-rmbg', 'qwen21-pose', 'qwen21-depth', 'qwen21-edges'].includes(workflow);
+  const items = h3 ? [
+    ['H3 六段结构模板（替换当前提示词）', () => applyPromptTemplate(H3_PROMPT_TEMPLATE)],
+  ] : qwenEdit ? [
+    ['Qwen 编辑指令模板', () => applyPromptTemplate(QWEN_EDIT_TEMPLATE)],
+  ] : node.type === 'image' ? [
+    ['电影感画面模板', () => applyPromptTemplate(IMAGE_TEMPLATE)],
+  ] : node.type === 'video' ? [
+    ['视频运动描述模板', () => applyPromptTemplate(VIDEO_TEMPLATE)],
+  ] : [
+    ['音频描述模板', () => applyPromptTemplate('旁白/对白：……；语气：……；环境声：……；不要背景音乐。')],
+  ];
+  const button = app.querySelector('#dockTemplate');
+  const rect = button.getBoundingClientRect();
+  showContextMenu(items, rect.left, Math.max(80, rect.top - 100));
 }
 
 async function optimizePrompt() {
