@@ -29,6 +29,7 @@ import { computeSnap, guidesHtml } from './snap-view.mjs';
 import { createAssetsPanel } from './assets-view.mjs';
 import { applyNodeSelection, marqueeWorldBox, selectionAfterMarquee } from './selection-model.mjs';
 import { createHistory } from './history.mjs';
+import { createBoardManager } from './board-manager.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -3479,93 +3480,36 @@ function initBoards(projectId, incomingDoc, incomingBoards = null) {
   window.setTimeout(resumePendingJobs, 400);
 }
 
-function switchBoard(id) {
-  if (id === currentBoardId) return;
-  saveBoardState();
-  const next = readBoardDoc(id);
-  if (!next) { toast('画布读取失败'); return; }
-  currentBoardId = id;
-  localStorage.setItem(boardCurrentKey(), id);
-  doc = next;
-  selection = new Set();
-  historyState.clear();
-  updateBoardButton();
-  render();
-  persist(false);
-  postBoards();
-  toast('已切换画布');
-}
+const boardManager = createBoardManager({
+  state: {
+    get boards() { return boardList; },
+    set boards(value) { boardList = value; },
+    get currentId() { return currentBoardId; },
+    set currentId(value) { currentBoardId = value; },
+    get doc() { return doc; },
+    set doc(value) { doc = value; },
+    currentKey: () => boardCurrentKey(),
+  },
+  storage: localStorage,
+  app,
+  readDoc: readBoardDoc,
+  removeDoc: (id) => localStorage.removeItem(boardDocKey(id)),
+  saveState: saveBoardState,
+  updateButton: updateBoardButton,
+  render,
+  persist,
+  postBoards,
+  createDocument: createCanvasDocument,
+  resetView: () => { selection = new Set(); historyState.clear(); },
+  toast,
+});
 
-function makeBoard(name = '新画布') {
-  saveBoardState();
-  const id = `board_${Date.now().toString(36)}`;
-  boardList.push({ id, name, updatedAt: Date.now() });
-  currentBoardId = id;
-  doc = createCanvasDocument({ viewport: { x: 520, y: 300, zoom: 0.8 } });
-  selection = new Set();
-  historyState.clear();
-  updateBoardButton();
-  saveBoardState();
-  render();
-  persist(false);
-  postBoards();
-  toast('已新建画布');
-}
-
-function duplicateBoard() {
-  saveBoardState();
-  const id = `board_${Date.now().toString(36)}`;
-  const source = boardList.find((item) => item.id === currentBoardId);
-  boardList.push({ id, name: `${source?.name || '画布'} 副本`, updatedAt: Date.now() });
-  currentBoardId = id;
-  doc = structuredClone(doc);
-  selection = new Set();
-  historyState.clear();
-  updateBoardButton();
-  saveBoardState();
-  render();
-  persist(false);
-  postBoards();
-  toast('已复制画布');
-}
-
-function renameBoard() {
-  const board = boardList.find((item) => item.id === currentBoardId);
-  if (!board) return;
-  app.querySelector('#boardRenameInput').value = board.name;
-  app.querySelector('#boardRenameModal').classList.add('open');
-  app.querySelector('#boardRenameInput').focus();
-  app.querySelector('#boardRenameInput').select();
-}
-
-function confirmBoardRename() {
-  const board = boardList.find((item) => item.id === currentBoardId);
-  const value = app.querySelector('#boardRenameInput').value.trim();
-  if (!board || !value) return;
-  board.name = value.slice(0, 40);
-  app.querySelector('#boardRenameModal').classList.remove('open');
-  updateBoardButton();
-  saveBoardState();
-  postBoards();
-  toast('已重命名');
-}
-
-function deleteBoard() {
-  if (boardList.length <= 1) { toast('至少保留一个画布'); return; }
-  const removed = currentBoardId;
-  boardList = boardList.filter((item) => item.id !== removed);
-  localStorage.removeItem(boardDocKey(removed));
-  currentBoardId = boardList[0].id;
-  doc = readBoardDoc(currentBoardId) || createCanvasDocument();
-  selection = new Set();
-  historyState.clear();
-  updateBoardButton();
-  saveBoardState();
-  render();
-  persist(false);
-  postBoards();
-  toast('已删除画布');
-}
+function switchBoard(id) { return boardManager.switchBoard(id); }
+function makeBoard(name) { return boardManager.makeBoard(name); }
+function duplicateBoard() { return boardManager.duplicateBoard(); }
+function renameBoard() { return boardManager.startRename(); }
+function confirmBoardRename() { return boardManager.confirmRename(); }
+function deleteBoard() { return boardManager.deleteBoard(); }
 
 function openBoardMenu(event) {
   saveBoardState();
