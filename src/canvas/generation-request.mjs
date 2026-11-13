@@ -82,3 +82,21 @@ export async function listVoicesRequest({ fetchImpl = fetch } = {}) {
   if (!response.ok) throw new Error(data.error || '读取音色失败');
   return Array.isArray(data.voices) ? data.voices : [];
 }
+
+export async function extractVideoFrameRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/video/frame', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '截取帧失败');
+  return data;
+}
+
+export async function extractVideoAudioRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/video/audio', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '分离音频失败');
+  return data;
+}

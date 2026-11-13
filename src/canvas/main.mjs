@@ -37,6 +37,8 @@ import { createPromptTools } from './prompt-tools.mjs';
 import { createStyleTools } from './style-tools.mjs';
 import { createTrimTools } from './trim-tools.mjs';
 import { createVoicePicker } from './voice-picker.mjs';
+import { createMaskEditor } from './mask-editor.mjs';
+import { createMediaExtract } from './media-extract.mjs';
 import { reorderReferences, applyReferenceRole, findReferenceEdge, mentionMode } from './reference-actions.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
@@ -473,7 +475,7 @@ app.querySelector('#paletteConfirm').addEventListener('click', applyPalette);
 app.querySelector('#styleCancel').addEventListener('click', () => app.querySelector('#styleModal').classList.remove('open'));
 app.querySelector('#styleConfirm').addEventListener('click', applyStyle);
 app.querySelector('#trimEnd').addEventListener('input', drawTrimWave);
-app.querySelector('#maskClear').addEventListener('click', () => { maskRects = []; drawMask(); });
+app.querySelector('#maskClear').addEventListener('click', () => maskEditor.clear());
 app.querySelector('#maskConfirm').addEventListener('click', confirmInpaint);
 app.querySelector('#voiceCancel').addEventListener('click', () => app.querySelector('#voiceModal').classList.remove('open'));
 app.querySelector('#settingsCancel').addEventListener('click', closeSettings);
@@ -504,7 +506,6 @@ app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((button) => but
 app.querySelector('#timelineSplit').addEventListener('click', splitTimelineClip);
 app.querySelector('#timelineDelete').addEventListener('click', deleteTimelineClip);
 app.querySelector('#timelineMute').addEventListener('click', () => { const preview = app.querySelector('#timelinePreview'); preview.muted = !preview.muted; app.querySelector('#timelineMute').textContent = preview.muted ? '🔇' : '🔊'; });
-
 
 app.querySelector('#timelineZoomFit').addEventListener('click', () => { saveTimeline(); document.body.classList.remove('timeline-open'); });
 app.querySelector('#boardRenameCancel').addEventListener('click', () => app.querySelector('#boardRenameModal').classList.remove('open'));
@@ -726,8 +727,6 @@ function updateSelectionUi() {
   cost.classList.toggle('cv-warn', view.costWarn);
   app.querySelector('#dockSend').disabled = view.sendDisabled;
 }
-
-function updateDock() { /* 由 updateSelectionUi 负责，保留占位 */ }
 
 function onToolClick(tool) {
   if (tool === 'upload') {
@@ -1246,123 +1245,22 @@ function openAudioTrim(node) { return trimTools.openAudio(node); }
 function drawTrimWave() { return trimTools.drawAudioInfo(); }
 function confirmAudioTrim() { return trimTools.confirmAudio(); }
 
-let maskNode = null;
-let maskRects = [];
-let maskImage = null;
-let maskScale = 1;
+const maskEditor = createMaskEditor({
+  app,
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  render,
+  toast,
+  getPrompt: () => promptEl.value,
+  uploadDataUrl,
+  submitJob,
+  pollJob,
+});
 
-function openMaskEditor(node) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('先生成一张图片'); return; }
-  maskNode = node;
-  maskRects = [];
-  const modal = app.querySelector('#maskModal');
-  const img = app.querySelector('#maskImage');
-  const canvas = app.querySelector('#maskCanvas');
-  img.onload = () => {
-    const maxW = Math.min(760, window.innerWidth - 160);
-    const maxH = Math.min(520, window.innerHeight - 260);
-    maskScale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
-    const width = Math.round(img.naturalWidth * maskScale);
-    const height = Math.round(img.naturalHeight * maskScale);
-    img.style.width = `${width}px`;
-    img.style.height = `${height}px`;
-    canvas.width = width;
-    canvas.height = height;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    drawMask();
-  };
-  img.src = media.url;
-  modal.classList.add('open');
-  if (!canvas.dataset.bound) {
-    canvas.dataset.bound = '1';
-    let start = null;
-    canvas.addEventListener('pointerdown', (event) => {
-      const rect = canvas.getBoundingClientRect();
-      start = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      try { canvas.setPointerCapture?.(event.pointerId); } catch { /* 合成事件无活动指针 */ }
-    });
-    canvas.addEventListener('pointermove', (event) => {
-      if (!start) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      drawMask({ x: Math.min(start.x, x), y: Math.min(start.y, y), w: Math.abs(x - start.x), h: Math.abs(y - start.y) });
-    });
-    canvas.addEventListener('pointerup', (event) => {
-      if (!start) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const w = Math.abs(x - start.x);
-      const h = Math.abs(y - start.y);
-      if (w > 4 && h > 4) maskRects.push({ x: Math.min(start.x, x) / canvas.width, y: Math.min(start.y, y) / canvas.height, w: w / canvas.width, h: h / canvas.height });
-      start = null;
-      drawMask();
-    });
-  }
-}
+function openMaskEditor(node) { return maskEditor.open(node); }
+function closeMaskEditor() { return maskEditor.close(); }
+async function confirmInpaint() { return maskEditor.confirm(); }
 
-function drawMask(preview = null) {
-  const canvas = app.querySelector('#maskCanvas');
-  if (!canvas?.width) return;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'rgba(255, 70, 90, 0.45)';
-  ctx.strokeStyle = 'rgba(255, 120, 140, 0.9)';
-  for (const r of maskRects) {
-    ctx.fillRect(r.x * canvas.width, r.y * canvas.height, r.w * canvas.width, r.h * canvas.height);
-    ctx.strokeRect(r.x * canvas.width, r.y * canvas.height, r.w * canvas.width, r.h * canvas.height);
-  }
-  if (preview) {
-    ctx.fillStyle = 'rgba(255, 70, 90, 0.35)';
-    ctx.strokeStyle = 'rgba(255, 120, 140, 0.8)';
-    ctx.fillRect(preview.x, preview.y, preview.w, preview.h);
-    ctx.strokeRect(preview.x, preview.y, preview.w, preview.h);
-  }
-}
-
-function closeMaskEditor() {
-  app.querySelector('#maskModal').classList.remove('open');
-  maskNode = null;
-}
-
-async function confirmInpaint() {
-  if (!maskNode) return;
-  if (!maskRects.length) { toast('先在图片上拖出要重绘的区域'); return; }
-  const node = maskNode;
-  const media = node.resources?.[0];
-  const out = document.createElement('canvas');
-  const source = app.querySelector('#maskImage');
-  out.width = source.naturalWidth || 768;
-  out.height = source.naturalHeight || 512;
-  const ctx = out.getContext('2d');
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, out.width, out.height);
-  ctx.fillStyle = '#fff';
-  for (const r of maskRects) ctx.fillRect(r.x * out.width, r.y * out.height, r.w * out.width, r.h * out.height);
-  const dataUrl = out.toDataURL('image/png');
-  closeMaskEditor();
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '局部重绘中…' });
-  render();
-  try {
-    const uploaded = await uploadDataUrl(dataUrl);
-    const prompt = promptEl.value.trim() || (node.generation?.prompt || '');
-    const data = await submitJob({ kind: 'comfyui-inpaint', imageUrl: media.url, maskUrl: uploaded.url, prompt });
-    toast('已提交局部重绘');
-    pollJob(data.id, node.id);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
-}
-
-function outpaintMenu(node) {
-  if (!node.resources?.[0]?.url) { toast('先生成一张图片'); return; }
-  showContextMenu(['左', '上', '右', '下'].map((label) => [`向${label}扩图`, () => runOutpaint(node, { 左: 'left', 上: 'top', 右: 'right', 下: 'bottom' }[label])]), 420, 300);
-}
+function outpaintMenu(node) { return imageActions.outpaintMenu(node, showContextMenu); }
 
 async function translateLightPrompt(text) {
   try {
@@ -1381,7 +1279,6 @@ const imageActions = createImageActions({
   translate: translateLightPrompt,
 });
 
-async function runOutpaint(node, direction) { return imageActions.outcrop(node, direction); }
 
 async function addResourceNode(sourceNode, type, resource, title) {
   pushHistory();
@@ -1397,45 +1294,12 @@ async function addResourceNode(sourceNode, type, resource, title) {
   render();
 }
 
-async function extractVideoFrame(node) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('视频还没有生成'); return; }
-  toast('截取帧中…');
-  try {
-    const response = await fetch('/api/generation/video/frame', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ videoUrl: media.url, time: 1 }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '截取帧失败');
-    await addResourceNode(node, 'image', data, '截取帧');
-    toast('已生成截取帧节点');
-  } catch (error) { toast(error.message, true); }
-}
+const mediaExtract = createMediaExtract({ addResourceNode, toast });
 
-async function extractVideoAudio(node) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('视频还没有生成'); return; }
-  toast('分离音频中…');
-  try {
-    const response = await fetch('/api/generation/video/audio', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ videoUrl: media.url }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '分离音频失败');
-    await addResourceNode(node, 'audio', data, '分离音频');
-    toast('已生成音频节点');
-  } catch (error) { toast(error.message, true); }
-}
+async function extractVideoFrame(node) { return mediaExtract.frame(node); }
+async function extractVideoAudio(node) { return mediaExtract.audio(node); }
 
-function relightMenu(node) {
-  if (!node.resources?.[0]?.url) { toast('先生成一张图片'); return; }
-  showContextMenu([
-    ['强打光（白底重打光）', () => startRelight(node, 'fg')],
-    ['轻补光（保留背景）', () => startRelight(node, 'light')],
-  ], 420, 300);
-}
+function relightMenu(node) { return imageActions.relightMenu(node, showContextMenu); }
 
 async function startRelight(node, variant) { return imageActions.relight(node, variant); }
 async function startMatte(node) { return imageActions.matte(node); }

@@ -54,5 +54,18 @@ export function createImageActions({
     }, isUpscale ? '放大中…' : '修脸中…', isUpscale ? '已提交放大任务' : '已提交修脸任务');
   }
 
-  return { outcrop, relight, matte, postProcess };
+  function relightMenu(node, showMenu) {
+    if (!node?.resources?.[0]?.url) { toast('先生成一张图片'); return; }
+    showMenu?.([
+      ['强打光（白底重打光）', () => relight(node, 'fg')],
+      ['轻补光（保留背景）', () => relight(node, 'light')],
+    ], 420, 300);
+  }
+
+  function outpaintMenu(node, showMenu) {
+    if (!node?.resources?.[0]?.url) { toast('先生成一张图片'); return; }
+    showMenu?.(['左', '上', '右', '下'].map((label) => [`向${label}扩图`, () => outcrop(node, { 左: 'left', 上: 'top', 右: 'right', 下: 'bottom' }[label])]), 420, 300);
+  }
+
+  return { outcrop, relight, matte, postProcess, relightMenu, outpaintMenu };
 }
