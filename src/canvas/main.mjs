@@ -7,6 +7,10 @@ import {
 import {
   screenToWorld, worldToScreen, zoomAt, fitViewport, edgePath, nodeRect, nodesInRect,
 } from './engine.mjs';
+import {
+  modelDefaultsKey, pickSavedParams, estimateForModel, missingH3Sections,
+  promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
+} from './generation-catalog.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -1864,8 +1868,7 @@ async function generateSelected() {
     return;
   }
   const imageUrl = frames.first?.resource?.url;
-  const qwenNeedsImage = ['qwen21-edit', 'qwen21-rmbg', 'qwen21-pose', 'qwen21-depth', 'qwen21-edges'].includes(imageWorkflow);
-  if (qwenNeedsImage && !imageUrl) { toast('先连接一张参考图，再生成 Qwen 编辑/控制模式'); return; }
+  if (qwenModeNeedsImage(imageWorkflow) && !imageUrl) { toast('先连接一张参考图，再生成 Qwen 编辑/控制模式'); return; }
   if (frames.last) toast('H3 当前只支持首帧，尾帧会忽略');
   const send = app.querySelector('#dockSend');
   send.disabled = true;
@@ -2104,20 +2107,6 @@ function modelOptions(node) {
 }
 
 const MODEL_DEFAULTS_KEY = 'zaomeng-canvas2:model-defaults';
-const MODEL_ESTIMATES = {
-  'video:comfyui:h3': '约 2–3 分钟 · 显存 ~6G',
-  'video:comfyui:h3-ref2v': '约 2–4 分钟 · 显存 ~6G',
-  'video:comfyui:h3-ultimate': '约 2–3 分钟 · 显存 4.5G / 内存 28G',
-  'video:comfyui:wan22': '约 3–6 分钟 · 显存 ~9G',
-  'video:comfyui:ltx23': '约 2 分钟 · 显存 ~10G',
-  'video:comfyui:framepack': '约 16–26 分钟 · 显存 ~6G',
-  'image:comfyui:qwen21-t2i': '约 30–60 秒 · 显存 ~4.5G / 内存 26G',
-  'image:comfyui:qwen21-edit': '约 45 秒 · 显存 ~6G / 内存 27G',
-  'image:comfyui:qwen21-rmbg': '约 45 秒 · 显存 ~6G',
-  'image:comfyui:qwen21-pose': '约 45 秒 · 显存 ~7G',
-  'image:comfyui:qwen21-depth': '约 50 秒 · 显存 ~11G（勿并行）',
-  'image:comfyui:qwen21-edges': '约 45 秒 · 显存 ~8G',
-};
 
 function readModelDefaults() {
   try { return JSON.parse(localStorage.getItem(MODEL_DEFAULTS_KEY) || '{}'); } catch { return {}; }
@@ -2125,15 +2114,11 @@ function readModelDefaults() {
 
 function defaultsKey(node) {
   const provider = node.generation?.backend?.provider || (node.type === 'image' ? 'comfyui' : 'dreamina');
-  const selector = node.type === 'image' ? (node.generation?.imageWorkflow || node.generation?.model) : (node.generation?.model || 'default');
-  return `${node.type}:${provider}:${selector || 'default'}`;
+  return modelDefaultsKey({ type: node.type, provider, model: node.generation?.model, workflow: node.generation?.imageWorkflow });
 }
 
 function savedParamsFor(key) {
-  const saved = readModelDefaults()[key];
-  if (!saved || typeof saved !== 'object') return {};
-  const allowed = ['ratio', 'resolution', 'durationSeconds', 'outputCount', 'megapixels'];
-  return Object.fromEntries(Object.entries(saved).filter(([name]) => allowed.includes(name)));
+  return pickSavedParams(readModelDefaults()[key]);
 }
 
 function rememberModelParams(node) {
@@ -2155,7 +2140,7 @@ function withSavedParams(key, patch) {
 }
 
 function estimateFor(node) {
-  return MODEL_ESTIMATES[defaultsKey(node)] || '';
+  return estimateForModel(defaultsKey(node));
 }
 
 function setGeneration(patch) {
@@ -2362,7 +2347,7 @@ async function startComfyVideo(node) {
   if (!prompt) { toast('先写提示词'); return; }
   const frames = videoFrameRefs(node);
   const model = ['h3', 'wan22', 'ltx23', 'framepack', 'h3-ref2v', 'h3-ultimate'].includes(node.generation?.model) ? node.generation.model : 'h3';
-  if (['h3-ref2v', 'h3-ultimate'].includes(model)) {
+  if (requiresH3Sections(model)) {
     const missing = missingH3Sections(prompt);
     if (missing.length) toast(`H3 提示词建议补齐六段结构（缺：${missing.join('、')}），可点「模板」`, true);
   }
@@ -3475,22 +3460,6 @@ async function sendAIMessage() {
   }
 }
 
-const H3_PROMPT_TEMPLATE = `subject_definitions: <Subject 1> 是 <Picture 1> 中的……（人物/服装/场景）；<Subject 2> 是 <Picture 2> 中的……。
-summary: 一句话说明本镜头要发生什么。
-retention_analysis: <Subject 1> 的面部、发型、服装与 <Picture 1> 保持一致；<Subject 2> 与 <Picture 2> 保持一致，不得互换或融合。
-detailed_description: [Shot 1] 景别、机位、主体动作、环境与光线；[Shot 2] 如有分镜继续写。
-overall_soundscape: 环境声、动作声、对白有无。
-non_diegetic_music: 配乐或无配乐。`;
-
-const QWEN_EDIT_TEMPLATE = '把画面中的……改成……；保留人物身份、发型、服装、构图和光线；不要改变没有提到的部分。';
-const IMAGE_TEMPLATE = '电影感画面：主体……；动作/状态……；环境……；镜头……；光线……；材质与色调……；不要文字、水印、畸形。';
-const VIDEO_TEMPLATE = '主体：……；动作：……；镜头：……；环境：……；光线：……；风格：……；声音：……。';
-
-function missingH3Sections(prompt) {
-  const text = String(prompt || '');
-  return ['subject_definitions', 'summary', 'retention_analysis', 'detailed_description', 'overall_soundscape', 'non_diegetic_music'].filter((key) => !new RegExp(`(^|\\n)\\s*${key}\\s*:`, 'i').test(text));
-}
-
 function applyPromptTemplate(text) {
   promptEl.value = text;
   onPromptInput();
@@ -3502,21 +3471,12 @@ function openPromptTemplateMenu() {
   const id = [...selection][0];
   const node = id ? findNode(doc, id) : null;
   if (!node?.generation) { toast('先选中一个生成节点'); return; }
-  const workflow = node.generation?.imageWorkflow || '';
-  const model = node.generation?.model || '';
-  const h3 = ['h3', 'h3-ref2v', 'h3-ultimate'].includes(model);
-  const qwenEdit = ['qwen21-edit', 'qwen21-rmbg', 'qwen21-pose', 'qwen21-depth', 'qwen21-edges'].includes(workflow);
-  const items = h3 ? [
-    ['H3 六段结构模板（替换当前提示词）', () => applyPromptTemplate(H3_PROMPT_TEMPLATE)],
-  ] : qwenEdit ? [
-    ['Qwen 编辑指令模板', () => applyPromptTemplate(QWEN_EDIT_TEMPLATE)],
-  ] : node.type === 'image' ? [
-    ['电影感画面模板', () => applyPromptTemplate(IMAGE_TEMPLATE)],
-  ] : node.type === 'video' ? [
-    ['视频运动描述模板', () => applyPromptTemplate(VIDEO_TEMPLATE)],
-  ] : [
-    ['音频描述模板', () => applyPromptTemplate('旁白/对白：……；语气：……；环境声：……；不要背景音乐。')],
-  ];
+  const template = promptTemplateFor({
+    type: node.type,
+    model: node.generation?.model || '',
+    workflow: node.generation?.imageWorkflow || '',
+  });
+  const items = [[template.label, () => applyPromptTemplate(template.text)]];
   const button = app.querySelector('#dockTemplate');
   const rect = button.getBoundingClientRect();
   showContextMenu(items, rect.left, Math.max(80, rect.top - 100));
