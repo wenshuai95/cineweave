@@ -43,6 +43,7 @@
 - 抽出 `src/canvas/dock-view.mjs`（生成坞视图模型），新增 4 条单测。
 - 抽出 `src/canvas/node-tools.mjs`（节点工具栏动作/HTML），新增 3 条单测。
 - 抽出 `src/canvas/menu-view.mjs`（右键菜单 HTML），新增 2 条单测。
+- 抽出 `src/canvas/node-view.mjs`（节点内容/进度覆盖层），新增 4 条单测。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -63,6 +64,7 @@
 - 抽出 `src/canvas/dock-view.mjs`（生成坞视图模型），新增 4 条单测。
 - 抽出 `src/canvas/node-tools.mjs`（节点工具栏动作/HTML），新增 3 条单测。
 - 抽出 `src/canvas/menu-view.mjs`（右键菜单 HTML），新增 2 条单测。
+- 抽出 `src/canvas/node-view.mjs`（节点内容/进度覆盖层），新增 4 条单测。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
