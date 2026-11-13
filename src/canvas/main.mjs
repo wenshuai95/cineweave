@@ -20,6 +20,7 @@ import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
 import { aiContextLabel, buildAIContext, renderAIMessagesHtml } from './ai-context.mjs';
 import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
+import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { ICONS, toolIcon, typeLabel, statusLabel } from './canvas-icons.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
@@ -2475,15 +2476,7 @@ async function refreshProviderStatus() {
 function renderNodeTools(node) {
   const tools = app.querySelector('#nodeTools');
   if (!node) { tools.classList.remove('open'); tools.innerHTML = ''; return; }
-  const actions = {
-    image: ['智能改图', '局部重绘', '扩图', '抠图', '预设', '工具', '智能超清', '修脸', '智能打光', '版本', '下载'],
-    video: ['视频修剪', '截取帧', '分离音频', '版本', '下载'],
-    audio: ['生成配音', '音色库', '裁剪音频', '版本', '下载'],
-    text: ['复制', '删除'],
-    stage: ['打开导演台'],
-    timeline: ['打开时间线'],
-  }[node.type] || ['下载'];
-  tools.innerHTML = actions.map((label) => `<button data-tool="${label}" title="${label}">${toolIcon(label) ? `<span class="cv-tool-icon">${toolIcon(label)}</span>` : ''}${label}</button>`).join('<span class="cv-tool-sep"></span>');
+  tools.innerHTML = nodeToolsHtml(node);
   tools.querySelectorAll('button').forEach((button) => {
     button.addEventListener('click', () => onNodeTool(node, button.dataset.tool));
   });
@@ -3384,8 +3377,8 @@ function renderMultiTools() {
   const tools = app.querySelector('#nodeTools');
   const ids = [...selection];
   const inGroup = ids.length && ids.every((id) => { const group = groupOf(doc, id); return group && ids.every((other) => group.nodeIds.includes(other)); });
-  const labels = [inGroup ? '解组' : '编组', '堆叠', '布局', '下载'];
-  tools.innerHTML = labels.map((label) => `<button data-tool="${label}">${label}</button>`).join('<span class="cv-tool-sep"></span>');
+  const labels = multiToolLabels(inGroup);
+  tools.innerHTML = multiToolsHtml(labels);
   tools.querySelectorAll('button').forEach((button) => {
     button.addEventListener('click', () => {
       const action = button.dataset.tool;
