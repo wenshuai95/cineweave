@@ -69,3 +69,23 @@ export function dragTimelineItem(item, origin, mode, delta) {
   }
   return next;
 }
+
+export function findTimelineDropTarget(nodes = [], draggedRect, draggedId, rectOf) {
+  return nodes.find((node) => node.type === 'timeline' && node.id !== draggedId && (() => {
+    const rect = rectOf(node);
+    return draggedRect.x < rect.x + rect.width && draggedRect.x + draggedRect.width > rect.x && draggedRect.y < rect.y + rect.height && draggedRect.y + draggedRect.height > rect.y;
+  })()) || null;
+}
+
+export function appendTimelineItem(items = [], node) {
+  if (!node?.id || items.some((item) => item.id === node.id)) return items;
+  const end = items.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
+  return [...items, {
+    id: node.id,
+    label: node.title || node.type,
+    type: node.type,
+    start: end,
+    duration: node.type === 'image' ? 3 : (Number(node.generation?.durationSeconds) || 5),
+    sourceStart: 0,
+  }];
+}

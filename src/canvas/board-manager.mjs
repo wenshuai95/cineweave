@@ -105,5 +105,34 @@ export function createBoardManager({
     return true;
   }
 
-  return { switchBoard, makeBoard, duplicateBoard, startRename, confirmRename, deleteBoard };
+  function openMenu(showContextMenu, event) {
+    saveState?.();
+    const items = state.boards.map((board) => [`${board.id === state.currentId ? '✓ ' : ''}${board.name}`, () => switchBoard(board.id)]);
+    items.push(['sep']);
+    items.push(['新建画布', () => makeBoard(`画布 ${state.boards.length + 1}`)]);
+    items.push(['复制当前画布', duplicateBoard]);
+    items.push(['重命名当前画布', startRename]);
+    items.push(['删除当前画布', deleteBoard]);
+    if (event?.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      showContextMenu?.(items, rect.left, rect.bottom + 6);
+    } else {
+      showContextMenu?.(items, 440, 300);
+    }
+  }
+
+  function saveNodeToOtherBoard(node, showContextMenu, writeNode) {
+    const targets = state.boards.filter((item) => item.id !== state.currentId);
+    const items = targets.map((board) => [board.name, () => writeNode?.(node, board.id)]);
+    items.push(['新建画布并保存', () => {
+      saveState?.();
+      const id = `board_${Date.now().toString(36)}`;
+      state.boards = [...state.boards, { id, name: `画布 ${state.boards.length + 1}`, updatedAt: Date.now() }];
+      saveState?.();
+      writeNode?.(node, id);
+    }]);
+    showContextMenu?.(items, 440, 340);
+  }
+
+  return { switchBoard, makeBoard, duplicateBoard, startRename, confirmRename, deleteBoard, openMenu, saveNodeToOtherBoard };
 }

@@ -11,7 +11,7 @@ import {
   modelDefaultsKey, pickSavedParams, estimateForModel, missingH3Sections,
   promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
 } from './generation-catalog.mjs';
-import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem } from './timeline-model.mjs';
+import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, findTimelineDropTarget, appendTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
 import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
@@ -30,6 +30,10 @@ import { createAssetsPanel } from './assets-view.mjs';
 import { applyNodeSelection, marqueeWorldBox, selectionAfterMarquee } from './selection-model.mjs';
 import { createHistory } from './history.mjs';
 import { createBoardManager } from './board-manager.mjs';
+import { alignPositions, stackPositions } from './layout-actions.mjs';
+import { minimapBounds, paintMinimap, minimapTransform } from './minimap.mjs';
+import { createNodeActions } from './node-actions.mjs';
+import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -618,53 +622,16 @@ function drawGuides(lines) {
   guidesSvg.innerHTML = guidesHtml(lines);
 }
 
-function minimapBounds() {
+function currentMinimapBounds() {
   const stageRect = stage.getBoundingClientRect();
-  const viewport = {
-    x: -doc.viewport.x / doc.viewport.zoom,
-    y: -doc.viewport.y / doc.viewport.zoom,
-    width: stageRect.width / doc.viewport.zoom,
-    height: stageRect.height / doc.viewport.zoom,
-  };
-  const boxes = doc.nodes.map(nodeRect).concat([viewport]);
-  const minX = Math.min(...boxes.map((box) => box.x));
-  const minY = Math.min(...boxes.map((box) => box.y));
-  const maxX = Math.max(...boxes.map((box) => box.x + box.width));
-  const maxY = Math.max(...boxes.map((box) => box.y + box.height));
-  return { minX: minX - 80, minY: minY - 80, width: maxX - minX + 160, height: maxY - minY + 160, viewport };
+  return minimapBounds({ nodes: doc.nodes, nodeRect, stageWidth: stageRect.width, stageHeight: stageRect.height, viewport: doc.viewport });
 }
 
 function drawMinimap() {
   const canvas = app.querySelector('#minimapCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#0b0e12';
-  ctx.fillRect(0, 0, width, height);
-  if (!doc.nodes.length) {
-    ctx.fillStyle = '#4a5360';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('空画布', 12, 24);
-    return;
-  }
-  const bounds = minimapBounds();
-  const scale = Math.min((width - 16) / bounds.width, (height - 16) / bounds.height);
-  const offsetX = 8 - bounds.minX * scale + (width - 16 - bounds.width * scale) / 2;
-  const offsetY = 8 - bounds.minY * scale + (height - 16 - bounds.height * scale) / 2;
-  const colors = { text: '#5b6b7f', image: '#4b8dff', video: '#9d7bff', audio: '#42b883', stage: '#e0a35c', timeline: '#d9d2c3' };
-  for (const node of doc.nodes) {
-    const rect = nodeRect(node);
-    ctx.fillStyle = colors[node.type] || '#6b7280';
-    ctx.globalAlpha = 0.8;
-    ctx.fillRect(offsetX + rect.x * scale, offsetY + rect.y * scale, Math.max(2, rect.width * scale), Math.max(2, rect.height * scale));
-  }
-  ctx.globalAlpha = 1;
-  const viewport = bounds.viewport;
-  ctx.strokeStyle = 'rgba(120,180,255,.95)';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(offsetX + viewport.x * scale, offsetY + viewport.y * scale, Math.max(4, viewport.width * scale), Math.max(4, viewport.height * scale));
+  paintMinimap(ctx, { width: canvas.width, height: canvas.height, nodes: doc.nodes, nodeRect, bounds: currentMinimapBounds() });
 }
 
 function bindMinimap() {
@@ -672,13 +639,11 @@ function bindMinimap() {
   if (!canvas) return;
   let dragging = false;
   const moveTo = (event) => {
-    const bounds = minimapBounds();
+    const bounds = currentMinimapBounds();
     const rect = canvas.getBoundingClientRect();
     const width = canvas.width;
     const height = canvas.height;
-    const scale = Math.min((width - 16) / bounds.width, (height - 16) / bounds.height);
-    const offsetX = 8 - bounds.minX * scale + (width - 16 - bounds.width * scale) / 2;
-    const offsetY = 8 - bounds.minY * scale + (height - 16 - bounds.height * scale) / 2;
+    const { scale, offsetX, offsetY } = minimapTransform(bounds, width, height);
     const worldX = (event.clientX - rect.left) / scale - offsetX / scale;
     const worldY = (event.clientY - rect.top) / scale - offsetY / scale;
     const stageRect = stage.getBoundingClientRect();
@@ -985,15 +950,10 @@ function onPointerUp(event) {
     const dragged = findNode(doc, id);
     if (dragged && (dragged.type === 'video' || dragged.type === 'audio')) {
       const draggedRect = nodeRect(dragged);
-      const target = doc.nodes.find((node) => node.type === 'timeline' && node.id !== dragged.id && (() => {
-        const r = nodeRect(node);
-        return draggedRect.x < r.x + r.width && draggedRect.x + draggedRect.width > r.x && draggedRect.y < r.y + r.height && draggedRect.y + draggedRect.height > r.y;
-      })());
+      const target = findTimelineDropTarget(doc.nodes, draggedRect, dragged.id, nodeRect);
       if (target) {
-        const items = [...(target.timelineItems || [])];
-        if (!items.some((item) => item.id === dragged.id)) {
-          const end = items.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
-          items.push({ id: dragged.id, label: dragged.title || dragged.type, type: dragged.type, start: end, duration: Number(dragged.generation?.durationSeconds) || 5, sourceStart: 0 });
+        const items = appendTimelineItem(target.timelineItems || [], dragged);
+        if (items !== target.timelineItems) {
           doc = updateNode(doc, target.id, { timelineItems: items });
           toast('已加入时间线');
         }
@@ -1679,24 +1639,12 @@ function toggleRefMode() {
 function alignSelection(mode) {
   const items = [...selection].map((id) => findNode(doc, id)).filter(Boolean);
   if (items.length < 2) return;
-  const rects = items.map(nodeRect);
-  const left = Math.min(...rects.map((r) => r.x));
-  const right = Math.max(...rects.map((r) => r.x + r.width));
-  const top = Math.min(...rects.map((r) => r.y));
-  const bottom = Math.max(...rects.map((r) => r.y + r.height));
+  const positions = alignPositions(items.map((node) => ({ id: node.id, ...nodeRect(node) })), mode);
   pushHistory();
-  for (const node of items) {
-    const r = nodeRect(node);
-    let x = r.x;
-    let y = r.y;
-    if (mode === 'left') x = left;
-    if (mode === 'right') x = right - r.width;
-    if (mode === 'centerX') x = (left + right) / 2 - r.width / 2;
-    if (mode === 'top') y = top;
-    if (mode === 'bottom') y = bottom - r.height;
-    if (mode === 'centerY') y = (top + bottom) / 2 - r.height / 2;
-    doc = moveNode(doc, node.id, Math.round(x / 8) * 8, Math.round(y / 8) * 8);
-  }
+  items.forEach((node, index) => {
+    const position = positions[index];
+    if (position) doc = moveNode(doc, node.id, position.x, position.y);
+  });
   render();
   toast('已对齐');
 }
@@ -1712,52 +1660,16 @@ async function loadDreaminaCatalog() {
   } catch { /* CLI 未登录时保留原有菜单 */ }
 }
 
-function dreaminaSpecFor(node) {
-  const model = node?.generation?.model;
-  if (!model) return null;
-  const type = node.type === 'image' ? 'image' : node.type === 'video' ? 'video' : node.type === 'audio' ? 'audio' : null;
-  return (dreaminaCatalog[type] || []).find((item) => item.model === model) || null;
+function dreaminaFrameCount(node) {
+  return videoFrameRefs(node).last ? 2 : videoFrameRefs(node).first ? 1 : 0;
 }
-
-function dreaminaModeFor(node) {
-  const spec = dreaminaSpecFor(node);
-  if (!spec) return null;
-  if (node.type === 'image') return spec.modes?.find((mode) => mode.name === 't2i') || spec.modes?.[0] || null;
-  if (node.type === 'video') {
-    const frameCount = videoFrameRefs(node).last ? 2 : videoFrameRefs(node).first ? 1 : 0;
-    return (spec.modes || []).find((mode) => mode.name === (frameCount ? 'first_last_frame' : 't2v') && (mode.references?.max ?? 0) >= frameCount) || spec.modes?.[0] || null;
-  }
-  return spec.modes?.[0] || null;
-}
-
-function dreaminaValues(node, flag) {
-  const mode = dreaminaModeFor(node);
-  return (mode?.flags || []).find((item) => item.flag === flag)?.values || [];
-}
-
-function dreaminaRange(node, flag, fallbackMin, fallbackMax) {
-  const mode = dreaminaModeFor(node);
-  const item = (mode?.flags || []).find((entry) => entry.flag === flag);
-  return {
-    min: Number.isFinite(Number(item?.min)) ? Number(item.min) : fallbackMin,
-    max: Number.isFinite(Number(item?.max)) ? Number(item.max) : fallbackMax,
-  };
-}
-
-function dreaminaModelLabel(node) {
-  return dreaminaSpecFor(node)?.displayName || '';
-}
-
+function dreaminaSpecFor(node) { return findDreaminaSpec(node, dreaminaCatalog); }
+function dreaminaModeFor(node) { return findDreaminaMode(node, dreaminaCatalog, dreaminaFrameCount(node)); }
+function dreaminaValues(node, flag) { return findDreaminaValues(node, flag, dreaminaCatalog, dreaminaFrameCount(node)); }
+function dreaminaRange(node, flag, fallbackMin, fallbackMax) { return findDreaminaRange(node, flag, fallbackMin, fallbackMax, dreaminaCatalog, dreaminaFrameCount(node)); }
+function dreaminaModelLabel(node) { return findDreaminaModelLabel(node, dreaminaCatalog); }
 function chooseDreaminaModel(spec, type) {
-  const t2i = spec.modes?.find((mode) => mode.name === (type === 'video' ? 't2v' : 't2i')) || spec.modes?.[0] || null;
-  const resolutions = (t2i?.flags || []).find((flag) => flag.flag === '--resolution')?.values || [];
-  const duration = (t2i?.flags || []).find((flag) => flag.flag === '--duration');
-  const count = (t2i?.flags || []).find((flag) => flag.flag === '--count');
-  const patch = { model: spec.model };
-  if (resolutions.length) patch.resolution = resolutions[0];
-  if (type === 'video') patch.durationSeconds = Number(duration?.min) >= 4 ? Math.min(5, Number(duration.max) || 5) : 5;
-  if (count) patch.outputCount = Math.min(Number(count.max) || 1, 4);
-  setGeneration(withSavedParams(`${type}:dreamina:${spec.model}`, patch));
+  setGeneration(withSavedParams(`${type}:dreamina:${spec.model}`, chooseDreaminaPatch(spec, type)));
 }
 
 function modelLabel(node) {
@@ -2281,44 +2193,36 @@ function positionNodeTools() {
   tools.style.top = `${screen.y - 8}px`;
 }
 
-async function onNodeTool(node, tool) {
-  if (tool === '删除') { doc = removeNode(doc, node.id); selection = new Set(); render(); toast('已删除'); return; }
-  if (tool === '复制') { copySelected(); return; }
-  if (tool === '生成配音' && node.type === 'audio') { await startAudioQuote(node); return; }
-  if (tool === '下载') {
-    const media = node.resources?.[0];
-    if (!media?.url) { toast('还没有生成结果'); return; }
-    const link = document.createElement('a');
-    link.href = media.url;
-    link.download = media.id || 'canvas-result';
-    link.click();
-    return;
-  }
-  if (tool === '版本') { openVersions(node); return; }
-  if (tool === '裁剪音频' && node.type === 'audio') { openAudioTrim(node); return; }
-  if (tool === '智能超清' && node.type === 'image') { await startPostProcess(node, 'upscale'); return; }
-  if (tool === '修脸' && node.type === 'image') { await startPostProcess(node, 'detail'); return; }
-  if (tool === '局部重绘' && node.type === 'image') { openMaskEditor(node); return; }
-  if (tool === '抠图' && node.type === 'image') { await startMatte(node); return; }
-  if (tool === '智能打光' && node.type === 'image') { relightMenu(node); return; }
-  if (tool === '扩图' && node.type === 'image') { outpaintMenu(node); return; }
-  if (tool === '智能改图' && node.type === 'image') {
+const runNodeAction = createNodeActions({
+  remove: (node) => { doc = removeNode(doc, node.id); selection = new Set(); render(); toast('已删除'); },
+  copy: () => copySelected(),
+  download: downloadNode,
+  versions: (node) => openVersions(node),
+  audioQuote: (node) => startAudioQuote(node),
+  audioTrim: (node) => openAudioTrim(node),
+  postProcess: (node, mode) => startPostProcess(node, mode),
+  maskEditor: (node) => openMaskEditor(node),
+  matte: (node) => startMatte(node),
+  relightMenu: (node) => relightMenu(node),
+  outpaintMenu: (node) => outpaintMenu(node),
+  presetMenu: (node) => showPresetMenu(node),
+  imageToolMenu: (node) => showImageToolMenu(node),
+  videoTrim: (node) => openVideoTrim(node),
+  extractFrame: (node) => extractVideoFrame(node),
+  extractAudio: (node) => extractVideoAudio(node),
+  openTimeline: (node) => openTimeline(node),
+  openStage: () => openDirectorStage(),
+  smartEdit: async (node) => {
     const hasRefs = (node.generation?.references || []).some((ref) => findNode(doc, ref.id)?.type === 'image');
     if (!hasRefs) { toast('先从图片节点连一条参考线'); return; }
     if (!promptEl.value.trim()) { promptEl.focus(); toast('写一句改图要求，再点一次「智能改图」'); return; }
     if (!node.generation?.refMode) doc = updateNode(doc, node.id, { generation: { refMode: 'i2i' } });
     await generateSelected();
-    return;
-  }
-  if (tool === '预设' && node.type === 'image') { showPresetMenu(node); return; }
-  if (tool === '工具' && node.type === 'image') { showImageToolMenu(node); return; }
-  if (tool === '视频修剪' && node.type === 'video') { openVideoTrim(node); return; }
-  if (tool === '截取帧' && node.type === 'video') { await extractVideoFrame(node); return; }
-  if (tool === '分离音频' && node.type === 'video') { await extractVideoAudio(node); return; }
-  if (tool === '打开时间线' && node.type === 'timeline') { openTimeline(node); return; }
-  if (tool === '打开导演台') { openDirectorStage(); return; }
-  toast(`${tool} 将在后续接入`);
-}
+  },
+  fallback: (tool) => toast(`${tool} 将在后续接入`),
+});
+
+async function onNodeTool(node, tool) { return runNodeAction(node, tool); }
 
 function renderDockChips(node) {
   const chips = app.querySelector('#dockChips');
@@ -3119,10 +3023,9 @@ function renderMultiTools() {
       }
       const items = ids.map((id) => findNode(doc, id)).filter(Boolean);
       if (action === '堆叠') {
-        const left = Math.min(...items.map((node) => node.layout.x));
-        let top = Math.min(...items.map((node) => node.layout.y));
+        const positions = stackPositions(items.map((node) => ({ id: node.id, ...nodeRect(node) })));
         pushHistory();
-        for (const node of items) { doc = moveNode(doc, node.id, left, top); top += (node.layout.height || 320) + 24; }
+        items.forEach((node, index) => { doc = moveNode(doc, node.id, positions[index].x, positions[index].y); });
         render();
         toast('已堆叠');
       }
@@ -3511,32 +3414,9 @@ function renameBoard() { return boardManager.startRename(); }
 function confirmBoardRename() { return boardManager.confirmRename(); }
 function deleteBoard() { return boardManager.deleteBoard(); }
 
-function openBoardMenu(event) {
-  saveBoardState();
-  const items = boardList.map((board) => [`${board.id === currentBoardId ? '✓ ' : ''}${board.name}`, () => switchBoard(board.id)]);
-  items.push(['sep']);
-  items.push(['新建画布', () => makeBoard(`画布 ${boardList.length + 1}`)]);
-  items.push(['复制当前画布', duplicateBoard]);
-  items.push(['重命名当前画布', renameBoard]);
-  items.push(['删除当前画布', deleteBoard]);
-  const rect = event.currentTarget.getBoundingClientRect();
-  showContextMenu(items, rect.left, rect.bottom + 6);
-}
+function openBoardMenu(event) { return boardManager.openMenu(showContextMenu, event); }
 
-function saveNodeToOtherBoard(node) {
-  const targets = boardList.filter((item) => item.id !== currentBoardId);
-  const items = targets.map((board) => [board.name, () => {
-    writeNodeToBoard(node, board.id);
-  }]);
-  items.push(['新建画布并保存', () => {
-    saveBoardState();
-    const id = `board_${Date.now().toString(36)}`;
-    boardList.push({ id, name: `画布 ${boardList.length + 1}`, updatedAt: Date.now() });
-    saveBoardState();
-    writeNodeToBoard(node, id);
-  }]);
-  showContextMenu(items, 440, 340);
-}
+function saveNodeToOtherBoard(node) { return boardManager.saveNodeToOtherBoard(node, showContextMenu, writeNodeToBoard); }
 
 function writeNodeToBoard(node, boardId) {
   const target = readBoardDoc(boardId) || createCanvasDocument({ viewport: { x: 520, y: 300, zoom: 0.8 } });
