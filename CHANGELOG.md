@@ -63,6 +63,7 @@
 - 抽出 `src/canvas/style-tools.mjs`（相机/配色/风格/运镜），新增 2 条单测。
 - 抽出 `src/canvas/trim-tools.mjs`（视频/音频修剪），新增 2 条单测。
 - 抽出 voice-picker / reference-actions，新增 4 条单测。
+- 抽出 mask-editor / media-extract，新增 3 条单测；main.mjs 降到 3000 行。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -103,6 +104,7 @@
 - 抽出 `src/canvas/style-tools.mjs`（相机/配色/风格/运镜），新增 2 条单测。
 - 抽出 `src/canvas/trim-tools.mjs`（视频/音频修剪），新增 2 条单测。
 - 抽出 voice-picker / reference-actions，新增 4 条单测。
+- 抽出 mask-editor / media-extract，新增 3 条单测；main.mjs 降到 3000 行。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
