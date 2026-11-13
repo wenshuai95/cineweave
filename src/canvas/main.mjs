@@ -22,6 +22,7 @@ import { createAIPanel } from './ai-panel.mjs';
 import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
 import { createGenerationFlow } from './generation-flow.mjs';
+import { createImageActions } from './image-actions.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -1550,19 +1551,24 @@ function outpaintMenu(node) {
   showContextMenu(['左', '上', '右', '下'].map((label) => [`向${label}扩图`, () => runOutpaint(node, { 左: 'left', 上: 'top', 右: 'right', 下: 'bottom' }[label])]), 420, 300);
 }
 
-async function runOutpaint(node, direction) {
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '扩图中…' });
-  render();
+async function translateLightPrompt(text) {
   try {
-    const data = await submitJob({ kind: 'comfyui-outpaint', imageUrl: node.resources[0].url, direction, pixels: 256, prompt: promptEl.value.trim() || node.generation?.prompt || '' });
-    toast('已提交扩图');
-    pollJob(data.id, node.id);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
+    const response = await fetch('/api/generation/prompt/translate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: text }) });
+    const data = await response.json();
+    return response.ok && data.translated ? data.translated : text;
+  } catch { return text; }
 }
+
+const imageActions = createImageActions({
+  submitJob,
+  pollJob,
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); render(); },
+  toast,
+  getPrompt: () => promptEl.value.trim(),
+  translate: translateLightPrompt,
+});
+
+async function runOutpaint(node, direction) { return imageActions.outcrop(node, direction); }
 
 async function addResourceNode(sourceNode, type, resource, title) {
   pushHistory();
@@ -1618,69 +1624,9 @@ function relightMenu(node) {
   ], 420, 300);
 }
 
-async function startRelight(node, variant) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('先生成一张图片'); return; }
-  let lightPrompt = promptEl.value.trim();
-  if (lightPrompt && hasCJK(lightPrompt)) {
-    toast('正在翻译光照描述…');
-    try {
-      const response = await fetch('/api/generation/prompt/translate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: lightPrompt }) });
-      const data = await response.json();
-      if (response.ok && data.translated) lightPrompt = data.translated;
-    } catch { /* 翻译失败就用原文 */ }
-  }
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: variant === 'light' ? '轻补光中…' : '重打光中…' });
-  render();
-  try {
-    const data = await submitJob({ kind: 'comfyui-relight', imageUrl: media.url, prompt: lightPrompt, variant });
-    toast('已提交智能打光任务');
-    pollJob(data.id, node.id);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
-}
-
-async function startMatte(node) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('先生成一张图片'); return; }
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '抠图中…' });
-  render();
-  try {
-    const data = await submitJob({ kind: 'comfyui-matte', imageUrl: media.url });
-    toast('已提交抠图任务');
-    pollJob(data.id, node.id);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
-}
-
-async function startPostProcess(node, mode) {
-  const media = node.resources?.[0];
-  if (!media?.url) { toast('先生成一张图片'); return; }
-  const isUpscale = mode === 'upscale';
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: isUpscale ? '放大中…' : '修脸中…' });
-  render();
-  try {
-    const data = await submitJob({
-        kind: isUpscale ? 'comfyui-upscale' : 'comfyui-detail',
-        imageUrl: media.url,
-        prompt: node.generation?.prompt || '',
-        upscaleBy: 1.5,
-        denoise: 0.4,
-      });
-    toast(isUpscale ? '已提交放大任务' : '已提交修脸任务');
-    pollJob(data.id, node.id);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
-}
+async function startRelight(node, variant) { return imageActions.relight(node, variant); }
+async function startMatte(node) { return imageActions.matte(node); }
+async function startPostProcess(node, mode) { return imageActions.postProcess(node, mode); }
 
 async function generateSelected() {
   const id = [...selection][0];
