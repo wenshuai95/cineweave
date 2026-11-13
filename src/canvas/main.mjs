@@ -105,6 +105,7 @@ app.innerHTML = `
     <a class="cv-back" href="/" title="返回">${ICONS.back}</a>
     <button class="cv-title cv-board-btn" id="cvBoardBtn" title="画布管理">画布 ▾</button>
     <span class="cv-badge" id="nodeCount">节点 0</span>
+    <button class="cv-gear" id="cvJobsBtn" title="生成任务">任务</button>
     <span class="cv-save" id="saveState">已保存到本机</span>
     <span class="cv-spacer"></span>
     <button class="cv-gear" id="shortcutsBtn" title="快捷键">?</button>
@@ -167,6 +168,17 @@ app.innerHTML = `
       <div class="cv-modal-actions">
         <button class="cv-btn" id="optimizeCancel">取消</button>
         <button class="cv-btn primary" id="optimizeApply">应用到输入框</button>
+      </div>
+    </div>
+  </div>
+  <div class="cv-modal" id="jobsModal">
+    <div class="cv-modal-card" role="dialog" aria-label="生成任务">
+      <h3>生成任务</h3>
+      <div class="cv-modal-sub">ComfyUI / 即梦任务进度；失败可重试，运行中可取消。</div>
+      <div class="cv-job-list" id="jobsList"></div>
+      <div class="cv-modal-actions">
+        <button class="cv-btn" id="jobsRefresh">刷新</button>
+        <button class="cv-btn" id="jobsClose">关闭</button>
       </div>
     </div>
   </div>
@@ -417,6 +429,9 @@ app.querySelector('#videoTrimEnd').addEventListener('input', drawVideoTrimInfo);
 app.querySelector('#trimConfirm').addEventListener('click', confirmAudioTrim);
 app.querySelector('#trimStart').addEventListener('input', drawTrimWave);
 app.querySelector('#versionsClose').addEventListener('click', () => app.querySelector('#versionsModal').classList.remove('open'));
+app.querySelector('#cvJobsBtn').addEventListener('click', openJobsPanel);
+app.querySelector('#jobsClose').addEventListener('click', closeJobsPanel);
+app.querySelector('#jobsRefresh').addEventListener('click', refreshJobsPanel);
 app.querySelector('#shortcutsBtn').addEventListener('click', () => app.querySelector('#shortcutsModal').classList.add('open'));
 app.querySelector('#aiDockBtn').addEventListener('click', openAIPanel);
 app.querySelector('#aiClose').addEventListener('click', () => app.querySelector('#aiPanel').classList.remove('open'));
@@ -2465,6 +2480,64 @@ async function submitDreaminaJob(quote) {
     render();
     toast(error.message || String(error), true);
   }
+}
+
+let jobsRefreshTimer = null;
+
+async function refreshJobsPanel() {
+  const host = app.querySelector('#jobsList');
+  if (!host) return;
+  try {
+    const response = await fetch('/api/generation/jobs?limit=30');
+    const data = await response.json();
+    const list = Array.isArray(data.jobs) ? data.jobs : [];
+    const labels = { prepare: '准备', sampling: '生成中', finalize: '收尾', done: '结束' };
+    host.innerHTML = list.length ? list.map((job) => {
+      const terminal = ['success', 'failed', 'canceled'].includes(job.status);
+      const status = job.status === 'success' ? '完成' : job.status === 'failed' ? '失败' : job.status === 'canceled' ? '已取消' : '运行中';
+      const model = job.meta?.model || job.type || '';
+      const progress = Math.max(0, Math.min(100, Number(job.progress) || 0));
+      const eta = job.etaSeconds ? ` · 约剩 ${job.etaSeconds}s` : '';
+      return `<div class="cv-job-row" data-job="${escapeHtml(job.id)}">
+        <div class="cv-job-top"><b>${escapeHtml(model)}</b><span>${status}${eta}</span></div>
+        <div class="cv-job-msg">${escapeHtml(job.message || labels[job.stage] || '')}</div>
+        <div class="cv-job-bar"><i style="width:${terminal && job.status === 'success' ? 100 : progress}%"></i></div>
+        <div class="cv-job-actions">
+          ${terminal ? (job.status === 'failed' && job.meta?.request ? '<button data-job-retry>重试</button>' : '') : '<button data-job-cancel>取消</button>'}
+        </div>
+      </div>`;
+    }).join('') : '<div class="cv-status">还没有生成任务。</div>';
+    host.querySelectorAll('[data-job-cancel]').forEach((button) => button.addEventListener('click', async () => {
+      const row = button.closest('[data-job]');
+      button.disabled = true;
+      await fetch(`/api/generation/jobs/${encodeURIComponent(row.dataset.job)}/cancel`, { method: 'POST' }).catch(() => null);
+      await refreshJobsPanel();
+    }));
+    host.querySelectorAll('[data-job-retry]').forEach((button) => button.addEventListener('click', async () => {
+      const row = button.closest('[data-job]');
+      button.disabled = true;
+      const response = await fetch(`/api/generation/jobs/${encodeURIComponent(row.dataset.job)}/retry`, { method: 'POST' }).catch(() => null);
+      if (response && !response.ok) toast('重试失败', true);
+      await refreshJobsPanel();
+    }));
+  } catch {
+    host.innerHTML = '<div class="cv-status">读取任务失败，请检查本地服务。</div>';
+  }
+}
+
+function openJobsPanel() {
+  app.querySelector('#jobsModal').classList.add('open');
+  refreshJobsPanel();
+  window.clearInterval(jobsRefreshTimer);
+  jobsRefreshTimer = window.setInterval(() => {
+    if (app.querySelector('#jobsModal')?.classList.contains('open')) refreshJobsPanel();
+  }, 2000);
+}
+
+function closeJobsPanel() {
+  app.querySelector('#jobsModal').classList.remove('open');
+  window.clearInterval(jobsRefreshTimer);
+  jobsRefreshTimer = null;
 }
 
 async function pollJob(jobId, nodeId) {

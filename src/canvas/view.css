@@ -496,3 +496,15 @@ body.timeline-open .cv-timeline-overlay{box-shadow:none}
 .cv-gen-card b{align-self:flex-end;font-variant-numeric:tabular-nums;font-weight:600}
 .cv-gen-bar{height:5px;border-radius:999px;background:#0b0e12;overflow:hidden}
 .cv-gen-bar i{display:block;height:100%;background:linear-gradient(90deg,#4b8dff,#8ab4ff);border-radius:999px;transition:width .3s ease}
+
+/* 生成任务面板 */
+.cv-job-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;margin:10px 0}
+.cv-job-row{border:1px solid rgba(255,255,255,.08);background:#14181e;border-radius:8px;padding:9px 10px}
+.cv-job-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#dbe8ff}
+.cv-job-top span{color:#8f9bab;font-size:11px}
+.cv-job-msg{color:#9fb3c8;font-size:11px;margin:4px 0 6px;min-height:15px}
+.cv-job-bar{height:4px;background:#0a0d11;border-radius:999px;overflow:hidden}
+.cv-job-bar i{display:block;height:100%;background:linear-gradient(90deg,#4b8dff,#8ab4ff)}
+.cv-job-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+.cv-job-actions button{padding:3px 9px;font-size:11px;border-radius:5px;background:#232a33;border-color:#3b4756;color:#cfd9e6}
+.cv-job-actions button:hover{background:#2f3945}

@@ -20,7 +20,7 @@ const WORKFLOW_DIR = join(ROOT, 'workflows');
 const ASSETS_DIR = CONFIG_ASSETS_DIR;
 const execFileAsync = promisify(execFile);
 const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
-const jobs = createJobStore();
+const jobs = createJobStore({ path: join(DATA_DIR, 'jobs.json') });
 let activeJobId = null;
 const pendingQuotes = new Map();
 let voiceCache = null;
@@ -213,6 +213,60 @@ function fallbackCliSpec(type, model) {
 function pickCliModel(catalog, type, requested, fallback) {
   const list = catalog?.[type] || [];
   return list.find((item) => item.model === requested) || list.find((item) => item.model === fallback) || list[0] || fallbackCliSpec(type, requested || fallback || 'seedance_2.5_draft');
+}
+
+function jobActive() {
+  if (!activeJobId) return null;
+  const running = jobs.get(activeJobId);
+  if (running && !['success', 'failed', 'canceled'].includes(running.status)) return running;
+  activeJobId = null;
+  return null;
+}
+
+function launchJob(kind, body, pending = null) {
+  const isComfy = String(kind).startsWith('comfyui-');
+  const job = jobs.create(kind, { prompt: body.prompt || pending?.prompt || '', request: isComfy ? body : undefined, model: body.model || '' });
+  activeJobId = job.id;
+  const run = kind === 'comfyui-image'
+    ? runComfyImageJob(job.id, body)
+    : kind === 'comfyui-video'
+      ? runComfyVideoJob(job.id, body)
+      : kind === 'comfyui-upscale'
+        ? runComfyPostJob(job.id, body, 'upscale')
+        : kind === 'comfyui-detail'
+          ? runComfyPostJob(job.id, body, 'detail')
+          : kind === 'comfyui-inpaint'
+            ? runComfyEditJob(job.id, body, 'inpaint')
+            : kind === 'comfyui-outpaint'
+              ? runComfyEditJob(job.id, body, 'outpaint')
+              : kind === 'comfyui-matte'
+                ? runComfyMatteJob(job.id, body)
+                : kind === 'comfyui-relight'
+                  ? runComfyRelightJob(job.id, body)
+                  : kind === 'dreamina-audio'
+                    ? runDreaminaAudioJob(job.id, pending, body.creditCeiling)
+                    : kind === 'dreamina-image'
+                      ? runDreaminaImageJob(job.id, pending, body.creditCeiling)
+                      : runDreaminaVideoJob(job.id, pending, body.creditCeiling);
+  run.catch((error) => {
+    jobs.update(job.id, { status: 'failed', message: error.message || String(error), error: { code: error.code || 'JOB_FAILED', message: error.message } });
+  }).finally(() => { if (activeJobId === job.id) activeJobId = null; });
+  return job;
+}
+
+async function cancelJob(job) {
+  if (!job) return;
+  jobs.update(job.id, { status: 'canceled', message: '已取消' });
+  if (activeJobId === job.id) activeJobId = null;
+  if (!String(job.type).startsWith('comfyui-')) return;
+  try {
+    const config = await loadConfig();
+    const capabilities = await loadCapabilities();
+    let baseUrl = config.comfyui.baseUrl;
+    if (['h3-ultimate', 'qwen21'].includes(job.meta?.model)) baseUrl = resolveEndpoint(capabilities, 'parallel045', config).url;
+    const provider = createComfyUIProvider({ baseUrl, timeoutMs: 5000 });
+    await provider.interrupt();
+  } catch { /* 中断失败也标记取消，避免 UI 卡住 */ }
 }
 
 async function handle(req, res, url) {
@@ -422,13 +476,10 @@ async function handle(req, res, url) {
       sendJson(res, 400, { error: `unsupported job kind: ${kind}` });
       return;
     }
-    if (activeJobId) {
-      const running = jobs.get(activeJobId);
-      if (running && !['success', 'failed', 'canceled'].includes(running.status)) {
-        sendJson(res, 429, { error: '当前已有生成任务在跑，请稍后再试', jobId: activeJobId });
-        return;
-      }
-      activeJobId = null;
+    const running = jobActive();
+    if (running) {
+      sendJson(res, 429, { error: '当前已有生成任务在跑，请稍后再试', jobId: running.id });
+      return;
     }
     let pending = null;
     if (kind === 'dreamina-video' || kind === 'dreamina-audio' || kind === 'dreamina-image') {
@@ -437,32 +488,33 @@ async function handle(req, res, url) {
       if (!pending) { sendJson(res, 409, { error: '报价已过期，请重新生成报价' }); return; }
       pendingQuotes.delete(body.quoteId);
     }
-    const job = jobs.create(kind, { prompt: body.prompt || pending?.prompt || '' });
-    activeJobId = job.id;
-    const run = kind === 'comfyui-image'
-      ? runComfyImageJob(job.id, body)
-      : kind === 'comfyui-video'
-        ? runComfyVideoJob(job.id, body)
-        : kind === 'comfyui-upscale'
-          ? runComfyPostJob(job.id, body, 'upscale')
-          : kind === 'comfyui-detail'
-            ? runComfyPostJob(job.id, body, 'detail')
-            : kind === 'comfyui-inpaint'
-              ? runComfyEditJob(job.id, body, 'inpaint')
-              : kind === 'comfyui-outpaint'
-                ? runComfyEditJob(job.id, body, 'outpaint')
-                : kind === 'comfyui-matte'
-                  ? runComfyMatteJob(job.id, body)
-                  : kind === 'comfyui-relight'
-                    ? runComfyRelightJob(job.id, body)
-      : kind === 'dreamina-audio'
-        ? runDreaminaAudioJob(job.id, pending, body.creditCeiling)
-        : kind === 'dreamina-image'
-          ? runDreaminaImageJob(job.id, pending, body.creditCeiling)
-          : runDreaminaVideoJob(job.id, pending, body.creditCeiling);
-    run.catch((error) => {
-      jobs.update(job.id, { status: 'failed', message: error.message || String(error), error: { code: error.code || 'JOB_FAILED', message: error.message } });
-    }).finally(() => { if (activeJobId === job.id) activeJobId = null; });
+    const job = launchJob(kind, body, pending);
+    sendJson(res, 202, { id: job.id, status: job.status });
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/generation/jobs') {
+    sendJson(res, 200, { jobs: jobs.list({ limit: url.searchParams.get('limit') || 50 }) });
+    return;
+  }
+
+  const cancelMatch = url.pathname.match(/^\/api\/generation\/jobs\/([A-Za-z0-9_-]+)\/cancel$/);
+  if (req.method === 'POST' && cancelMatch) {
+    const job = jobs.get(cancelMatch[1]);
+    if (!job) { sendJson(res, 404, { error: 'job not found' }); return; }
+    await cancelJob(job);
+    sendJson(res, 200, { ok: true, job: jobs.get(job.id) });
+    return;
+  }
+
+  const retryMatch = url.pathname.match(/^\/api\/generation\/jobs\/([A-Za-z0-9_-]+)\/retry$/);
+  if (req.method === 'POST' && retryMatch) {
+    const old = jobs.get(retryMatch[1]);
+    if (!old) { sendJson(res, 404, { error: 'job not found' }); return; }
+    if (!old.meta?.request) { sendJson(res, 400, { error: '只有 ComfyUI 任务支持一键重试' }); return; }
+    const running = jobActive();
+    if (running) { sendJson(res, 429, { error: '当前已有生成任务在跑，请稍后再试', jobId: running.id }); return; }
+    const job = launchJob(old.type, { ...old.meta.request }, null);
     sendJson(res, 202, { id: job.id, status: job.status });
     return;
   }

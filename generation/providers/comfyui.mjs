@@ -61,6 +61,10 @@ export function createComfyUIProvider(options = {}) {
     return { name: data.name, subfolder: data.subfolder || subfolder, type: data.type || type };
   }
 
+  async function interrupt() {
+    return request('/interrupt', { method: 'POST', body: '{}', expect: 'none' }).catch(() => null);
+  }
+
   async function submit(workflow, extra = {}) {
     if (!workflow || typeof workflow !== 'object') throw providerError('COMFY_WORKFLOW', 'workflow object is required');
     const payload = { prompt: workflow, client_id: clientId, ...extra };
@@ -105,7 +109,7 @@ export function createComfyUIProvider(options = {}) {
     return request(`/view?${params}`, { expect: 'buffer' });
   }
 
-  return { kind: 'comfyui', baseUrl, testConnection, uploadImage, submit, getHistory, waitFor, download };
+  return { kind: 'comfyui', baseUrl, testConnection, uploadImage, submit, interrupt, getHistory, waitFor, download };
 }
 
 // 把生成请求映射进 ComfyUI workflow（API 格式 JSON）。
