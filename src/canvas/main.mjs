@@ -22,6 +22,7 @@ import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
+import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
 import { ICONS, toolIcon, typeLabel, statusLabel } from './canvas-icons.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
@@ -569,9 +570,9 @@ function renderNodes() {
     el.style.height = `${rect.height}px`;
     el.innerHTML = `
       <div class="cv-node-title">${ICONS[node.type] || ICONS.image}<span class="cv-node-name">${escapeHtml(node.title || node.type)}</span></div>
-      ${node.status === 'running' && node.resources?.length ? `<div class="cv-generation-overlay"><div class="cv-gen-card"><span>生成中…</span><b>${Math.round(Number(node.progress) || 0)}%</b><div class="cv-gen-bar"><i style="width:${Math.max(3, Math.min(100, Number(node.progress) || 0))}%"></i></div></div></div>` : ''}
+      ${generationOverlayHtml(node)}
       <div class="cv-card">
-        <div class="cv-node-body">${nodeBody(node)}</div>
+        <div class="cv-node-body">${nodeBodyHtml(node)}</div>
         <span class="cv-conn left" data-conn="in" data-id="${node.id}"></span>
         <span class="cv-conn right" data-conn="out" data-id="${node.id}"></span>
       </div>`;
@@ -584,38 +585,6 @@ function renderNodes() {
   }
 }
 
-function nodeBody(node) {
-  if (node.type === 'text') return `<div class="cv-text-inner">${escapeHtml(node.text || '双击输入文本')}</div>`;
-  if (node.type === 'timeline') {
-    const items = node.timelineItems || [];
-    const total = Math.max(1, ...items.map((item) => (Number(item.start) || 0) + (Number(item.duration) || 0)));
-    const clips = items.map((item) => {
-      const left = ((Number(item.start) || 0) / total) * 100;
-      const width = Math.max(2, ((Number(item.duration) || 0) / total) * 100);
-      return `<span class="cv-mini-clip ${item.type}" style="left:${left}%;width:${width}%" title="${escapeHtml(item.label || item.type)} · ${item.duration}s"></span>`;
-    }).join('');
-    return `<div class="cv-mini-timeline"><div class="cv-mini-bar"><span>▶ 00:00 / ${total.toFixed(1)}s</span><button class="cv-mini-expand">全屏编辑 ↗</button></div><div class="cv-mini-ruler">${[0, .25, .5, .75, 1].map((p) => `<i style="left:${p * 100}%"></i>`).join('')}</div><div class="cv-mini-track">${clips}<b class="cv-mini-add">${items.length ? '' : '+ 添加素材到时间线'}</b></div></div>`;
-  }
-  const media = node.resources?.[0];
-  if (media?.url && media.type === 'image') {
-    return `<img class="cv-node-image" src="${escapeHtml(media.url)}" alt="${escapeHtml(node.title || '')}">`;
-  }
-  if (media?.url && media.type === 'video') {
-    return `<video class="cv-node-media" src="${escapeHtml(media.url)}" controls playsinline preload="metadata"></video>`;
-  }
-  if (media?.url && media.type === 'audio') {
-    return `<div class="cv-wave-wrap"><canvas class="cv-wave" data-audio-url="${escapeHtml(media.url)}"></canvas><audio class="cv-node-media" src="${escapeHtml(media.url)}" controls preload="metadata"></audio></div>`;
-  }
-  if (node.status === 'running') {
-    return `<div class="cv-placeholder">${ICONS[node.type] || ICONS.image}<span>生成中… ${Math.round(node.progress || 0)}%</span></div>`;
-  }
-  if (node.status === 'failed') {
-    const reason = String(node.error || '生成失败').slice(0, 80);
-    return `<div class="cv-placeholder">${ICONS[node.type] || ICONS.image}<span>生成失败 · ${escapeHtml(reason)}</span></div>`;
-  }
-  const label = { image: '图片节点', video: '视频节点', audio: '音频节点', stage: '导演台', timeline: '时间线' }[node.type] || '节点';
-  return `<div class="cv-placeholder">${ICONS[node.type] || ICONS.image}<span>${label} · 选中后生成</span></div>`;
-}
 
 function renderEdges() {
   const paths = [];
