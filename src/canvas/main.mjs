@@ -11,11 +11,9 @@ import {
   modelDefaultsKey, pickSavedParams, estimateForModel, missingH3Sections,
   promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
 } from './generation-catalog.mjs';
-import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, findTimelineDropTarget, appendTimelineItem } from './timeline-model.mjs';
+import { findTimelineDropTarget, appendTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
-import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
 import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
-import { createTimelineDragController } from './timeline-editor.mjs';
 import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
 import { buildAIContext } from './ai-context.mjs';
 import { createAIPanel } from './ai-panel.mjs';
@@ -39,6 +37,7 @@ import { createTrimTools } from './trim-tools.mjs';
 import { createVoicePicker } from './voice-picker.mjs';
 import { createMaskEditor } from './mask-editor.mjs';
 import { createVersionsView, downloadNodeResource } from './versions-view.mjs';
+import { createTimelineUI } from './timeline-ui.mjs';
 import { createMediaExtract } from './media-extract.mjs';
 import { reorderReferences, applyReferenceRole, findReferenceEdge, mentionMode } from './reference-actions.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
@@ -503,7 +502,7 @@ app.querySelector('#timelinePlay').addEventListener('click', playTimelineClip);
 app.querySelector('#timelineExport').addEventListener('click', openTimelineExportMenu);
 app.querySelector('#timelineRescan').addEventListener('click', () => { renderTimelineRows(); });
 app.querySelector('#timelineImport').addEventListener('click', () => app.querySelector('#cvFileInput').click());
-app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((button) => button.addEventListener('click', () => { timelineAssetFilter = button.dataset.kind; app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((item) => item.classList.toggle('active', item === button)); renderTimelineRows(); }));
+app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((button) => button.addEventListener('click', () => { timelineUI.setFilter(button.dataset.kind); app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((item) => item.classList.toggle('active', item === button)); }));
 app.querySelector('#timelineSplit').addEventListener('click', splitTimelineClip);
 app.querySelector('#timelineDelete').addEventListener('click', deleteTimelineClip);
 app.querySelector('#timelineMute').addEventListener('click', () => { const preview = app.querySelector('#timelinePreview'); preview.muted = !preview.muted; app.querySelector('#timelineMute').textContent = preview.muted ? '🔇' : '🔊'; });
@@ -2118,266 +2117,37 @@ function commitResource(nodeId, resource) {
   doc = updateNode(doc, nodeId, { resources: [resource], versions: next.slice(0, 30) });
 }
 
-let timelineNode = null;
-let timelineDraft = [];
-let timelineSelected = null;
-let timelineAssetFilter = 'all';
-const timelineDragController = createTimelineDragController({
-  getItem: (id) => timelineDraft.find((entry) => entry.id === id),
-  onChange: () => renderTimelineRows(),
+const timelineUI = createTimelineUI({
+  app,
+  getNodes: () => doc.nodes,
+  getNode: (id) => findNode(doc, id),
+  updateNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  render,
+  toast,
+  showContextMenu,
+  pushHistory,
+  addNodeToDoc: (payload) => {
+    pushHistory();
+    doc = addNode(doc, payload);
+    const added = doc.nodes.at(-1);
+    if (added) selection = new Set([added.id]);
+    return added?.id || null;
+  },
+  setSelection: (id) => { selection = id ? new Set([id]) : new Set(); },
+  nodeRect,
+  embed: EMBED,
+  parentWindow: parent,
 });
 
+function openTimeline(node) { return timelineUI.open(node); }
+function renderTimelineRows() { return timelineUI.renderRows(); }
+function splitTimelineClip() { return timelineUI.split(); }
+function deleteTimelineClip() { return timelineUI.removeSelected(); }
+function playTimelineClip() { return timelineUI.play(); }
+function openTimelineExportMenu() { return timelineUI.openExportMenu(); }
+function closeTimelineView() { return timelineUI.close(); }
+function saveTimeline() { return timelineUI.save(); }
 
-function openTimeline(node) {
-  try {
-    timelineNode = node;
-    timelineDraft = Array.isArray(node.timelineItems) && node.timelineItems.length
-      ? normalizeTimelineItems(node.timelineItems)
-      : scanTimelineNodes(doc.nodes);
-    timelineSelected = timelineDraft[0]?.id || null;
-    renderTimelineRows();
-    app.querySelector('#timelineModal').classList.add('open');
-  } catch (error) {
-    toast(error.message || String(error), true);
-  }
-}
-
-
-function timelineAssetNodes() {
-  return doc.nodes.filter((node) => node.resources?.[0]?.url && (node.type === 'image' || node.type === 'video' || node.type === 'audio'));
-}
-
-function addAssetToTimeline(node) {
-  if (!node) return;
-  if (timelineDraft.some((item) => item.id === node.id)) { timelineSelected = node.id; renderTimelineRows(); return; }
-  const end = timelineDraft.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
-  const duration = node.type === 'image' ? 3 : (Number(node.generation?.durationSeconds) || 5);
-  timelineDraft.push({ id: node.id, label: node.title || node.type, type: node.type, start: end, duration, sourceStart: 0, transition: 'none' });
-  timelineSelected = node.id;
-  renderTimelineRows();
-}
-
-function renderTimelineRows() {
-  const total = timelineTotalDuration(timelineDraft);
-  const assets = timelineAssetNodes().filter((node) => timelineAssetFilter === 'all' || node.type === timelineAssetFilter);
-  const assetHost = app.querySelector('#timelineAssets');
-  assetHost.innerHTML = timelineAssetsHtml(assets);
-  assetHost.querySelectorAll('[data-asset]').forEach((button) => button.addEventListener('click', () => addAssetToTimeline(findNode(doc, button.dataset.asset))));
-  app.querySelector('#timelineRuler').innerHTML = timelineRulerHtml(total);
-  const host = app.querySelector('#timelineLanes');
-  host.innerHTML = timelineLanesHtml(timelineDraft, total, timelineSelected);
-  const totalSeconds = timelineDraft.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
-  app.querySelector('#timelineTotal').textContent = `${timelineDraft.length} 个片段 · ${totalSeconds.toFixed(1)}s`;
-  host.querySelectorAll('.cv-timeline-add').forEach((button) => button.addEventListener('click', () => { const first = timelineAssetNodes()[0]; if (first) addAssetToTimeline(first); }));
-  host.querySelectorAll('.cv-tl-clip').forEach((clip) => {
-    const item = timelineDraft.find((entry) => entry.id === clip.dataset.item);
-    if (!item) return;
-    clip.addEventListener('click', (event) => {
-      event.stopPropagation();
-      timelineSelected = item.id;
-      updateTimelinePreview(item);
-      renderTimelineRows();
-    });
-    clip.addEventListener('pointerdown', (event) => {
-      if (event.target.closest('.handle')) return;
-      startTimelineDrag(event, item, 'move');
-    });
-    clip.querySelectorAll('.handle').forEach((handle) => {
-      handle.addEventListener('pointerdown', (event) => startTimelineDrag(event, item, handle.dataset.edge === 'start' ? 'trim-start' : 'trim-end'));
-    });
-    clip.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      showContextMenu([
-        [item.transition === 'fade' ? '✓ 淡入淡出' : '淡入淡出', () => { item.transition = item.transition === 'fade' ? 'none' : 'fade'; renderTimelineRows(); }],
-        [item.transition === 'black' ? '✓ 黑场' : '黑场', () => { item.transition = item.transition === 'black' ? 'none' : 'black'; renderTimelineRows(); }],
-        ['无转场', () => { item.transition = 'none'; renderTimelineRows(); }],
-        ['移除片段', () => { timelineDraft = timelineDraft.filter((entry) => entry.id !== item.id); timelineSelected = timelineDraft[0]?.id || null; renderTimelineRows(); }],
-      ], event.clientX, event.clientY);
-    });
-  });
-  if (timelineSelected) {
-    const item = timelineDraft.find((entry) => entry.id === timelineSelected);
-    if (item) updateTimelinePreview(item);
-  }
-}
-
-
-function splitTimelineClip() {
-  const item = timelineDraft.find((entry) => entry.id === timelineSelected);
-  if (!item) { toast('先选一个片段'); return; }
-  const parts = splitTimelineItem(item);
-  if (!parts) return;
-  const index = timelineDraft.indexOf(item);
-  timelineDraft.splice(index, 1, ...parts);
-  timelineSelected = parts[0].id;
-  renderTimelineRows();
-}
-
-function deleteTimelineClip() {
-  if (!timelineSelected) { toast('先选一个片段'); return; }
-  timelineDraft = timelineDraft.filter((entry) => entry.id !== timelineSelected);
-  timelineSelected = timelineDraft[0]?.id || null;
-  renderTimelineRows();
-}
-
-function updateTimelinePreview(item) {
-  const preview = app.querySelector('#timelinePreview');
-  const image = app.querySelector('#timelinePreviewImage');
-  const empty = app.querySelector('#timelinePreviewEmpty');
-  const url = findNode(doc, item.id)?.resources?.[0]?.url;
-  const isImage = item.type === 'image';
-  preview.hidden = !url || isImage;
-  image.hidden = !url || !isImage;
-  empty.hidden = Boolean(url);
-  if (url && image.dataset.clip !== item.id) {
-    image.dataset.clip = item.id;
-    if (isImage) image.src = url;
-  }
-  if (!isImage && url && preview.dataset.clip !== item.id) {
-    preview.dataset.clip = item.id;
-    preview.src = url;
-    preview.load();
-  }
-  app.querySelector('#timelinePlayhead').textContent = `${formatTimelineTime(item.start)} / ${formatTimelineTime((Number(item.start) || 0) + (Number(item.duration) || 0))}`;
-}
-
-function startTimelineDrag(event, item, mode) {
-  event.preventDefault();
-  event.stopPropagation();
-  const lane = app.querySelector('#timelineLanes');
-  const width = lane.getBoundingClientRect().width || 1;
-  timelineSelected = item.id;
-  const started = timelineDragController.start({ id: item.id, mode, startX: event.clientX, origin: item, pxPerSecond: width / timelineTotalDuration(timelineDraft) });
-  if (!started) return;
-  document.addEventListener('pointermove', onTimelineDragMove);
-  document.addEventListener('pointerup', onTimelineDragUp, { once: true });
-  updateTimelinePreview(item);
-}
-
-function onTimelineDragMove(event) {
-  timelineDragController.move(event.clientX);
-}
-
-function onTimelineDragUp() {
-  document.removeEventListener('pointermove', onTimelineDragMove);
-  timelineDragController.end();
-  renderTimelineRows();
-}
-
-function playTimelineClip() {
-  const item = timelineDraft.find((entry) => entry.id === timelineSelected);
-  if (!item) { toast('先选一个片段'); return; }
-  const preview = app.querySelector('#timelinePreview');
-  if (!preview.src) { toast('这个片段还没有素材'); return; }
-  const button = app.querySelector('#timelinePlay');
-  if (!preview.paused) { preview.pause(); button.textContent = '▶'; return; }
-  try {
-    if (Math.abs(preview.currentTime - (Number(item.sourceStart) || 0)) > 0.2) preview.currentTime = Number(item.sourceStart) || 0;
-    preview.play();
-    button.textContent = '❚❚';
-    window.clearTimeout(playTimelineClip.timer);
-    playTimelineClip.timer = window.setTimeout(() => { preview.pause(); button.textContent = '▶'; }, Math.max(300, (Number(item.duration) || 1) * 1000));
-  } catch { toast('预览失败'); }
-}
-
-function openTimelineExportMenu() {
-  const button = app.querySelector('#timelineExport');
-  const rect = button.getBoundingClientRect();
-  showContextMenu([
-    ['横屏 1080p（1920×1080）', () => exportTimelineMovie('landscape')],
-    ['竖屏 1080p（1080×1920）', () => exportTimelineMovie('portrait')],
-    ['草稿 720p（1280×720）', () => exportTimelineMovie('draft')],
-  ], rect.left, rect.bottom + 6);
-}
-
-async function exportTimelineMovie(preset = 'landscape') {
-  const items = timelineDraft.filter((item) => item.type === 'video' || item.type === 'image').map((item) => ({
-    type: item.type,
-    videoUrl: item.type === 'video' ? findNode(doc, item.id)?.resources?.[0]?.url : undefined,
-    imageUrl: item.type === 'image' ? findNode(doc, item.id)?.resources?.[0]?.url : undefined,
-    sourceStart: Number(item.sourceStart) || 0,
-    duration: Number(item.duration) || (item.type === 'image' ? 3 : 5),
-    transition: item.transition || 'none',
-  })).filter((item) => item.videoUrl || item.imageUrl);
-  if (!items.length) { toast('时间线里没有可导出的片段'); return; }
-  const button = app.querySelector('#timelineExport');
-  button.disabled = true;
-  button.textContent = '导出中…';
-  try {
-    const response = await fetch('/api/generation/timeline/export', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items, preset }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '导出失败');
-    showTimelineExportChoice(data);
-  } catch (error) {
-    toast(error.message || String(error), true);
-  } finally {
-    button.disabled = false;
-    button.textContent = '导出 MP4';
-  }
-}
-
-function showTimelineExportChoice(data) {
-  const button = app.querySelector('#timelineExport');
-  const rect = button.getBoundingClientRect();
-  showContextMenu([
-    ['加入画布（生成视频节点）', () => addExportedVideoToCanvas(data)],
-    ['导出到文件夹…', () => saveExportedVideoToFolder(data)],
-    ['直接下载', () => { const link = document.createElement('a'); link.href = data.url; link.download = data.filename || 'timeline.mp4'; link.click(); }],
-  ], rect.left, rect.bottom + 6);
-}
-
-function addExportedVideoToCanvas(data) {
-  saveTimeline();
-  app.querySelector('#timelineModal').classList.remove('open');
-  document.body.classList.remove('timeline-open');
-  const timeline = timelineNode;
-  const rect = timeline ? nodeRect(timeline) : { x: 0, y: 0, width: 600, height: 320 };
-  pushHistory();
-  doc = addNode(doc, {
-    type: 'video',
-    title: '时间线成片',
-    layout: { x: Math.round(rect.x + rect.width + 48), y: Math.round(rect.y), width: 569, height: 320 },
-    resources: [{ id: data.filename, type: 'video', url: data.url, source: 'timeline' }],
-    generation: { mode: 't2v', prompt: '时间线成片', model: 'h3', ratio: '16:9', resolution: '480P', durationSeconds: 5, outputCount: 1 },
-  });
-  selection = new Set([doc.nodes.at(-1).id]);
-  render();
-  toast('时间线成片已加入画布');
-}
-
-function saveExportedVideoToFolder(data) {
-  if (EMBED) {
-    try {
-      parent.postMessage({ type: 'canvas-save-file', url: data.url, filename: data.filename || 'timeline.mp4' }, location.origin);
-      toast('请选择保存文件夹');
-      return;
-    } catch { /* fall through */ }
-  }
-  const link = document.createElement('a');
-  link.href = data.url;
-  link.download = data.filename || 'timeline.mp4';
-  link.click();
-}
-
-function closeTimelineView() {
-  saveTimeline();
-  app.querySelector('#timelineModal').classList.remove('open');
-  document.body.classList.remove('timeline-open');
-}
-
-function saveTimeline() {
-  if (!timelineNode) return;
-  doc = updateNode(doc, timelineNode.id, { timelineItems: timelineDraft, status: 'success' });
-  app.querySelector('#timelineModal').classList.remove('open');
-  document.body.classList.remove('timeline-open');
-  render();
-  toast('时间线已保存');
-}
-
-const versionsView = createVersionsView({ app, commitResource, render, toast });
 function openVersions(node) { return versionsView.open(node); }
 
 function collectAssets() {

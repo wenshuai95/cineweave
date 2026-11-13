@@ -100,3 +100,12 @@ export async function extractVideoAudioRequest(body, { fetchImpl = fetch } = {})
   if (!response.ok) throw new Error(data.error || '分离音频失败');
   return data;
 }
+
+export async function exportTimelineRequest(body, { fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/timeline/export', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '导出失败');
+  return data;
+}
