@@ -11,10 +11,11 @@ import {
   modelDefaultsKey, pickSavedParams, estimateForModel, missingH3Sections,
   promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
 } from './generation-catalog.mjs';
-import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, dragTimelineItem } from './timeline-model.mjs';
+import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
 import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
+import { createTimelineDragController } from './timeline-editor.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -2923,8 +2924,11 @@ function commitResource(nodeId, resource) {
 let timelineNode = null;
 let timelineDraft = [];
 let timelineSelected = null;
-let timelineDrag = null;
 let timelineAssetFilter = 'all';
+const timelineDragController = createTimelineDragController({
+  getItem: (id) => timelineDraft.find((entry) => entry.id === id),
+  onChange: () => renderTimelineRows(),
+});
 
 
 function openTimeline(node) {
@@ -3046,25 +3050,20 @@ function startTimelineDrag(event, item, mode) {
   const lane = app.querySelector('#timelineLanes');
   const width = lane.getBoundingClientRect().width || 1;
   timelineSelected = item.id;
-  timelineDrag = { id: item.id, mode, startX: event.clientX, pxPerSecond: width / timelineTotalDuration(timelineDraft), origin: { ...item } };
+  const started = timelineDragController.start({ id: item.id, mode, startX: event.clientX, origin: item, pxPerSecond: width / timelineTotalDuration(timelineDraft) });
+  if (!started) return;
   document.addEventListener('pointermove', onTimelineDragMove);
   document.addEventListener('pointerup', onTimelineDragUp, { once: true });
   updateTimelinePreview(item);
 }
 
 function onTimelineDragMove(event) {
-  if (!timelineDrag) return;
-  const item = timelineDraft.find((entry) => entry.id === timelineDrag.id);
-  if (!item) return;
-  const delta = (event.clientX - timelineDrag.startX) / timelineDrag.pxPerSecond;
-  const next = dragTimelineItem(item, timelineDrag.origin, timelineDrag.mode, delta);
-  if (next) Object.assign(item, next);
-  renderTimelineRows();
+  timelineDragController.move(event.clientX);
 }
 
 function onTimelineDragUp() {
   document.removeEventListener('pointermove', onTimelineDragMove);
-  timelineDrag = null;
+  timelineDragController.end();
   renderTimelineRows();
 }
 
