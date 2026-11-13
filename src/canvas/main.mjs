@@ -18,6 +18,7 @@ import { submitJob, requestQuote, uploadDataUrl, askAssistant } from './generati
 import { createTimelineDragController } from './timeline-editor.mjs';
 import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
 import { aiContextLabel, buildAIContext, renderAIMessagesHtml } from './ai-context.mjs';
+import { jobsListHtml } from './job-view.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -2457,22 +2458,7 @@ async function refreshJobsPanel() {
   if (!host) return;
   try {
     const list = await listJobs({ limit: 30 });
-    const labels = { prepare: '准备', sampling: '生成中', finalize: '收尾', done: '结束' };
-    host.innerHTML = list.length ? list.map((job) => {
-      const terminal = ['success', 'failed', 'canceled'].includes(job.status);
-      const status = job.status === 'success' ? '完成' : job.status === 'failed' ? '失败' : job.status === 'canceled' ? '已取消' : '运行中';
-      const model = job.meta?.model || job.type || '';
-      const progress = Math.max(0, Math.min(100, Number(job.progress) || 0));
-      const eta = job.etaSeconds ? ` · 约剩 ${job.etaSeconds}s` : '';
-      return `<div class="cv-job-row" data-job="${escapeHtml(job.id)}">
-        <div class="cv-job-top"><b>${escapeHtml(model)}</b><span>${status}${eta}</span></div>
-        <div class="cv-job-msg">${escapeHtml(job.message || labels[job.stage] || '')}</div>
-        <div class="cv-job-bar"><i style="width:${terminal && job.status === 'success' ? 100 : progress}%"></i></div>
-        <div class="cv-job-actions">
-          ${terminal ? (job.status === 'failed' && job.meta?.request ? '<button data-job-retry>重试</button>' : '') : '<button data-job-cancel>取消</button>'}
-        </div>
-      </div>`;
-    }).join('') : '<div class="cv-status">还没有生成任务。</div>';
+    host.innerHTML = jobsListHtml(list);
     host.querySelectorAll('[data-job-cancel]').forEach((button) => button.addEventListener('click', async () => {
       const row = button.closest('[data-job]');
       button.disabled = true;
