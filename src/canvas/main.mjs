@@ -504,11 +504,6 @@ window.addEventListener('keydown', onKeyDown);
 window.addEventListener('keyup', (event) => { if (event.code === 'Space') spaceHeld = false; });
 window.addEventListener('resize', applyViewport);
 
-render();
-probeProviders();
-loadDreaminaCatalog();
-if (EMBED) parent.postMessage({ type: 'canvas-ready' }, location.origin);
-
 function render() {
   clearGuides();
   renderGroups();
@@ -516,7 +511,6 @@ function render() {
   renderEdges();
   renderAudioWaveforms();
   updateSelectionUi();
-  updateDock();
   applyViewport();
   drawMinimap();
   document.title = '造梦工坊 · 画布';
@@ -791,6 +785,14 @@ const shortcuts = createShortcuts({
 });
 
 function onKeyDown(event) { return shortcuts.onKeyDown(event); }
+
+const historyState = createHistory({
+  limit: HISTORY_LIMIT,
+  getDoc: () => doc,
+  setDoc: (next) => { doc = next; },
+  onRestore: () => { selection = new Set(); render(); },
+  toast,
+});
 
 function pushHistory() { historyState.push(); }
 function undo() { historyState.undo(); }
@@ -1826,6 +1828,26 @@ const assetsPanel = createAssetsPanel({
 
 function openAssetsPanel() { assetsPanel.open(); }
 
+function applyPromptTemplate(text) {
+  promptEl.value = text;
+  onPromptInput();
+  promptEl.focus();
+  toast('已套用提示词模板');
+}
+
+function openPromptTemplateMenu() {
+  const id = [...selection][0];
+  const node = id ? findNode(doc, id) : null;
+  if (!node?.generation) { toast('先选中一个生成节点'); return; }
+  const template = promptTemplateFor({
+    type: node.type,
+    model: node.generation?.model || '',
+    workflow: node.generation?.imageWorkflow || '',
+  });
+  const rect = app.querySelector('#dockTemplate').getBoundingClientRect();
+  showContextMenu([[template.label, () => applyPromptTemplate(template.text)]], rect.left, Math.max(80, rect.top - 100));
+}
+
 const promptTools = createPromptTools({
   app,
   getPrompt: () => promptEl.value,
@@ -2395,3 +2417,7 @@ if (EMBED) {
     initBoards(data.projectId, data.doc && typeof data.doc === 'object' ? data.doc : null, data.boards ? { boards: data.boards, currentId: data.currentBoardId } : null);
   });
 }
+
+probeProviders();
+loadDreaminaCatalog();
+if (EMBED) parent.postMessage({ type: 'canvas-ready' }, location.origin);
