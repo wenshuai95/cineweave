@@ -34,6 +34,7 @@
 - 抽出 `src/canvas/timeline-model.mjs`（片段归一化/扫描/分割/拖动），新增 5 条单测。
 - 抽出 `src/canvas/job-client.mjs`（任务轮询/列表/取消/重试），新增 5 条单测。
 - 抽出 `src/canvas/timeline-view.mjs`（资产/标尺/轨道 HTML），新增 4 条单测。
+- 抽出 `src/canvas/generation-request.mjs`（提交/报价/上传），新增 5 条单测。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -45,6 +46,7 @@
 - 抽出 `src/canvas/timeline-model.mjs`（片段归一化/扫描/分割/拖动），新增 5 条单测。
 - 抽出 `src/canvas/job-client.mjs`（任务轮询/列表/取消/重试），新增 5 条单测。
 - 抽出 `src/canvas/timeline-view.mjs`（资产/标尺/轨道 HTML），新增 4 条单测。
+- 抽出 `src/canvas/generation-request.mjs`（提交/报价/上传），新增 5 条单测。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。

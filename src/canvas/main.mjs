@@ -14,6 +14,7 @@ import {
 import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, dragTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 import { timelineAssetsHtml, timelineRulerHtml, timelineLanesHtml } from './timeline-view.mjs';
+import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -1662,16 +1663,9 @@ async function confirmInpaint() {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '局部重绘中…' });
   render();
   try {
-    const upload = await fetch('/api/generation/upload', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dataUrl }) });
-    const uploaded = await upload.json();
-    if (!upload.ok) throw new Error(uploaded.error || '蒙版上传失败');
+    const uploaded = await uploadDataUrl(dataUrl);
     const prompt = promptEl.value.trim() || (node.generation?.prompt || '');
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'comfyui-inpaint', imageUrl: media.url, maskUrl: uploaded.url, prompt }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+    const data = await submitJob({ kind: 'comfyui-inpaint', imageUrl: media.url, maskUrl: uploaded.url, prompt });
     toast('已提交局部重绘');
     pollJob(data.id, node.id);
   } catch (error) {
@@ -1690,12 +1684,7 @@ async function runOutpaint(node, direction) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '扩图中…' });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'comfyui-outpaint', imageUrl: node.resources[0].url, direction, pixels: 256, prompt: promptEl.value.trim() || node.generation?.prompt || '' }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+    const data = await submitJob({ kind: 'comfyui-outpaint', imageUrl: node.resources[0].url, direction, pixels: 256, prompt: promptEl.value.trim() || node.generation?.prompt || '' });
     toast('已提交扩图');
     pollJob(data.id, node.id);
   } catch (error) {
@@ -1774,12 +1763,7 @@ async function startRelight(node, variant) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: variant === 'light' ? '轻补光中…' : '重打光中…' });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'comfyui-relight', imageUrl: media.url, prompt: lightPrompt, variant }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+    const data = await submitJob({ kind: 'comfyui-relight', imageUrl: media.url, prompt: lightPrompt, variant });
     toast('已提交智能打光任务');
     pollJob(data.id, node.id);
   } catch (error) {
@@ -1795,12 +1779,7 @@ async function startMatte(node) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '抠图中…' });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'comfyui-matte', imageUrl: media.url }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+    const data = await submitJob({ kind: 'comfyui-matte', imageUrl: media.url });
     toast('已提交抠图任务');
     pollJob(data.id, node.id);
   } catch (error) {
@@ -1817,19 +1796,13 @@ async function startPostProcess(node, mode) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: isUpscale ? '放大中…' : '修脸中…' });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+    const data = await submitJob({
         kind: isUpscale ? 'comfyui-upscale' : 'comfyui-detail',
         imageUrl: media.url,
         prompt: node.generation?.prompt || '',
         upscaleBy: 1.5,
         denoise: 0.4,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+      });
     toast(isUpscale ? '已提交放大任务' : '已提交修脸任务');
     pollJob(data.id, node.id);
   } catch (error) {
@@ -1878,18 +1851,12 @@ async function generateSelected() {
   doc = updateNode(doc, id, { status: 'running', progress: 0 });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+    const data = await submitJob({
         kind: 'comfyui-image', prompt, width: comfyImageSize(node).width, height: comfyImageSize(node).height, imageUrl,
         workflow: node.generation?.imageWorkflow || undefined,
         megapixels: node.generation?.imageWorkflow?.startsWith('qwen21-') ? 1 : undefined,
         refMode: imageUrl ? (node.generation?.refMode || 'i2i') : undefined,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+      });
     toast('已提交 ComfyUI');
     pollJob(data.id, id);
   } catch (error) {
@@ -2385,9 +2352,7 @@ async function startComfyVideo(node) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+    const data = await submitJob({
         kind: 'comfyui-video', prompt, model,
         width: spec.width, height: spec.height, fps: spec.fps,
         duration: spec.duration,
@@ -2400,10 +2365,7 @@ async function startComfyVideo(node) {
         refImages: model === 'h3-ultimate' && !explicitLast ? refImages.slice(0, 2).map((item) => item.url) : undefined,
         sourceVideoUrl: model === 'h3-ultimate' ? sourceVideo : undefined,
         megapixels: model === 'h3-ultimate' ? (Number(node.generation?.megapixels) > 0 ? Number(node.generation.megapixels) : 0.22) : undefined,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+      });
     toast('已提交 ComfyUI 视频任务');
     pollJob(data.id, node.id);
   } catch (error) {
@@ -2420,18 +2382,13 @@ async function startImageQuote(node) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '报价中…' });
   render();
   try {
-    const response = await fetch('/api/generation/quote', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+    const quote = await requestQuote({
         kind: 'dreamina-image', prompt,
         model: node.generation?.model || undefined,
         ratio: node.generation?.ratio || '16:9',
         resolution: (() => { const allowed = dreaminaValues(node, '--resolution'); return allowed.length && !allowed.includes(node.generation?.resolution) ? allowed[0] : (node.generation?.resolution || '2K'); })(),
         count: Math.min(node.generation?.outputCount || 1, dreaminaRange(node, '--count', 1, 4).max),
-      }),
-    });
-    const quote = await response.json();
-    if (!response.ok) throw new Error(quote.error || '报价失败');
+      });
     pendingQuote = { ...quote, nodeId: node.id };
     doc = updateNode(doc, node.id, { status: 'empty' });
     render();
@@ -2450,9 +2407,7 @@ async function startVideoQuote(node) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '报价中…' });
   render();
   try {
-    const response = await fetch('/api/generation/quote', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+    const quote = await requestQuote({
         kind: 'dreamina-video', prompt,
         model: node.generation?.model && node.generation.model !== 'h3' ? node.generation.model : undefined,
         firstFrameUrl: videoFrameRefs(node).first?.resource?.url || undefined,
@@ -2460,10 +2415,7 @@ async function startVideoQuote(node) {
         ratio: node.generation?.ratio || '16:9',
         resolution: (() => { const allowed = dreaminaValues(node, '--resolution'); const raw = String(node.generation?.resolution || '480p'); return allowed.length && !allowed.includes(raw) && !allowed.includes(raw.toLowerCase()) ? allowed[0] : raw.toLowerCase(); })(),
         duration: Math.min(Math.max(node.generation?.durationSeconds || 4, dreaminaRange(node, '--duration', 4, 15).min), dreaminaRange(node, '--duration', 4, 15).max),
-      }),
-    });
-    const quote = await response.json();
-    if (!response.ok) throw new Error(quote.error || '报价失败');
+      });
     pendingQuote = { ...quote, nodeId: node.id };
     doc = updateNode(doc, node.id, { status: 'empty' });
     render();
@@ -2481,12 +2433,7 @@ async function startAudioQuote(node) {
   doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
   render();
   try {
-    const response = await fetch('/api/generation/quote', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'dreamina-audio', prompt, model: node.generation?.model || 'legacy_tts', voiceName: node.generation?.voiceName || undefined }),
-    });
-    const quote = await response.json();
-    if (!response.ok) throw new Error(quote.error || '报价失败');
+    const quote = await requestQuote({ kind: 'dreamina-audio', prompt, model: node.generation?.model || 'legacy_tts', voiceName: node.generation?.voiceName || undefined });
     pendingQuote = { ...quote, nodeId: node.id };
     doc = updateNode(doc, node.id, { status: 'empty' });
     render();
@@ -2523,12 +2470,7 @@ async function submitDreaminaJob(quote) {
   doc = updateNode(doc, quote.nodeId, { status: 'running', progress: 0 });
   render();
   try {
-    const response = await fetch('/api/generation/jobs', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: quote.kind || 'dreamina-video', quoteId: quote.quoteId, creditCeiling: quote.credits }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || '提交失败');
+    const data = await submitJob({ kind: quote.kind || 'dreamina-video', quoteId: quote.quoteId, creditCeiling: quote.credits });
     toast('已提交即梦生成');
     await pollJob(data.id, quote.nodeId);
   } catch (error) {
