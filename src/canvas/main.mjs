@@ -21,6 +21,7 @@ import { buildAIContext } from './ai-context.mjs';
 import { createAIPanel } from './ai-panel.mjs';
 import { jobsListHtml } from './job-view.mjs';
 import { buildDockViewModel } from './dock-view.mjs';
+import { createGenerationFlow } from './generation-flow.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -1738,8 +1739,6 @@ async function generateSelected() {
   }
 }
 
-let pendingQuote = null;
-
 function openBackendMenu() {
   const id = [...selection][0];
   const node = id ? findNode(doc, id) : null;
@@ -2217,74 +2216,66 @@ async function startComfyVideo(node) {
   }
 }
 
+function buildImageQuotePayload(node, prompt) {
+  const allowed = dreaminaValues(node, '--resolution');
+  return {
+    prompt,
+    model: node.generation?.model || undefined,
+    ratio: node.generation?.ratio || '16:9',
+    resolution: allowed.length && !allowed.includes(node.generation?.resolution) ? allowed[0] : (node.generation?.resolution || '2K'),
+    count: Math.min(node.generation?.outputCount || 1, dreaminaRange(node, '--count', 1, 4).max),
+  };
+}
+
+function buildVideoQuotePayload(node, prompt) {
+  const allowed = dreaminaValues(node, '--resolution');
+  const raw = String(node.generation?.resolution || '480p');
+  const range = dreaminaRange(node, '--duration', 4, 15);
+  return {
+    prompt,
+    model: node.generation?.model && node.generation.model !== 'h3' ? node.generation.model : undefined,
+    firstFrameUrl: videoFrameRefs(node).first?.resource?.url || undefined,
+    lastFrameUrl: videoFrameRefs(node).last?.resource?.url || undefined,
+    ratio: node.generation?.ratio || '16:9',
+    resolution: allowed.length && !allowed.includes(raw) && !allowed.includes(raw.toLowerCase()) ? allowed[0] : raw.toLowerCase(),
+    duration: Math.min(Math.max(node.generation?.durationSeconds || 4, range.min), range.max),
+  };
+}
+
+function buildAudioQuotePayload(node, prompt) {
+  return { prompt, model: node.generation?.model || 'legacy_tts', voiceName: node.generation?.voiceName || undefined };
+}
+
+const generationFlow = createGenerationFlow({
+  requestQuote,
+  submitJob,
+  pollJob,
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); render(); },
+  toast,
+  showQuote: (quote, label) => openQuote(quote, label),
+  buildImagePayload: buildImageQuotePayload,
+  buildVideoPayload: buildVideoQuotePayload,
+  buildAudioPayload: buildAudioQuotePayload,
+});
+
 async function startImageQuote(node) {
   rememberModelParams(node);
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '报价中…' });
-  render();
-  try {
-    const quote = await requestQuote({
-        kind: 'dreamina-image', prompt,
-        model: node.generation?.model || undefined,
-        ratio: node.generation?.ratio || '16:9',
-        resolution: (() => { const allowed = dreaminaValues(node, '--resolution'); return allowed.length && !allowed.includes(node.generation?.resolution) ? allowed[0] : (node.generation?.resolution || '2K'); })(),
-        count: Math.min(node.generation?.outputCount || 1, dreaminaRange(node, '--count', 1, 4).max),
-      });
-    pendingQuote = { ...quote, nodeId: node.id };
-    doc = updateNode(doc, node.id, { status: 'empty' });
-    render();
-    openQuote(quote, '即梦图片');
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed' });
-    render();
-    toast(error.message || String(error), true);
-  }
+  await generationFlow.startImage(node, prompt);
 }
 
 async function startVideoQuote(node) {
   rememberModelParams(node);
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写提示词'); return; }
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: '报价中…' });
-  render();
-  try {
-    const quote = await requestQuote({
-        kind: 'dreamina-video', prompt,
-        model: node.generation?.model && node.generation.model !== 'h3' ? node.generation.model : undefined,
-        firstFrameUrl: videoFrameRefs(node).first?.resource?.url || undefined,
-        lastFrameUrl: videoFrameRefs(node).last?.resource?.url || undefined,
-        ratio: node.generation?.ratio || '16:9',
-        resolution: (() => { const allowed = dreaminaValues(node, '--resolution'); const raw = String(node.generation?.resolution || '480p'); return allowed.length && !allowed.includes(raw) && !allowed.includes(raw.toLowerCase()) ? allowed[0] : raw.toLowerCase(); })(),
-        duration: Math.min(Math.max(node.generation?.durationSeconds || 4, dreaminaRange(node, '--duration', 4, 15).min), dreaminaRange(node, '--duration', 4, 15).max),
-      });
-    pendingQuote = { ...quote, nodeId: node.id };
-    doc = updateNode(doc, node.id, { status: 'empty' });
-    render();
-    openQuote(quote);
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed' });
-    render();
-    toast(error.message || String(error), true);
-  }
+  await generationFlow.startVideo(node, prompt);
 }
 
 async function startAudioQuote(node) {
   const prompt = promptEl.value.trim();
   if (!prompt) { toast('先写台词 / 声音描述'); return; }
-  doc = updateNode(doc, node.id, { status: 'running', progress: 0 });
-  render();
-  try {
-    const quote = await requestQuote({ kind: 'dreamina-audio', prompt, model: node.generation?.model || 'legacy_tts', voiceName: node.generation?.voiceName || undefined });
-    pendingQuote = { ...quote, nodeId: node.id };
-    doc = updateNode(doc, node.id, { status: 'empty' });
-    render();
-    openQuote(quote, '即梦音频');
-  } catch (error) {
-    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
+  await generationFlow.startAudio(node, prompt);
 }
 
 function openQuote(quote, label = '即梦视频') {
@@ -2302,24 +2293,7 @@ function openQuote(quote, label = '即梦视频') {
 
 function closeQuote(confirmed) {
   app.querySelector('#quoteModal').classList.remove('open');
-  if (!confirmed || !pendingQuote) { pendingQuote = null; return; }
-  const quote = pendingQuote;
-  pendingQuote = null;
-  submitDreaminaJob(quote).catch((error) => toast(error.message || String(error), true));
-}
-
-async function submitDreaminaJob(quote) {
-  doc = updateNode(doc, quote.nodeId, { status: 'running', progress: 0 });
-  render();
-  try {
-    const data = await submitJob({ kind: quote.kind || 'dreamina-video', quoteId: quote.quoteId, creditCeiling: quote.credits });
-    toast('已提交即梦生成');
-    await pollJob(data.id, quote.nodeId);
-  } catch (error) {
-    doc = updateNode(doc, quote.nodeId, { status: 'failed', error: error.message || String(error) });
-    render();
-    toast(error.message || String(error), true);
-  }
+  generationFlow.confirm(confirmed);
 }
 
 let jobsRefreshTimer = null;
