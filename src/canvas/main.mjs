@@ -27,6 +27,7 @@ import { createPicturePopover } from './picture-popover.mjs';
 import { createClipboardActions } from './clipboard-actions.mjs';
 import { computeSnap, guidesHtml } from './snap-view.mjs';
 import { createAssetsPanel } from './assets-view.mjs';
+import { applyNodeSelection, marqueeWorldBox, selectionAfterMarquee } from './selection-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -796,13 +797,8 @@ function onNodePointerDown(event) {
     return;
   }
   if (conn?.dataset.conn === 'in') return;
-  if (event.shiftKey) {
-    selection.has(nodeId) ? selection.delete(nodeId) : selection.add(nodeId);
-  } else {
-    const group = groupOf(doc, nodeId);
-    if (group) selection = new Set(group.nodeIds);
-    else if (!selection.has(nodeId)) selection = new Set([nodeId]);
-  }
+  const group = groupOf(doc, nodeId);
+  selection = applyNodeSelection(selection, nodeId, { shift: event.shiftKey, groupIds: group ? group.nodeIds : [] });
   updateSelectionUi();
   layer.querySelectorAll('.cv-node').forEach((el) => el.classList.toggle('selected', selection.has(el.dataset.id)));
   const node = findNode(doc, nodeId);
@@ -961,12 +957,10 @@ function onPointerUp(event) {
     marquee?.remove();
     marquee = null;
     const rect = stage.getBoundingClientRect();
-    const a = screenToWorld({ x: finished.startX - rect.left, y: finished.startY - rect.top }, doc.viewport);
-    const b = screenToWorld({ x: currentX - rect.left, y: currentY - rect.top }, doc.viewport);
-    const box = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) };
+    const box = marqueeWorldBox({ startX: finished.startX, startY: finished.startY, currentX, currentY, stageLeft: rect.left, stageTop: rect.top, viewport: doc.viewport });
     if (box.width > 4 || box.height > 4) {
       const hit = nodesInRect(doc.nodes, box).map((node) => node.id);
-      selection = finished.additive ? new Set([...selection, ...hit]) : new Set(hit);
+      selection = selectionAfterMarquee(selection, hit, finished.additive);
       updateSelectionUi();
       layer.querySelectorAll('.cv-node').forEach((el) => el.classList.toggle('selected', selection.has(el.dataset.id)));
     }
