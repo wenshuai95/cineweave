@@ -52,6 +52,7 @@
 - 抽出 `src/canvas/generation-flow.mjs`（即梦报价/提交流程），新增 3 条单测。
 - 抽出 `src/canvas/image-actions.mjs`（扩图/打光/抠图/超清/修脸），新增 4 条单测。
 - 抽出 `src/canvas/picture-popover.mjs`（画面设置弹层），新增 2 条单测。
+- 抽出 `src/canvas/clipboard-actions.mjs`（复制/粘贴/副本），新增 3 条单测。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -81,6 +82,7 @@
 - 抽出 `src/canvas/generation-flow.mjs`（即梦报价/提交流程），新增 3 条单测。
 - 抽出 `src/canvas/image-actions.mjs`（扩图/打光/抠图/超清/修脸），新增 4 条单测。
 - 抽出 `src/canvas/picture-popover.mjs`（画面设置弹层），新增 2 条单测。
+- 抽出 `src/canvas/clipboard-actions.mjs`（复制/粘贴/副本），新增 3 条单测。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
