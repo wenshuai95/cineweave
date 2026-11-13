@@ -2483,6 +2483,8 @@ async function submitDreaminaJob(quote) {
 }
 
 let jobsRefreshTimer = null;
+const pollingJobs = new Set();
+let resumedJobs = false;
 
 async function refreshJobsPanel() {
   const host = app.querySelector('#jobsList');
@@ -2541,6 +2543,10 @@ function closeJobsPanel() {
 }
 
 async function pollJob(jobId, nodeId) {
+  if (pollingJobs.has(jobId)) return;
+  pollingJobs.add(jobId);
+  doc = updateNode(doc, nodeId, { jobId });
+  try {
   for (;;) {
     const response = await fetch(`/api/generation/jobs/${jobId}`);
     const job = await response.json();
@@ -2562,6 +2568,31 @@ async function pollJob(jobId, nodeId) {
     doc = updateNode(doc, nodeId, { status: 'running', progress: job.progress || 0 });
     render();
     await new Promise((resolve) => setTimeout(resolve, 1200));
+  }
+  } finally { pollingJobs.delete(jobId); }
+}
+
+async function resumePendingJobs() {
+  if (resumedJobs) return;
+  resumedJobs = true;
+  const pending = doc.nodes.filter((node) => node.status === 'running' && node.jobId);
+  for (const node of pending) {
+    if (pollingJobs.has(node.jobId)) continue;
+    try {
+      const response = await fetch(`/api/generation/jobs/${node.jobId}`);
+      if (!response.ok) { doc = updateNode(doc, node.id, { status: 'failed', error: '任务已失效' }); render(); continue; }
+      const job = await response.json();
+      if (job.status === 'success' && job.result) {
+        commitResource(node.id, { id: job.result.filename, type: job.result.type || 'image', url: job.result.url, source: job.result.provider || 'comfyui' });
+        doc = updateNode(doc, node.id, { status: 'success', progress: 100 });
+        render();
+      } else if (job.status === 'failed' || job.status === 'canceled') {
+        doc = updateNode(doc, node.id, { status: 'failed', error: job.message || job.error?.message || '任务已结束' });
+        render();
+      } else {
+        pollJob(node.jobId, node.id);
+      }
+    } catch { /* 服务未就绪时等下次 */ }
   }
 }
 
@@ -3884,6 +3915,7 @@ function updateBoardButton() {
 }
 
 function initBoards(projectId, incomingDoc, incomingBoards = null) {
+  resumedJobs = false;
   boardProjectId = projectId || 'local';
   if (incomingBoards?.boards?.length) {
     boardList = incomingBoards.boards.map((board) => ({ id: board.id, name: board.name || '画布', updatedAt: Date.now() }));
@@ -3900,6 +3932,7 @@ function initBoards(projectId, incomingDoc, incomingBoards = null) {
     future = [];
     render();
     postBoards();
+    window.setTimeout(resumePendingJobs, 400);
     return;
   }
   boardList = readBoardIndex();
@@ -3922,6 +3955,7 @@ function initBoards(projectId, incomingDoc, incomingBoards = null) {
   future = [];
   render();
   postBoards();
+  window.setTimeout(resumePendingJobs, 400);
 }
 
 function switchBoard(id) {

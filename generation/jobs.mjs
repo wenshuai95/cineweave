@@ -82,7 +82,9 @@ export function createJobStore({ path = '' } = {}) {
     if (!job) return null;
     if (job.status === 'canceled' && patch.status && patch.status !== 'canceled') return job;
     if (job.status === 'success' && patch.status === 'failed') return job;
-    Object.assign(job, patch);
+    const { meta: metaPatch, ...rest } = patch;
+    Object.assign(job, rest);
+    if (metaPatch && typeof metaPatch === 'object') job.meta = { ...(job.meta || {}), ...metaPatch };
     if (patch.status === 'running' && !job.startedAt) job.startedAt = Date.now();
     if (patch.status && TERMINAL.has(patch.status)) job.doneAt = Date.now();
     if (job.status === 'running') {
