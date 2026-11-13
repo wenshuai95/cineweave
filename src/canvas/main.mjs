@@ -5,13 +5,12 @@ import {
   disconnect, removeReference, addGroup, removeGroup, groupOf,
 } from './document.mjs';
 import {
-  screenToWorld, worldToScreen, zoomAt, fitViewport, edgePath, nodeRect, nodesInRect,
+  screenToWorld, worldToScreen, zoomAt, fitViewport, nodeRect, nodesInRect,
 } from './engine.mjs';
 import {
   modelDefaultsKey, pickSavedParams, estimateForModel, missingH3Sections,
   promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
 } from './generation-catalog.mjs';
-import { findTimelineDropTarget, appendTimelineItem } from './timeline-model.mjs';
 import { getJob, listJobs, cancelJob, retryJob, waitForJob } from './job-client.mjs';
 import { submitJob, requestQuote, uploadDataUrl } from './generation-request.mjs';
 import { buildModelOptions, IMAGE_PRESETS } from './generation-options.mjs';
@@ -25,7 +24,6 @@ import { createPicturePopover } from './picture-popover.mjs';
 import { createClipboardActions } from './clipboard-actions.mjs';
 import { computeSnap, guidesHtml } from './snap-view.mjs';
 import { createAssetsPanel } from './assets-view.mjs';
-import { applyNodeSelection, marqueeWorldBox, selectionAfterMarquee } from './selection-model.mjs';
 import { createHistory } from './history.mjs';
 import { createBoardManager } from './board-manager.mjs';
 import { alignPositions, stackPositions } from './layout-actions.mjs';
@@ -40,6 +38,9 @@ import { createVersionsView, downloadNodeResource } from './versions-view.mjs';
 import { createTimelineUI } from './timeline-ui.mjs';
 import { createGenerationSubmit } from './generation-submit.mjs';
 import { createComfyVideoSubmit } from './comfy-video.mjs';
+import { createCanvasGestures } from './canvas-gestures.mjs';
+import { createShortcuts } from './shortcuts.mjs';
+import { seedDocument } from './seed-document.mjs';
 import { createMediaExtract } from './media-extract.mjs';
 import { reorderReferences, applyReferenceRole, findReferenceEdge, mentionMode } from './reference-actions.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
@@ -70,33 +71,6 @@ const TOOLBAR = [
   { id: 'upload', label: '上传', note: '上传本机素材' },
 ];
 
-function seedDocument() {
-  let doc = createCanvasDocument({ viewport: { x: 520, y: 300, zoom: 0.8 } });
-  doc = addNode(doc, {
-    id: 'node_text', type: 'text', title: '剧本 / 镜头说明',
-    layout: { x: -480, y: -120, width: 320, height: 320 },
-    text: 'INT. 庭院 · 傍晚\n\n男演员穿过庭院，在旧友面前停下。\n镜头缓慢推进。',
-  });
-  doc = addNode(doc, {
-    id: 'node_img', type: 'image', title: '研究 · 图片生成',
-    layout: { x: 0, y: 0, width: 569, height: 320 },
-    generation: {
-      mode: 't2i', prompt: '电影感写实画面：黄昏庭院，一位穿深色夹克的男演员走向旧友，灰白墙面与长桌，自然侧光，克制构图，真实材质。',
-      model: '未配置后端', ratio: '16:9', resolution: '2K', outputCount: 1,
-    },
-  });
-  doc = addNode(doc, {
-    id: 'node_vid', type: 'video', title: '研究 · 图生视频',
-    layout: { x: 700, y: 40, width: 569, height: 320 },
-    generation: {
-      mode: 'i2v', prompt: '参考 {{node:node_img}} 的构图与人物站位，生成黄昏庭院中两人缓慢对视的电影镜头；镜头轻推，自然侧光，真实材质。',
-      model: '未配置后端', ratio: '16:9', resolution: '480P', durationSeconds: 5, outputCount: 1,
-    },
-  });
-  doc = connect(doc, 'node_img', 'node_vid').doc;
-  return doc;
-}
-
 function loadDocument() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -111,16 +85,11 @@ function loadDocument() {
 let doc = EMBED ? seedDocument() : loadDocument();
 let embedLoaded = false;
 let selection = new Set();
-let drag = null;
-let tempLink = null;
-let dragPos = null;
 let toastTimer = null;
 let menuOpenedAt = 0;
 let dreaminaCatalog = { image: [], video: [], audio: [] };
-let marquee = null;
 let selectedEdge = null;
 let spaceHeld = false;
-let dragPositions = null;
 let clipboard = null;
 const HISTORY_LIMIT = 60;
 
@@ -602,15 +571,16 @@ function renderNodes() {
   }
 }
 
-
 function renderEdges() {
   const positions = new Map();
   for (const node of doc.nodes) {
     const rect = nodeRect(node);
+    const dragPositions = gestures.getDragPositions();
+    const dragPos = gestures.getDragPos();
     const moved = (dragPositions && dragPositions.get(node.id)) || (dragPos && dragPos.id === node.id ? dragPos : null);
     positions.set(node.id, moved ? { ...rect, x: moved.x, y: moved.y } : rect);
   }
-  edgesSvg.innerHTML = edgePathsHtml({ edges: doc.edges, positions, selectedEdge, tempLink });
+  edgesSvg.innerHTML = edgePathsHtml({ edges: doc.edges, positions, selectedEdge, tempLink: gestures.getTempLink() });
 }
 
 function clearGuides() {
@@ -757,324 +727,70 @@ function onToolClick(tool) {
   render();
 }
 
-function onNodePointerDown(event) {
-  if (event.button !== 0) return;
-  const nodeEl = event.currentTarget;
-  const nodeId = nodeEl.dataset.id;
-  const conn = event.target.closest('.cv-conn');
-  event.stopPropagation();
-  if (conn?.dataset.conn === 'out') {
-    startLink(nodeId, event);
-    return;
-  }
-  if (conn?.dataset.conn === 'in') return;
-  const group = groupOf(doc, nodeId);
-  selection = applyNodeSelection(selection, nodeId, { shift: event.shiftKey, groupIds: group ? group.nodeIds : [] });
-  updateSelectionUi();
-  layer.querySelectorAll('.cv-node').forEach((el) => el.classList.toggle('selected', selection.has(el.dataset.id)));
-  const node = findNode(doc, nodeId);
-  const rect = nodeRect(node);
-  if (!event.shiftKey && selection.has(nodeId) && selection.size > 1) {
-    dragPositions = new Map();
-    for (const id of selection) {
-      const item = findNode(doc, id);
-      if (!item) continue;
-      const r = nodeRect(item);
-      dragPositions.set(id, { x: r.x, y: r.y });
-    }
-    drag = { kind: 'nodes', ids: [...selection], startX: event.clientX, startY: event.clientY, moved: false };
-  } else {
-    drag = {
-      kind: 'node', id: nodeId, startX: event.clientX, startY: event.clientY,
-      originX: rect.x, originY: rect.y, moved: false,
-    };
-    dragPos = { id: nodeId, x: rect.x, y: rect.y };
-  }
-  try { nodeEl.setPointerCapture?.(event.pointerId); } catch { /* 合成事件无活动指针 */ }
-  stage.classList.add('panning');
-}
-
-function startLink(fromId, event) {
-  const node = findNode(doc, fromId);
-  const rect = nodeRect(node);
-  tempLink = {
-    from: fromId,
-    to: screenToWorld({ x: event.clientX - stage.getBoundingClientRect().left, y: event.clientY - stage.getBoundingClientRect().top }, doc.viewport),
-    pointerId: event.pointerId,
-  };
-  drag = { kind: 'link' };
-  renderEdges();
-}
-
-function onPointerDown(event) {
-  if (event.button !== 0 && event.button !== 1) return;
-  const edgeEl = event.target.closest('[data-edge]');
-  if (edgeEl && event.button === 0) {
-    selectedEdge = edgeEl.dataset.edge;
-    selection = new Set();
-    updateSelectionUi();
-    renderEdges();
-    return;
-  }
-  if (event.target.closest('.cv-node')) return;
-  selectedEdge = null;
-  if (event.button === 1 || spaceHeld) {
-    drag = { kind: 'pan', startX: event.clientX, startY: event.clientY, originX: doc.viewport.x, originY: doc.viewport.y };
-    stage.classList.add('panning');
-    try { stage.setPointerCapture?.(event.pointerId); } catch { /* 合成事件无活动指针 */ }
-    selection = new Set();
-    updateSelectionUi();
-    layer.querySelectorAll('.cv-node').forEach((el) => el.classList.remove('selected'));
-    return;
-  }
-  // 空白左键拖动 = 框选（即梦同款）；空格/中键拖动 = 平移。
-  drag = { kind: 'marquee', startX: event.clientX, startY: event.clientY, additive: event.shiftKey };
-  if (!event.shiftKey) {
-    selection = new Set();
-    updateSelectionUi();
-    layer.querySelectorAll('.cv-node').forEach((el) => el.classList.remove('selected'));
-  }
-  marquee = document.createElement('div');
-  marquee.className = 'cv-marquee';
-  document.body.appendChild(marquee);
-  positionMarquee();
-  try { stage.setPointerCapture?.(event.pointerId); } catch { /* 合成事件无活动指针 */ }
-}
-
-function positionMarquee() {
-  if (!marquee || drag?.kind !== 'marquee') return;
-  const x = Math.min(drag.startX, drag.currentX ?? drag.startX);
-  const y = Math.min(drag.startY, drag.currentY ?? drag.startY);
-  const w = Math.abs((drag.currentX ?? drag.startX) - drag.startX);
-  const h = Math.abs((drag.currentY ?? drag.startY) - drag.startY);
-  Object.assign(marquee.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, display: w > 2 && h > 2 ? 'block' : 'none' });
-}
-
-function onPointerMove(event) {
-  if (!drag) return;
-  const rect = stage.getBoundingClientRect();
-  if (drag.kind === 'pan') {
-    doc.viewport = {
-      x: drag.originX + (event.clientX - drag.startX),
-      y: drag.originY + (event.clientY - drag.startY),
-      zoom: doc.viewport.zoom,
-    };
-    applyViewport();
-    return;
-  }
-  if (drag.kind === 'marquee') {
-    drag.currentX = event.clientX;
-    drag.currentY = event.clientY;
-    positionMarquee();
-    return;
-  }
-  if (drag.kind === 'nodes') {
-    const dx = (event.clientX - drag.startX) / doc.viewport.zoom;
-    const dy = (event.clientY - drag.startY) / doc.viewport.zoom;
-    drag.moved = true;
-    const starts = [...drag.ids].map((id) => dragPositions?.get(id)).filter(Boolean);
-    if (!starts.length) return;
-    const minX = Math.min(...starts.map((p) => p.x));
-    const minY = Math.min(...starts.map((p) => p.y));
-    const width = Math.max(...drag.ids.map((id) => nodeRect(findNode(doc, id)).width));
-    const height = Math.max(...drag.ids.map((id) => nodeRect(findNode(doc, id)).height));
-    const snapped = snapToGuides(Math.round((minX + dx) / 8) * 8, Math.round((minY + dy) / 8) * 8, width, height, new Set(drag.ids));
-    const offsetX = snapped.x - minX;
-    const offsetY = snapped.y - minY;
-    for (const id of drag.ids) {
-      const start = dragPositions?.get(id);
-      if (!start) continue;
-      const x = Math.round((start.x + offsetX) / 8) * 8;
-      const y = Math.round((start.y + offsetY) / 8) * 8;
-      dragPositions.set(id, { x, y });
-      const el = layer.querySelector(`.cv-node[data-id="${id}"]`);
-      if (el) { el.style.left = `${x}px`; el.style.top = `${y}px`; }
-    }
-    drawGuides(snapped.lines);
-    renderEdges();
-    return;
-  }
-  if (drag.kind === 'node') {
-    const dx = (event.clientX - drag.startX) / doc.viewport.zoom;
-    const dy = (event.clientY - drag.startY) / doc.viewport.zoom;
-    const node = findNode(doc, drag.id);
-    if (!node) return;
-    const rawX = Math.round((drag.originX + dx) / 8) * 8;
-    const rawY = Math.round((drag.originY + dy) / 8) * 8;
-    const snapped = snapToGuides(rawX, rawY, node.layout.width, node.layout.height, new Set([drag.id]));
-    dragPos = { id: drag.id, x: snapped.x, y: snapped.y };
-    drag.moved = true;
-    const el = layer.querySelector(`.cv-node[data-id="${drag.id}"]`);
-    if (el) { el.style.left = `${snapped.x}px`; el.style.top = `${snapped.y}px`; }
-    drawGuides(snapped.lines);
-    renderEdges();
-    return;
-  }
-  if (drag.kind === 'link' && tempLink) {
-    tempLink.to = screenToWorld({ x: event.clientX - rect.left, y: event.clientY - rect.top }, doc.viewport);
-    renderEdges();
-  }
-}
-
-function onPointerUp(event) {
-  if (!drag) return;
-  clearGuides();
-  const finished = drag;
-  drag = null;
-  stage.classList.remove('panning');
-  if (finished.kind === 'marquee') {
-    const currentX = finished.currentX ?? finished.startX;
-    const currentY = finished.currentY ?? finished.startY;
-    marquee?.remove();
-    marquee = null;
-    const rect = stage.getBoundingClientRect();
-    const box = marqueeWorldBox({ startX: finished.startX, startY: finished.startY, currentX, currentY, stageLeft: rect.left, stageTop: rect.top, viewport: doc.viewport });
-    if (box.width > 4 || box.height > 4) {
-      const hit = nodesInRect(doc.nodes, box).map((node) => node.id);
-      selection = selectionAfterMarquee(selection, hit, finished.additive);
-      updateSelectionUi();
-      layer.querySelectorAll('.cv-node').forEach((el) => el.classList.toggle('selected', selection.has(el.dataset.id)));
-    }
-    renderEdges();
-    return;
-  }
-  if (finished.kind === 'nodes' && dragPositions) {
-    pushHistory();
-    for (const id of finished.ids) {
-      const pos = dragPositions.get(id);
-      if (pos) doc = moveNode(doc, id, pos.x, pos.y);
-    }
-    dragPositions = null;
-    render();
-    return;
-  }
-  if (finished.kind === 'node' && dragPos) {
-    const { id, x, y } = dragPos;
-    dragPos = null;
-    pushHistory();
-    doc = moveNode(doc, id, x, y);
-    const dragged = findNode(doc, id);
-    if (dragged && (dragged.type === 'video' || dragged.type === 'audio')) {
-      const draggedRect = nodeRect(dragged);
-      const target = findTimelineDropTarget(doc.nodes, draggedRect, dragged.id, nodeRect);
-      if (target) {
-        const items = appendTimelineItem(target.timelineItems || [], dragged);
-        if (items !== target.timelineItems) {
-          doc = updateNode(doc, target.id, { timelineItems: items });
-          toast('已加入时间线');
-        }
-      }
-    }
-    render();
-    return;
-  }
-  if (finished.kind === 'link' && tempLink) {
-    const fromId = tempLink.from;
-    tempLink = null;
-    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.cv-conn.left');
-    const toId = target?.dataset.id;
-    if (toId && toId !== fromId) {
-      try {
-        const fromNode = findNode(doc, fromId);
-        const targetNode = findNode(doc, toId);
-        // 图片→视频自动切 i2v，视频/音频参考自动切 m2v（即梦同款行为）。
-        if (targetNode?.generation) {
-          let mode = targetNode.generation.mode;
-          if (targetNode.type === 'video') {
-            mode = fromNode?.type === 'image' ? 'i2v' : fromNode?.type === 'video' || fromNode?.type === 'audio' ? 'm2v' : mode;
-          } else if (targetNode.type === 'image' && fromNode?.type === 'image') {
-            mode = 'i2i';
-          }
-          if (mode !== targetNode.generation.mode) doc = updateNode(doc, toId, { generation: { mode } });
-        }
-        pushHistory();
-        doc = connect(doc, fromId, toId).doc;
-        if (fromNode) doc = addReference(doc, toId, { id: fromId, type: fromNode.type });
-        toast('已连接');
-      } catch (error) {
-        toast(error.message, true);
-      }
-      render();
-      return;
-    }
-    renderEdges();
-    return;
-  }
-  if (finished.kind === 'pan') {
-    persist(false);
-    return;
-  }
-  renderEdges();
-}
-
-function onWheel(event) {
-  event.preventDefault();
-  const rect = stage.getBoundingClientRect();
-  const factor = Math.exp(-event.deltaY * 0.0012);
-  doc.viewport = zoomAt(doc.viewport, { x: event.clientX - rect.left, y: event.clientY - rect.top }, doc.viewport.zoom * factor);
-  applyViewport();
-  persist(false);
-}
-
-function onKeyDown(event) {
-  const editing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable;
-  if (editing) return;
-  if (event.code === 'Space' && !event.repeat) { spaceHeld = true; event.preventDefault(); return; }
-  if (event.key === 'Delete' || event.key === 'Backspace') {
-    if (selectedEdge) {
-      event.preventDefault();
-      const edge = doc.edges.find((item) => item.id === selectedEdge);
-      pushHistory();
-      if (edge) {
-        doc = disconnect(doc, edge.id);
-        const target = findNode(doc, edge.to);
-        if (target) doc = removeReference(doc, edge.to, edge.from);
-      }
-      selectedEdge = null;
-      render();
-      toast('已删除连线');
-      return;
-    }
-    if (!selection.size) return;
-    event.preventDefault();
-    pushHistory();
-    for (const id of selection) doc = removeNode(doc, id);
-    selection = new Set();
-    render();
-    toast('已删除');
-    return;
-  }
-  if (event.key === 'Escape') {
-    selection = new Set();
-    selectedEdge = null;
-    render();
-    return;
-  }
-  const meta = event.metaKey || event.ctrlKey;
-  const inAiPanel = Boolean(document.activeElement?.closest?.('#aiPanel') || window.getSelection()?.anchorNode?.parentElement?.closest?.('#aiPanel'));
-  if (inAiPanel && meta && ['c', 'a'].includes(event.key.toLowerCase())) return; // 让浏览器复制/全选 AI 对话
-  const textSelected = Boolean(window.getSelection()?.toString());
-  if (textSelected && meta && event.key.toLowerCase() === 'c') return; // 有文本选区时不抢复制
-  if (meta && event.key.toLowerCase() === 'z') {
-    event.preventDefault();
-    event.shiftKey ? redo() : undo();
-    return;
-  }
-  if (meta && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); return; }
-  if (meta && event.key.toLowerCase() === 'a') { event.preventDefault(); selection = new Set(doc.nodes.map((node) => node.id)); updateSelectionUi(); layer.querySelectorAll('.cv-node').forEach((el) => el.classList.toggle('selected', selection.has(el.dataset.id))); return; }
-  if (!meta && event.key.toLowerCase() === 'f') { event.preventDefault(); fitCanvas(); return; }
-  if (meta && event.key.toLowerCase() === 'c') { event.preventDefault(); copySelected(); return; }
-  if (meta && event.key.toLowerCase() === 'v') { event.preventDefault(); pasteNode(); return; }
-  if (meta && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); return; }
-}
-
-const historyState = createHistory({
-  limit: HISTORY_LIMIT,
+const gestures = createCanvasGestures({
+  stage,
+  layer,
   getDoc: () => doc,
   setDoc: (next) => { doc = next; },
-  onRestore: () => { selection = new Set(); render(); },
+  getSelection: () => selection,
+  setSelection: (next) => { selection = next; },
+  getSelectedEdge: () => selectedEdge,
+  setSelectedEdge: (next) => { selectedEdge = next; },
+  getSpaceHeld: () => spaceHeld,
+  render,
+  renderEdges,
+  updateSelectionUi,
+  applyViewport,
+  persist,
+  pushHistory,
   toast,
+  nodeRect,
+  screenToWorld,
+  zoomAt,
+  nodesInRect,
+  groupOf,
+  findNode,
+  connect,
+  addReference,
+  moveNode,
+  updateNode,
+  snapToGuides,
+  drawGuides,
+  clearGuides,
 });
+
+function onNodePointerDown(event) { return gestures.onNodePointerDown(event); }
+function onPointerDown(event) { return gestures.onPointerDown(event); }
+function onPointerMove(event) { return gestures.onPointerMove(event); }
+function onPointerUp(event) { return gestures.onPointerUp(event); }
+function onWheel(event) { return gestures.onWheel(event); }
+
+const shortcuts = createShortcuts({
+  getDoc: () => doc,
+  setDoc: (next) => { doc = next; },
+  getSelection: () => selection,
+  setSelection: (next) => { selection = next; },
+  getSelectedEdge: () => selectedEdge,
+  setSelectedEdge: (next) => { selectedEdge = next; },
+  setSpaceHeld: (value) => { spaceHeld = value; },
+  pushHistory,
+  undo,
+  redo,
+  render,
+  updateSelectionUi,
+  layer,
+  toast,
+  fitCanvas,
+  copySelected,
+  pasteNode,
+  duplicateSelected,
+  disconnect,
+  findNode,
+  removeNode,
+  removeReference,
+});
+
+function onKeyDown(event) { return shortcuts.onKeyDown(event); }
 
 function pushHistory() { historyState.push(); }
 function undo() { historyState.undo(); }
@@ -1143,7 +859,6 @@ async function probeProviders() {
     pill.disabled = true;
   }
 }
-
 
 function showPresetMenu(node) {
   showContextMenu(Object.keys(IMAGE_PRESETS).map((label) => [label, () => {
@@ -1228,7 +943,6 @@ function renderAudioWaveforms() {
   }
 }
 
-
 const trimTools = createTrimTools({
   app,
   getNode: (id) => findNode(doc, id),
@@ -1280,7 +994,6 @@ const imageActions = createImageActions({
   getPrompt: () => promptEl.value.trim(),
   translate: translateLightPrompt,
 });
-
 
 async function addResourceNode(sourceNode, type, resource, title) {
   pushHistory();
@@ -2645,7 +2358,6 @@ function toast(message, isError = false) {
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
-
 
 if (!EMBED) initBoards('local', null);
 
