@@ -38,6 +38,7 @@
 - 抽出 `src/canvas/timeline-editor.mjs`（拖动/裁剪控制器），新增 3 条单测。
 - 抽出 `src/canvas/generation-options.mjs`（模型菜单/图片预设），新增 4 条单测。
 - 抽出 `src/canvas/ai-context.mjs`（AI 上下文/消息 HTML），新增 3 条单测。
+- 抽出 `src/canvas/job-view.mjs`（任务面板 HTML），新增 3 条单测。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -53,6 +54,7 @@
 - 抽出 `src/canvas/timeline-editor.mjs`（拖动/裁剪控制器），新增 3 条单测。
 - 抽出 `src/canvas/generation-options.mjs`（模型菜单/图片预设），新增 4 条单测。
 - 抽出 `src/canvas/ai-context.mjs`（AI 上下文/消息 HTML），新增 3 条单测。
+- 抽出 `src/canvas/job-view.mjs`（任务面板 HTML），新增 3 条单测。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
