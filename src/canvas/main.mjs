@@ -34,6 +34,7 @@ import { alignPositions, stackPositions } from './layout-actions.mjs';
 import { minimapBounds, paintMinimap, minimapTransform } from './minimap.mjs';
 import { createNodeActions } from './node-actions.mjs';
 import { createPromptTools } from './prompt-tools.mjs';
+import { createStyleTools } from './style-tools.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
@@ -2276,28 +2277,6 @@ function renderDockChips(node) {
   });
 }
 
-const CAMERA_OPTIONS = {
-  camera: ['自动', 'ARRI Alexa 65', 'RED Komodo', 'Sony Venice', 'Blackmagic Ursa'],
-  lens: ['自动', '定焦 35mm', '定焦 50mm', '变焦 24-70mm', '微距 100mm'],
-  focal: ['自动', '广角', '中景', '特写', '远景'],
-  aperture: ['自动', 'f/1.4', 'f/2.8', 'f/4', 'f/8'],
-};
-
-const PALETTES = [
-  ['日系清新', ['#d9e7df', '#a8c6b8', '#f2e9dc', '#7d9f92']],
-  ['雾蓝米白', ['#cfd9e2', '#8fa6b8', '#f3efe7', '#5f7588']],
-  ['复古糖果', ['#f2b6c1', '#f6d365', '#8fd3c7', '#c48f9f']],
-  ['暖黄灰褐', ['#e6c79c', '#b58b63', '#f4ead9', '#7b614c']],
-  ['冷青琥珀', ['#8fc7c9', '#e0a35c', '#20343a', '#d9d2c3']],
-  ['南法假日', ['#f2d8a7', '#7fb6b0', '#e38b6d', '#f7f1e3']],
-  ['沙漠史诗', ['#e0a562', '#b8753f', '#f2dfc2', '#5e412b']],
-];
-
-const STYLES = ['复古对称美学', '电影胶片', '赛博霓虹', '水墨东方', '清新日系', '暗黑史诗'];
-
-let selectedPalette = 0;
-let selectedStyle = 0;
-
 function appendPrompt(text) {
   const value = promptEl.value.trimEnd();
   promptEl.value = `${value}${value ? '\n' : ''}${text}`;
@@ -2305,104 +2284,22 @@ function appendPrompt(text) {
   promptEl.focus();
 }
 
-function openCameraModal(node) {
-  const camera = node.generation?.camera || {};
-  for (const key of ['camera', 'lens', 'focal', 'aperture']) {
-    const select = app.querySelector({ camera: '#camCamera', lens: '#camLens', focal: '#camFocal', aperture: '#camAperture' }[key]);
-    select.innerHTML = CAMERA_OPTIONS[key].map((value) => `<option${value === (camera[key] || '自动') ? ' selected' : ''}>${value}</option>`).join('');
-  }
-  app.querySelector('#cameraModal').dataset.node = node.id;
-  app.querySelector('#cameraModal').classList.add('open');
-}
+const styleTools = createStyleTools({
+  app,
+  getNode: (id) => (id ? findNode(doc, id) : (([...selection][0]) ? findNode(doc, [...selection][0]) : null)),
+  updateNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  appendPrompt,
+  render,
+  toast,
+});
 
-function applyCamera() {
-  const modal = app.querySelector('#cameraModal');
-  const node = findNode(doc, modal.dataset.node);
-  if (!node) return;
-  const camera = {
-    camera: app.querySelector('#camCamera').value,
-    lens: app.querySelector('#camLens').value,
-    focal: app.querySelector('#camFocal').value,
-    aperture: app.querySelector('#camAperture').value,
-  };
-  doc = updateNode(doc, node.id, { generation: { camera } });
-  const parts = [];
-  if (camera.camera !== '自动') parts.push(`相机 ${camera.camera}`);
-  if (camera.lens !== '自动') parts.push(`镜头 ${camera.lens}`);
-  if (camera.focal !== '自动') parts.push(`${camera.focal}景别`);
-  if (camera.aperture !== '自动') parts.push(`光圈 ${camera.aperture}`);
-  if (parts.length) appendPrompt(`镜头语言：${parts.join('，')}`);
-  modal.classList.remove('open');
-  render();
-  toast('已应用相机参数');
-}
-
-function openPaletteModal(node) {
-  const grid = app.querySelector('#paletteGrid');
-  grid.innerHTML = PALETTES.map(([name, colors], index) => `<button class="cv-palette${index === selectedPalette ? ' active' : ''}" data-index="${index}"><b>${name}</b><span>${colors.map((color) => `<i style="background:${color}"></i>`).join('')}</span></button>`).join('');
-  grid.querySelectorAll('[data-index]').forEach((button) => {
-    button.addEventListener('click', () => {
-      selectedPalette = Number(button.dataset.index);
-      grid.querySelectorAll('.cv-palette').forEach((el) => el.classList.toggle('active', el === button));
-    });
-  });
-  app.querySelector('#paletteModal').dataset.node = node.id;
-  app.querySelector('#paletteModal').classList.add('open');
-}
-
-function applyPalette() {
-  const modal = app.querySelector('#paletteModal');
-  const node = findNode(doc, modal.dataset.node);
-  if (!node) return;
-  const [name, colors] = PALETTES[selectedPalette];
-  doc = updateNode(doc, node.id, { generation: { palette: name } });
-  appendPrompt(`配色：${name}（${colors.join(' / ')}）`);
-  modal.classList.remove('open');
-  render();
-  toast(`已应用配色：${name}`);
-}
-
-function openStyleModal(node) {
-  const list = app.querySelector('#styleList');
-  list.innerHTML = STYLES.map((name, index) => `<button class="cv-style${index === selectedStyle ? ' active' : ''}" data-index="${index}">${name}</button>`).join('');
-  list.querySelectorAll('[data-index]').forEach((button) => {
-    button.addEventListener('click', () => {
-      selectedStyle = Number(button.dataset.index);
-      list.querySelectorAll('.cv-style').forEach((el) => el.classList.toggle('active', el === button));
-    });
-  });
-  app.querySelector('#styleModal').dataset.node = node.id;
-  app.querySelector('#styleModal').classList.add('open');
-}
-
-function applyStyle() {
-  const modal = app.querySelector('#styleModal');
-  const node = findNode(doc, modal.dataset.node);
-  if (!node) return;
-  const name = STYLES[selectedStyle];
-  doc = updateNode(doc, node.id, { generation: { style: name } });
-  appendPrompt(`风格：${name}`);
-  modal.classList.remove('open');
-  render();
-  toast(`已应用风格：${name}`);
-}
-
-const CAMERA_MOVES = {
-  '推镜头': '镜头缓慢推近，主体逐渐占据画面',
-  '拉镜头': '镜头缓慢拉远，逐渐展现环境',
-  '摇镜头': '镜头水平摇移，扫过场景',
-  '移镜头': '镜头横向平移，跟随主体',
-  '跟拍': '镜头跟随主体移动，保持中景',
-  '环绕': '镜头围绕主体环绕，背景旋转',
-  '升降': '镜头垂直升降，改变视角高度',
-};
-
-function openCameraMoveMenu(node) {
-  showContextMenu(Object.keys(CAMERA_MOVES).map((label) => [label, () => {
-    appendPrompt(`运镜：${CAMERA_MOVES[label]}`);
-    toast(`已加入运镜：${label}`);
-  }]), 420, 300);
-}
+function openCameraModal(node) { return styleTools.openCamera(node); }
+function applyCamera() { return styleTools.applyCamera(); }
+function openPaletteModal(node) { return styleTools.openPalette(node); }
+function applyPalette() { return styleTools.applyPalette(); }
+function openStyleModal(node) { return styleTools.openStyle(node); }
+function applyStyle() { return styleTools.applyStyle(); }
+function openCameraMoveMenu() { return styleTools.openCameraMoveMenu(showContextMenu); }
 
 function openMentionMenu(event) {
   const currentId = [...selection][0];
