@@ -1,0 +1,251 @@
+{
+ "workflow": "relayvsr-x2",
+ "workflowVersion": "ComfyUI 0.45.0 官方模板 utility_relayvsr_video_x2_upscale（手工展平/校验）",
+ "generatedAt": "2026-11-13",
+ "model": "RelayVSR X2 (LightX2V int8 convrot) + Flash VAE X2 fp32",
+ "comfy": "http://192.168.3.27:8190",
+ "comfyVersion": "0.45.0",
+ "port": 8190,
+ "defaults": {
+  "steps": 1,
+  "cfg": 1.0,
+  "seed": 42,
+  "sampler_name": "euler",
+  "scheduler": "simple",
+  "denoise": 1.0,
+  "detail": 1.0,
+  "sourceVideo": "h3ult-t2v.mp4",
+  "outputPrefix": "video/RelayVSR_x2"
+ },
+ "notes": {
+  "nativeNodes": "0.45 核心原生 RelayVSRConditioning / VSRDecode / GetVideoComponents / CreateVideo / SaveVideo，无需第三方扩展。",
+  "scale": "倍率由权重文件名决定且固定 2x，没有 3x 选项；x2 主模型必须配 x2 VAE，混用 x4 会出错。",
+  "steps": "1 步 + CFG 1 是蒸馏模型原生工况；加步数不提质只增耗时。",
+  "audio": "GetVideoComponents 输出 slot1=AUDIO 直连 CreateVideo.audio，slot2=fps 直连 fps，因此音轨与帧率原样保留；不要改成 VHS_VideoCombine 再拼。",
+  "negative": "KSampler.negative 与 positive 同源于 RelayVSRConditioning slot0（官方模板接线），CFG=1 时负向不起作用。",
+  "ram": "本机瓶颈是 RAM 不是显存；长片段用 relayvsr-x2-short.json（Video Slice 裁 3 秒）或分段跑再拼接。",
+  "noTextEncoder": "不需要文本编码器、不需要提示词。",
+  "uploads": "把 mp4 POST /upload/image 到 8190，用响应 name 回填节点 1 的 file；或事先放进 D://AI//ComfyUI-045//ComfyUI//input//。重名会被改名。",
+  "offline": "8190 以 --offline 启动（CSP + 禁 Partner Nodes），节点数由 1533 降到 1173；本链路全部用核心/本地节点，不受影响。",
+  "flattenWarning": "官方 UI 原版（relayvsr-x2-官方UI原版.json）用 -10/-20 子图边界，旧 flatten_subgraph.py 展平时 widget 槽位会整体错位（VAELoader 拿到主模型名、scheduler 变 euler），因此交付的 API JSON 是照官方子图 links 手工构建的；不要直接拿展平器输出跑。",
+  "rifeFps": "插帧后帧数约 2x-1，必须把 CreateVideo.fps 同步乘 multiplier；本文件用 ComfyMathExpression 的 values.a 接 GetVideoComponents.fps，表达式 a * 2，避免变成慢动作。",
+  "ramAccumulation": "连续提交多个超分任务时，0.45 的 RAM pressure cache 会保留已 staged 权重，后续任务更快但 RAM 基线更高（实测 18.14 → 22.55 → 22.90 GiB）。长批次之间建议 POST /free {\"unload_models\":true,\"free_memory\":true} 或重启实例。",
+  "loadVideoOptions": "GET /object_info 时，LoadVideo 的文件列表在 input.required.file[1].options（[0] 只是字符串 \"COMBO\"）；新视频放进 D://AI//ComfyUI-045//ComfyUI//input// 后重启即可被识别。"
+ },
+ "variants": {
+  "relayvsr-x2-upscale.json": "完整片段 2x 超分（保音轨 / 保帧率）",
+  "relayvsr-x2-short.json": "前 3 秒短片段，低 RAM 兜底；改节点 10 的 start_time / duration 可切任意段",
+  "relayvsr-x2-rife.json": "2x 超分 + RIFE 插帧（帧数与 fps 同步翻倍，时长不变）"
+ },
+ "mapping": {
+  "upscale": {
+   "file": "relayvsr-x2-upscale.json",
+   "nodes": 9,
+   "uploads": {
+    "sourceVideo": {
+     "nodeId": "1",
+     "input": "file",
+     "from": "uploadName",
+     "type": "string",
+     "endpoint": "/upload/image"
+    }
+   },
+   "params": [
+    {
+     "nodeId": "1",
+     "input": "file",
+     "from": "sourceVideo",
+     "type": "string"
+    },
+    {
+     "nodeId": "5",
+     "input": "seed",
+     "from": "seed",
+     "type": "number"
+    },
+    {
+     "nodeId": "5",
+     "input": "steps",
+     "from": "steps",
+     "type": "number"
+    },
+    {
+     "nodeId": "5",
+     "input": "cfg",
+     "from": "cfg",
+     "type": "number"
+    },
+    {
+     "nodeId": "7",
+     "input": "detail",
+     "from": "detail",
+     "type": "number",
+     "note": "0..1，噪点多的原片可调低"
+    },
+    {
+     "nodeId": "9",
+     "input": "filename_prefix",
+     "from": "outputPrefix",
+     "type": "string"
+    }
+   ],
+   "outputs": [
+    {
+     "nodeId": "9",
+     "class_type": "SaveVideo",
+     "type": "VIDEO"
+    }
+   ]
+  },
+  "short": {
+   "file": "relayvsr-x2-short.json",
+   "nodes": 10,
+   "uploads": {
+    "sourceVideo": {
+     "nodeId": "1",
+     "input": "file",
+     "from": "uploadName",
+     "type": "string",
+     "endpoint": "/upload/image"
+    }
+   },
+   "params": [
+    {
+     "nodeId": "1",
+     "input": "file",
+     "from": "sourceVideo",
+     "type": "string"
+    },
+    {
+     "nodeId": "10",
+     "input": "start_time",
+     "from": "startTime",
+     "type": "number"
+    },
+    {
+     "nodeId": "10",
+     "input": "duration",
+     "from": "duration",
+     "type": "number"
+    },
+    {
+     "nodeId": "7",
+     "input": "detail",
+     "from": "detail",
+     "type": "number"
+    },
+    {
+     "nodeId": "9",
+     "input": "filename_prefix",
+     "from": "outputPrefix",
+     "type": "string"
+    }
+   ]
+  },
+  "rife": {
+   "file": "relayvsr-x2-rife.json",
+   "nodes": 11,
+   "uploads": {
+    "sourceVideo": {
+     "nodeId": "1",
+     "input": "file",
+     "from": "uploadName",
+     "type": "string",
+     "endpoint": "/upload/image"
+    }
+   },
+   "params": [
+    {
+     "nodeId": "1",
+     "input": "file",
+     "from": "sourceVideo",
+     "type": "string"
+    },
+    {
+     "nodeId": "11",
+     "input": "multiplier",
+     "from": "multiplier",
+     "type": "number",
+     "note": "2 = 帧数翻倍"
+    },
+    {
+     "nodeId": "11",
+     "input": "ensemble",
+     "from": "ensemble",
+     "type": "boolean",
+     "note": "True 质量略好但耗时约翻倍"
+    },
+    {
+     "nodeId": "12",
+     "input": "expression",
+     "from": "fpsExpression",
+     "type": "string",
+     "note": "必须含 multiplier，例如 a * 2"
+    },
+    {
+     "nodeId": "9",
+     "input": "filename_prefix",
+     "from": "outputPrefix",
+     "type": "string"
+    }
+   ],
+   "outputs": [
+    {
+     "nodeId": "9",
+     "class_type": "SaveVideo",
+     "type": "VIDEO"
+    }
+   ]
+  }
+ },
+ "modelFiles": [
+  {
+   "path": "D:/ComfyUI_windows_portable/ComfyUI/models/diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors",
+   "bytes": 5163295248,
+   "sha256": "240e75e0c17cf2845d559b25254a230ff7458f81449d7a8c5e7e3fb8275c7b3c"
+  },
+  {
+   "path": "D:/ComfyUI_windows_portable/ComfyUI/models/vae/relayvsr_flash_vae_x2_fp32.safetensors",
+   "bytes": 127759464,
+   "sha256": "b5bb0339acb5b52545911ea29a51b4c5b805776a779222b5a14591571f42e21c"
+  },
+  {
+   "path": "D:/AI/ComfyUI-045/ComfyUI/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife/rife49.pth",
+   "bytes": 21345274,
+   "sha256": "e55fd00f3cc184e3c65961f4bb827a9da022e78eed36b055242c0ac30000d533",
+   "note": "预置权重，避免 --offline 下节点自动下载失败"
+  }
+ ],
+ "benchmarks": {
+  "host": "RTX 3060 12GB / 31.8GB RAM / ComfyUI 0.45.0 (8190, --offline)",
+  "source": "h3ult-t2v.mp4 864x480 / 24fps / 124帧 / 5.167s / h264 + AAC 32kHz stereo",
+  "method": "POST /prompt 单任务，/system_stats 每 2s 采样，PyAV 复核输出流",
+  "runs": [
+   {
+    "variant": "relayvsr-x2-upscale.json",
+    "elapsed_s": 28.0,
+    "vram_peak_GiB": 7.28,
+    "ram_peak_GiB": 18.14,
+    "output": "1728x960 / 24fps / 124帧 / 5.167s / AAC 32kHz stereo",
+    "note": "冷启动，含 5.16GB 模型首次加载"
+   },
+   {
+    "variant": "relayvsr-x2-rife.json",
+    "elapsed_s": 16.0,
+    "vram_peak_GiB": 6.3,
+    "ram_peak_GiB": 22.9,
+    "output": "1728x960 / 48fps / 247帧 / 5.146s / AAC 32kHz stereo",
+    "note": "热启动；ensemble=false / float16 / multiplier=2"
+   },
+   {
+    "variant": "relayvsr-x2-short.json",
+    "elapsed_s": 16.0,
+    "vram_peak_GiB": 6.75,
+    "ram_peak_GiB": 22.55,
+    "output": "1728x960 / 24fps / 72帧 / 3.0s / AAC 32kHz stereo",
+    "note": "Video Slice 裁前 3 秒，长片段分段兜底"
+   }
+  ],
+  "fullChain": "H3 Ultimate T2V 864x480 实测 308.2s（见 045 全量回执）+ 本次超分 28.0s = 336.2s；两段式串行，非单次端到端连续提交。第三方 H100/5090 口径的 403 秒不可直接对比。"
+ }
+}

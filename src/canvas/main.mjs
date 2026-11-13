@@ -1014,6 +1014,22 @@ const mediaExtract = createMediaExtract({ addResourceNode, toast });
 async function extractVideoFrame(node) { return mediaExtract.frame(node); }
 async function extractVideoAudio(node) { return mediaExtract.audio(node); }
 
+async function upscaleVideo(node) {
+  const media = node?.resources?.[0];
+  if (!media?.url) { toast('视频还没有生成'); return; }
+  doc = updateNode(doc, node.id, { status: 'running', progress: 0, jobMessage: 'RelayVSR 超分中…' });
+  render();
+  try {
+    const data = await submitJob({ kind: 'comfyui-relayvsr', videoUrl: media.url, detail: 1 });
+    toast('已提交视频超分');
+    pollJob(data.id, node.id);
+  } catch (error) {
+    doc = updateNode(doc, node.id, { status: 'failed', error: error.message || String(error) });
+    render();
+    toast(error.message || String(error), true);
+  }
+}
+
 function relightMenu(node) { return imageActions.relightMenu(node, showContextMenu); }
 
 async function startRelight(node, variant) { return imageActions.relight(node, variant); }
@@ -1615,6 +1631,7 @@ const runNodeAction = createNodeActions({
   videoTrim: (node) => openVideoTrim(node),
   extractFrame: (node) => extractVideoFrame(node),
   extractAudio: (node) => extractVideoAudio(node),
+  relayVSR: (node) => upscaleVideo(node),
   openTimeline: (node) => openTimeline(node),
   openStage: () => openDirectorStage(),
   smartEdit: async (node) => {

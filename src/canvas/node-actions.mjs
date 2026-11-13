@@ -20,6 +20,7 @@ export function createNodeActions(handlers = {}) {
     if (tool === '视频修剪' && node.type === 'video') { handlers.videoTrim?.(node); return true; }
     if (tool === '截取帧' && node.type === 'video') { await handlers.extractFrame?.(node); return true; }
     if (tool === '分离音频' && node.type === 'video') { await handlers.extractAudio?.(node); return true; }
+    if (tool === '视频超分' && node.type === 'video') { await handlers.relayVSR?.(node); return true; }
     if (tool === '打开时间线' && node.type === 'timeline') { handlers.openTimeline?.(node); return true; }
     if (tool === '打开导演台') { handlers.openStage?.(); return true; }
     handlers.fallback?.(tool);

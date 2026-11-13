@@ -3,12 +3,12 @@
   "endpoints": {
     "main": {
       "config": "comfyui.baseUrl",
-      "label": "ComfyUI 主环境"
+      "label": "ComfyUI 主环境（8188 已停用，旧模型需按回退说明恢复）"
     },
     "parallel045": {
       "config": "comfyui.baseUrl045",
       "fallbackPort": 8190,
-      "label": "ComfyUI 0.45 并行环境"
+      "label": "ComfyUI 0.45 并行环境（8190，唯一在线）"
     }
   },
   "models": {
@@ -19,13 +19,52 @@
       "label": "H3 Ultimate",
       "license": "MiniMax H3 Community License",
       "modes": {
-        "t2v": { "workflow": "h3-ultimate-t2v", "mapping": "h3-ultimate", "requires": [] },
-        "i2v": { "workflow": "h3-ultimate-i2v", "mapping": "h3-ultimate", "requires": ["firstFrame"] },
-        "flf": { "workflow": "h3-ultimate-flf", "mapping": "h3-ultimate", "requires": ["firstFrame", "lastFrame"] },
-        "r2v": { "workflow": "h3-ultimate-r2v", "mapping": "h3-ultimate", "requires": ["refImage1", "refImage2"] },
-        "extend": { "workflow": "h3-ultimate-extend", "mapping": "h3-ultimate", "requires": ["sourceVideo"] }
+        "t2v": {
+          "workflow": "h3-ultimate-t2v",
+          "mapping": "h3-ultimate",
+          "requires": []
+        },
+        "i2v": {
+          "workflow": "h3-ultimate-i2v",
+          "mapping": "h3-ultimate",
+          "requires": [
+            "firstFrame"
+          ]
+        },
+        "flf": {
+          "workflow": "h3-ultimate-flf",
+          "mapping": "h3-ultimate",
+          "requires": [
+            "firstFrame",
+            "lastFrame"
+          ]
+        },
+        "r2v": {
+          "workflow": "h3-ultimate-r2v",
+          "mapping": "h3-ultimate",
+          "requires": [
+            "refImage1",
+            "refImage2"
+          ]
+        },
+        "extend": {
+          "workflow": "h3-ultimate-extend",
+          "mapping": "h3-ultimate",
+          "requires": [
+            "sourceVideo"
+          ]
+        }
       },
-      "params": { "megapixels": [0.22, 0.4, 0.9], "fps": 24, "audio": true, "negativePrompt": false }
+      "params": {
+        "megapixels": [
+          0.22,
+          0.4,
+          0.9
+        ],
+        "fps": 24,
+        "audio": true,
+        "negativePrompt": false
+      }
     },
     "qwen21": {
       "provider": "comfyui",
@@ -34,14 +73,57 @@
       "label": "Qwen Image 2.1",
       "license": "Qwen Research License (non-commercial)",
       "modes": {
-        "t2i": { "workflow": "qwen21-t2i", "mapping": "qwen21", "requires": [] },
-        "edit": { "workflow": "qwen21-edit", "mapping": "qwen21", "requires": ["image"] },
-        "rmbg": { "workflow": "qwen21-rmbg", "mapping": "qwen21", "requires": ["image"] },
-        "pose": { "workflow": "qwen21-pose", "mapping": "qwen21", "requires": ["image"] },
-        "depth": { "workflow": "qwen21-depth", "mapping": "qwen21", "requires": ["image"] },
-        "edges": { "workflow": "qwen21-edges", "mapping": "qwen21", "requires": ["image"] }
+        "t2i": {
+          "workflow": "qwen21-t2i",
+          "mapping": "qwen21",
+          "requires": []
+        },
+        "edit": {
+          "workflow": "qwen21-edit",
+          "mapping": "qwen21",
+          "requires": [
+            "image"
+          ]
+        },
+        "rmbg": {
+          "workflow": "qwen21-rmbg",
+          "mapping": "qwen21",
+          "requires": [
+            "image"
+          ]
+        },
+        "pose": {
+          "workflow": "qwen21-pose",
+          "mapping": "qwen21",
+          "requires": [
+            "image"
+          ]
+        },
+        "depth": {
+          "workflow": "qwen21-depth",
+          "mapping": "qwen21",
+          "requires": [
+            "image"
+          ]
+        },
+        "edges": {
+          "workflow": "qwen21-edges",
+          "mapping": "qwen21",
+          "requires": [
+            "image"
+          ]
+        }
       },
-      "params": { "megapixels": [1, 2], "alpha": true, "aspect": ["1:1"] }
+      "params": {
+        "megapixels": [
+          1,
+          2
+        ],
+        "alpha": true,
+        "aspect": [
+          "1:1"
+        ]
+      }
     },
     "h3-ref2v": {
       "provider": "comfyui",
@@ -50,9 +132,22 @@
       "label": "H3 Ref2VA",
       "license": "MiniMax H3 Community License",
       "modes": {
-        "reference": { "workflow": "h3-ref2v", "mapping": "h3-ref2v", "requires": ["refImage1"] }
+        "reference": {
+          "workflow": "h3-ref2v",
+          "mapping": "h3-ref2v",
+          "requires": [
+            "refImage1"
+          ]
+        }
       },
-      "params": { "fps": 24, "audio": true, "maxRefImages": 9, "maxRefVideos": 3, "maxRefAudios": 3, "negativePrompt": false }
+      "params": {
+        "fps": 24,
+        "audio": true,
+        "maxRefImages": 9,
+        "maxRefVideos": 3,
+        "maxRefAudios": 3,
+        "negativePrompt": false
+      }
     },
     "h3": {
       "provider": "comfyui",
@@ -60,10 +155,23 @@
       "type": "video",
       "label": "H3",
       "modes": {
-        "t2v": { "workflow": "h3-t2v", "mapping": "h3-t2v", "requires": [] },
-        "i2v": { "workflow": "h3-i2v", "mapping": "h3-i2v", "requires": ["firstFrame"] }
+        "t2v": {
+          "workflow": "h3-t2v",
+          "mapping": "h3-t2v",
+          "requires": []
+        },
+        "i2v": {
+          "workflow": "h3-i2v",
+          "mapping": "h3-i2v",
+          "requires": [
+            "firstFrame"
+          ]
+        }
       },
-      "params": { "fps": 24, "audio": true }
+      "params": {
+        "fps": 24,
+        "audio": true
+      }
     },
     "wan22": {
       "provider": "comfyui",
@@ -71,9 +179,16 @@
       "type": "video",
       "label": "Wan 2.2",
       "modes": {
-        "t2v": { "workflow": "wan22-t2v", "mapping": "wan22-t2v", "requires": [] }
+        "t2v": {
+          "workflow": "wan22-t2v",
+          "mapping": "wan22-t2v",
+          "requires": []
+        }
       },
-      "params": { "fps": 16, "frameRule": "4n+1" }
+      "params": {
+        "fps": 16,
+        "frameRule": "4n+1"
+      }
     },
     "ltx23": {
       "provider": "comfyui",
@@ -81,9 +196,16 @@
       "type": "video",
       "label": "LTX-2.3",
       "modes": {
-        "t2v": { "workflow": "ltx23-t2v", "mapping": "ltx23-t2v", "requires": [] }
+        "t2v": {
+          "workflow": "ltx23-t2v",
+          "mapping": "ltx23-t2v",
+          "requires": []
+        }
       },
-      "params": { "fps": 24, "frameRule": "8n+1" }
+      "params": {
+        "fps": 24,
+        "frameRule": "8n+1"
+      }
     },
     "framepack": {
       "provider": "comfyui",
@@ -91,9 +213,40 @@
       "type": "video",
       "label": "FramePack",
       "modes": {
-        "i2v": { "workflow": "framepack-i2v", "mapping": "framepack-i2v", "requires": ["firstFrame"] }
+        "i2v": {
+          "workflow": "framepack-i2v",
+          "mapping": "framepack-i2v",
+          "requires": [
+            "firstFrame"
+          ]
+        }
       },
-      "params": { "fps": 30 }
+      "params": {
+        "fps": 30
+      }
+    },
+    "relayvsr-x2": {
+      "provider": "comfyui",
+      "endpoint": "parallel045",
+      "type": "video",
+      "label": "RelayVSR X2",
+      "license": "Apache-2.0",
+      "modes": {
+        "upscale": {
+          "workflow": "relayvsr-x2-upscale",
+          "mapping": "relayvsr",
+          "requires": [
+            "sourceVideo"
+          ]
+        }
+      },
+      "params": {
+        "scale": 2,
+        "detail": 1.0,
+        "audio": true,
+        "fps": true,
+        "note": "先出片再超分，不能与 H3 同时跑"
+      }
     }
   }
 }

@@ -58,3 +58,15 @@ test('capabilities can be described for the API and UI', () => {
   const qwen = described.find((model) => model.id === 'qwen21');
   assert.ok(qwen.modes.some((mode) => mode.mode === 'rmbg'));
 });
+
+test('RelayVSR X2 capability is registered on 0.45 with source video requirement', async () => {
+  const capabilities = await loadCapabilities();
+  const model = getModel(capabilities, 'relayvsr-x2');
+  assert.equal(model.endpoint, 'parallel045');
+  assert.equal(model.type, 'video');
+  assert.equal(model.modes.upscale.workflow, 'relayvsr-x2-upscale');
+  assert.deepEqual(model.modes.upscale.requires, ['sourceVideo']);
+  const result = validateModelInputs(model, 'upscale', {});
+  assert.equal(result.ok, false);
+  assert.equal(validateModelInputs(model, 'upscale', { sourceVideo: '/v.mp4' }).ok, true);
+});

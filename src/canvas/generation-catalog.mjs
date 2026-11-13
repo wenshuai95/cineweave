@@ -29,6 +29,7 @@ export const MODEL_ESTIMATES = {
   'video:comfyui:wan22': '约 3–6 分钟 · 显存 ~9G',
   'video:comfyui:ltx23': '约 2 分钟 · 显存 ~10G',
   'video:comfyui:framepack': '约 16–26 分钟 · 显存 ~6G',
+  'video:comfyui:relayvsr-x2': '约 30 秒/5 秒片段 · 显存 7G / 内存 18G',
   'image:comfyui:qwen21-t2i': '约 30–60 秒 · 显存 ~4.5G / 内存 26G',
   'image:comfyui:qwen21-edit': '约 45 秒 · 显存 ~6G / 内存 27G',
   'image:comfyui:qwen21-rmbg': '约 45 秒 · 显存 ~6G',

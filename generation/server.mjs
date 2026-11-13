@@ -220,9 +220,10 @@ function pickCliModel(catalog, type, requested, fallback) {
 
 function jobEndpoint(kind, body = {}) {
   if (String(kind).startsWith('dreamina-')) return 'dreamina';
+  if (kind === 'comfyui-relayvsr') return 'comfyui-045';
   const model = String(body.model || '');
   const workflow = String(body.workflow || '');
-  if (model === 'h3-ultimate' || model === 'qwen21' || workflow.startsWith('h3-ultimate-') || workflow.startsWith('qwen21-')) return 'comfyui-045';
+  if (model === 'h3-ultimate' || model === 'qwen21' || model === 'relayvsr-x2' || workflow.startsWith('h3-ultimate-') || workflow.startsWith('qwen21-') || workflow.startsWith('relayvsr-')) return 'comfyui-045';
   return 'comfyui-main';
 }
 
@@ -236,6 +237,8 @@ function dispatchRun(jobId, kind, body, pending) {
     ? runComfyImageJob(jobId, body)
     : kind === 'comfyui-video'
       ? runComfyVideoJob(jobId, body)
+      : kind === 'comfyui-relayvsr'
+        ? runRelayVSRJob(jobId, body)
       : kind === 'comfyui-upscale'
         ? runComfyPostJob(jobId, body, 'upscale')
         : kind === 'comfyui-detail'
@@ -517,7 +520,7 @@ async function handle(req, res, url) {
   if (req.method === 'POST' && url.pathname === '/api/generation/jobs') {
     const body = await readJson(req);
     const kind = body.kind || 'comfyui-image';
-    if (!['comfyui-image', 'comfyui-video', 'comfyui-upscale', 'comfyui-detail', 'comfyui-inpaint', 'comfyui-outpaint', 'comfyui-matte', 'comfyui-relight', 'dreamina-video', 'dreamina-audio', 'dreamina-image'].includes(kind)) {
+    if (!['comfyui-image', 'comfyui-video', 'comfyui-upscale', 'comfyui-detail', 'comfyui-inpaint', 'comfyui-outpaint', 'comfyui-matte', 'comfyui-relight', 'comfyui-relayvsr', 'dreamina-video', 'dreamina-audio', 'dreamina-image'].includes(kind)) {
       sendJson(res, 400, { error: `unsupported job kind: ${kind}` });
       return;
     }
@@ -1104,7 +1107,7 @@ async function runH3UltimateJob(jobId, input, config) {
     timeoutMs: 35 * 60 * 1000,
     onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(90, 20 + Math.round(elapsedMs / 3000)), message: `H3 Ultimate ${mode} 生成中…` }),
   });
-  const video = outputs.find((item) => item.isVideo) || outputs.find((item) => /\.(mp4|webm|gif)$/i.test(item.filename || '')) || outputs[0];
+  const video = pickVideoOutput(outputs);
   if (!video?.filename) throw jobError('ComfyUI 没有返回视频');
   const bytes = await provider.download(video);
   await mkdir(ASSETS_DIR, { recursive: true, mode: 0o700 });
@@ -1113,6 +1116,57 @@ async function runH3UltimateJob(jobId, input, config) {
   jobs.update(jobId, {
     status: 'success', progress: 100, message: '完成',
     result: { url: `/api/generation/assets/${filename}`, filename, type: 'video', provider: 'comfyui', promptId: submitted.promptId, sourceName: video.filename, model: 'h3-ultimate', mode },
+  });
+}
+
+export function pickVideoOutput(outputs = []) {
+  return outputs.find((item) => item.isVideo && item.type === 'output')
+    || outputs.find((item) => item.isVideo && item.type !== 'input')
+    || outputs.find((item) => /\.(mp4|webm|gif)$/i.test(item.filename || '') && item.type === 'output')
+    || null;
+}
+
+async function runRelayVSRJob(jobId, input) {
+  const config = await loadConfig();
+  const sourceUrl = String(input.videoUrl || '').trim();
+  if (!sourceUrl) throw jobError('视频超分需要源视频');
+  const capabilities = await loadCapabilities();
+  const endpoint = resolveEndpoint(capabilities, 'parallel045', config);
+  const provider = createComfyUIProvider({ baseUrl: endpoint.url, timeoutMs: config.comfyui.timeoutMs || 30000 });
+  const assetName = basename(sourceUrl.split('?')[0]);
+  let bytes;
+  try {
+    bytes = await readFile(join(ASSETS_DIR, assetName));
+  } catch {
+    bytes = await readReferenceBytes(sourceUrl, 'video');
+  }
+  if (!bytes?.length) throw jobError('源视频为空');
+  jobs.update(jobId, { status: 'running', progress: 8, message: '上传源视频…' });
+  const uploaded = await provider.uploadImage(bytes, `relay-${jobId}-${assetName}`, { type: 'input', overwrite: true });
+  const file = uploaded.subfolder ? `${uploaded.subfolder}/${uploaded.name}` : uploaded.name;
+  const workflowFile = input.variant === 'rife' ? 'relayvsr-x2-rife' : input.variant === 'short' ? 'relayvsr-x2-short' : 'relayvsr-x2-upscale';
+  const workflow = JSON.parse(await readFile(join(WORKFLOW_DIR, `${workflowFile}.json`), 'utf8'));
+  if (!workflow['1']?.inputs) throw jobError(`RelayVSR workflow 缺少节点 1：${workflowFile}`);
+  workflow['1'].inputs.file = file;
+  if (workflow['7']?.inputs && Number(input.detail) > 0) workflow['7'].inputs.detail = Math.min(1, Math.max(0.1, Number(input.detail)));
+  jobs.update(jobId, { status: 'running', progress: 15, message: '提交 RelayVSR X2…' });
+  const submitted = await provider.submit(workflow);
+  jobs.update(jobId, { progress: 25, message: 'RelayVSR X2 超分中…', meta: { promptId: submitted.promptId, model: 'relayvsr-x2' } });
+  const { outputs } = await provider.waitFor(submitted.promptId, {
+    intervalMs: 2000,
+    timeoutMs: 15 * 60 * 1000,
+    onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(92, 25 + Math.round(elapsedMs / 2000)), message: 'RelayVSR X2 超分中…' }),
+  });
+  const video = pickVideoOutput(outputs);
+  if (!video?.filename) throw jobError('RelayVSR 没有返回视频');
+  const outBytes = await provider.download(video);
+  await mkdir(ASSETS_DIR, { recursive: true, mode: 0o700 });
+  const ext = (video.filename.match(/\.[A-Za-z0-9]+$/)?.[0] || '.mp4').toLowerCase();
+  const filename = `${jobId}${ext}`;
+  await writeFile(join(ASSETS_DIR, filename), outBytes);
+  jobs.update(jobId, {
+    status: 'success', progress: 100, message: '超分完成',
+    result: { url: `/api/generation/assets/${filename}`, filename, type: 'video', provider: 'comfyui-045', promptId: submitted.promptId, sourceName: video.filename, scale: 2 },
   });
 }
 
@@ -1217,7 +1271,7 @@ async function runComfyVideoJob(jobId, input) {
     timeoutMs,
     onProgress: ({ elapsedMs }) => jobs.update(jobId, { progress: Math.min(90, 20 + Math.round(elapsedMs / 3000)), message: `${label} 生成中…` }),
   });
-  const video = outputs.find((item) => item.isVideo) || outputs.find((item) => /\.(mp4|webm|gif)$/i.test(item.filename || '')) || outputs[0];
+  const video = pickVideoOutput(outputs);
   if (!video?.filename) throw jobError('ComfyUI 没有返回视频');
   const bytes = await provider.download(video);
   await mkdir(ASSETS_DIR, { recursive: true, mode: 0o700 });
