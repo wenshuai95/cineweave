@@ -11,6 +11,7 @@ import {
   modelDefaultsKey, pickSavedParams, estimateForModel, missingH3Sections,
   promptTemplateFor, requiresH3Sections, qwenModeNeedsImage,
 } from './generation-catalog.mjs';
+import { normalizeTimelineItems, scanTimelineItems as scanTimelineNodes, timelineTotalDuration, formatTimelineTime, splitTimelineItem, dragTimelineItem } from './timeline-model.mjs';
 
 const EMBED = new URLSearchParams(location.search).has('embed');
 if (EMBED) document.body.classList.add('embed');
@@ -2980,24 +2981,13 @@ let timelineSelected = null;
 let timelineDrag = null;
 let timelineAssetFilter = 'all';
 
-function scanTimelineItems() {
-  let cursor = 0;
-  return doc.nodes
-    .filter((node) => ['video', 'audio', 'image'].includes(node.type))
-    .map((node) => {
-      const duration = Number(node.generation?.durationSeconds) || 5;
-      const item = { id: node.id, label: node.title || node.type, type: node.type, start: cursor, duration, sourceStart: 0 };
-      cursor += duration;
-      return item;
-    });
-}
 
 function openTimeline(node) {
   try {
     timelineNode = node;
     timelineDraft = Array.isArray(node.timelineItems) && node.timelineItems.length
-      ? node.timelineItems.map((item, index) => ({ ...item, start: Number(item.start) || 0, duration: Number(item.duration) || 5, sourceStart: Number(item.sourceStart) || 0, label: item.label || item.type || `片段 ${index + 1}` }))
-      : scanTimelineItems();
+      ? normalizeTimelineItems(node.timelineItems)
+      : scanTimelineNodes(doc.nodes);
     timelineSelected = timelineDraft[0]?.id || null;
     renderTimelineRows();
     app.querySelector('#timelineModal').classList.add('open');
@@ -3006,9 +2996,6 @@ function openTimeline(node) {
   }
 }
 
-function timelineTotalDuration() {
-  return Math.max(2, ...timelineDraft.map((item) => (Number(item.start) || 0) + (Number(item.duration) || 0))) + 0.5;
-}
 
 function timelineAssetNodes() {
   return doc.nodes.filter((node) => node.resources?.[0]?.url && (node.type === 'image' || node.type === 'video' || node.type === 'audio'));
@@ -3025,7 +3012,7 @@ function addAssetToTimeline(node) {
 }
 
 function renderTimelineRows() {
-  const total = timelineTotalDuration();
+  const total = timelineTotalDuration(timelineDraft);
   const assets = timelineAssetNodes().filter((node) => timelineAssetFilter === 'all' || node.type === timelineAssetFilter);
   const assetHost = app.querySelector('#timelineAssets');
   assetHost.innerHTML = assets.length ? assets.map((node) => `<button class="cv-timeline-asset" data-asset="${node.id}">${node.resources?.[0]?.url && node.type !== 'audio' ? `<img src="${escapeHtml(node.resources[0].url)}" alt="">` : '<span class="cv-timeline-asset-audio">♫</span>'}<b>${escapeHtml(node.title || node.type)}</b><em>${node.type === 'video' ? '视频' : node.type === 'audio' ? '音频' : '图片'}</em></button>`).join('') : '<div class="cv-timeline-asset-empty">将文件拖至此处添加</div>';
@@ -3081,20 +3068,15 @@ function renderTimelineRows() {
   }
 }
 
-function formatTimelineTime(seconds) {
-  const value = Math.max(0, Number(seconds) || 0);
-  const minutes = Math.floor(value / 60);
-  const rest = value % 60;
-  return `${String(minutes).padStart(2, '0')}:${rest.toFixed(1).padStart(4, '0')}`;
-}
 
 function splitTimelineClip() {
   const item = timelineDraft.find((entry) => entry.id === timelineSelected);
   if (!item) { toast('先选一个片段'); return; }
-  const half = Number(item.duration) / 2;
-  if (half < 0.2) return;
-  item.duration = half;
-  timelineDraft.push({ ...item, start: (Number(item.start) || 0) + half, duration: half, sourceStart: (Number(item.sourceStart) || 0) + half });
+  const parts = splitTimelineItem(item);
+  if (!parts) return;
+  const index = timelineDraft.indexOf(item);
+  timelineDraft.splice(index, 1, ...parts);
+  timelineSelected = parts[0].id;
   renderTimelineRows();
 }
 
@@ -3132,7 +3114,7 @@ function startTimelineDrag(event, item, mode) {
   const lane = app.querySelector('#timelineLanes');
   const width = lane.getBoundingClientRect().width || 1;
   timelineSelected = item.id;
-  timelineDrag = { id: item.id, mode, startX: event.clientX, pxPerSecond: width / timelineTotalDuration(), origin: { ...item } };
+  timelineDrag = { id: item.id, mode, startX: event.clientX, pxPerSecond: width / timelineTotalDuration(timelineDraft), origin: { ...item } };
   document.addEventListener('pointermove', onTimelineDragMove);
   document.addEventListener('pointerup', onTimelineDragUp, { once: true });
   updateTimelinePreview(item);
@@ -3143,18 +3125,8 @@ function onTimelineDragMove(event) {
   const item = timelineDraft.find((entry) => entry.id === timelineDrag.id);
   if (!item) return;
   const delta = (event.clientX - timelineDrag.startX) / timelineDrag.pxPerSecond;
-  const origin = timelineDrag.origin;
-  if (timelineDrag.mode === 'move') {
-    item.start = Math.max(0, origin.start + delta);
-  } else if (timelineDrag.mode === 'trim-start') {
-    const newStart = Math.max(0, origin.start + delta);
-    const change = newStart - origin.start;
-    item.start = newStart;
-    item.duration = Math.max(0.2, origin.duration - change);
-    item.sourceStart = Math.max(0, (origin.sourceStart || 0) + change);
-  } else {
-    item.duration = Math.max(0.2, origin.duration + delta);
-  }
+  const next = dragTimelineItem(item, timelineDrag.origin, timelineDrag.mode, delta);
+  if (next) Object.assign(item, next);
   renderTimelineRows();
 }
 

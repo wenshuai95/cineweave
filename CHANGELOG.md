@@ -31,6 +31,7 @@
 
 ### 代码结构
 - 抽出 `src/canvas/generation-catalog.mjs`（提示词模板、估算、参数 key），新增 5 条单测。
+- 抽出 `src/canvas/timeline-model.mjs`（片段归一化/扫描/分割/拖动），新增 5 条单测。
 
 ### 时间线
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
@@ -39,6 +40,7 @@
 
 ### 代码结构
 - 抽出 `src/canvas/generation-catalog.mjs`（提示词模板、估算、参数 key），新增 5 条单测。
+- 抽出 `src/canvas/timeline-model.mjs`（片段归一化/扫描/分割/拖动），新增 5 条单测。
 
 ### 时间线
 - 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
