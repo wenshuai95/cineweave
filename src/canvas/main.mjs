@@ -336,6 +336,7 @@ app.innerHTML = `
       <h3>生成服务</h3>
       <div class="cv-modal-sub">配置本机或局域网另一台电脑的 ComfyUI；即梦 CLI 使用本机登录态。</div>
       <label class="cv-field"><span>ComfyUI 地址</span><input id="settingsComfyUrl" placeholder="http://127.0.0.1:8188" autocomplete="off"></label>
+      <label class="cv-field"><span>ComfyUI 0.45 并行地址（H3 Ultimate / Qwen 2.1）</span><input id="settingsComfyUrl045" placeholder="留空自动用同主机 8190" autocomplete="off"></label>
       <label class="cv-field"><span>即梦 CLI</span><input id="settingsDreamina" disabled></label>
       <label class="cv-field"><span>ComfyUI 图像 workflow</span><input id="settingsImageWorkflow" list="workflowOptions" placeholder="sdxl-t2i" autocomplete="off"></label>
       <label class="cv-field"><span>ComfyUI 视频 workflow</span><input id="settingsVideoWorkflow" list="workflowOptions" placeholder="h3-t2v" autocomplete="off"></label>
@@ -3563,6 +3564,7 @@ async function openSettings() {
     const providers = await providerResponse.json();
     const workflows = workflowResponse ? await workflowResponse.json() : { workflows: [] };
     app.querySelector('#settingsComfyUrl').value = config.comfyui?.baseUrl || 'http://127.0.0.1:8188';
+    app.querySelector('#settingsComfyUrl045').value = config.comfyui?.baseUrl045 || '';
     app.querySelector('#settingsDreamina').value = config.dreamina?.command || 'dreamina-canvas';
     app.querySelector('#settingsImageWorkflow').value = config.comfyui?.workflow || 'sdxl-t2i';
     app.querySelector('#settingsVideoWorkflow').value = config.comfyui?.videoWorkflow || 'h3-t2v';
@@ -3593,13 +3595,14 @@ function closeSettings() {
 async function saveSettings() {
   const status = app.querySelector('#settingsStatus');
   const baseUrl = app.querySelector('#settingsComfyUrl').value.trim();
+  const baseUrl045 = app.querySelector('#settingsComfyUrl045').value.trim();
   const workflow = app.querySelector('#settingsImageWorkflow').value.trim();
   const videoWorkflow = app.querySelector('#settingsVideoWorkflow').value.trim();
   try {
     const response = await fetch('/api/generation/config', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        comfyui: { baseUrl, workflow, videoWorkflow },
+        comfyui: { baseUrl, baseUrl045, workflow, videoWorkflow },
         deepseek: {
           model: app.querySelector('#settingsDeepseekModel').value.trim() || 'deepseek-chat',
           baseUrl: 'https://api.deepseek.com',

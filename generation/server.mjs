@@ -957,7 +957,7 @@ async function runH3UltimateJob(jobId, input, config) {
     if (!url) throw jobError(`H3 Ultimate ${mode} 缺少 ${from}`);
     jobs.update(jobId, { status: 'running', progress: Math.min(10, 3 + i), message: `上传 ${from}…` });
     const name = await uploadComfyInput(provider, url, `${from}.png`, jobId, from);
-    uploaded.push({ nodeId: item.nodeId, input: item.input, from, value: name });
+    uploaded.push({ nodeId: item.nodeId, input: item.input, value: name });
   }
   const resolutionNode = { t2v: '39', i2v: '40', flf: '41', r2v: '41', extend: '39' }[mode];
   const mapping = [...(spec.params || []), ...uploaded];
@@ -1293,7 +1293,7 @@ async function runQwen21Job(jobId, input, config) {
     if (!input.imageUrl) throw jobError('Qwen 图片编辑需要一张参考图');
     jobs.update(jobId, { status: 'running', progress: Math.min(10, 3 + i), message: '上传参考图…' });
     const name = await uploadComfyInput(provider, input.imageUrl, `${item.from}.png`, jobId, item.from);
-    uploaded.push({ nodeId: item.nodeId, input: item.input, from: item.from, value: name });
+    uploaded.push({ nodeId: item.nodeId, input: item.input, value: name });
   }
   const { workflow } = applyInputMapping(template, [...(spec.params || []), ...uploaded], values);
   jobs.update(jobId, { status: 'running', progress: 12, message: '提交到 ComfyUI 0.45（Qwen 2.1）…' });
