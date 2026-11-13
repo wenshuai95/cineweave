@@ -36,6 +36,8 @@ import { createNodeActions } from './node-actions.mjs';
 import { createPromptTools } from './prompt-tools.mjs';
 import { createStyleTools } from './style-tools.mjs';
 import { createTrimTools } from './trim-tools.mjs';
+import { createVoicePicker } from './voice-picker.mjs';
+import { reorderReferences, applyReferenceRole, findReferenceEdge, mentionMode } from './reference-actions.mjs';
 import { dreaminaSpecFor as findDreaminaSpec, dreaminaModeFor as findDreaminaMode, dreaminaValues as findDreaminaValues, dreaminaRange as findDreaminaRange, dreaminaModelLabel as findDreaminaModelLabel, chooseDreaminaPatch } from './dreamina-model.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
@@ -2218,9 +2220,7 @@ function insertMention(current, source) {
   const label = referenceLabel(refs.length, source.type);
   try {
     if (current.generation && (current.type === 'image' || current.type === 'video') && (source.type === 'image' || source.type === 'video' || source.type === 'audio')) {
-      let mode = current.generation.mode;
-      if (current.type === 'image' && source.type === 'image') mode = 'i2i';
-      if (current.type === 'video') mode = source.type === 'image' ? 'i2v' : 'm2v';
+      const mode = mentionMode({ currentType: current.type, currentMode: current.generation.mode, sourceType: source.type });
       if (mode !== current.generation.mode) doc = updateNode(doc, current.id, { generation: { mode } });
       pushHistory();
       doc = connect(doc, source.id, current.id).doc;
@@ -2570,27 +2570,22 @@ const promptTools = createPromptTools({
 });
 
 function moveReference(node, referenceId, direction) {
-  const refs = [...(node.generation?.references || [])];
-  const index = refs.findIndex((ref) => ref.id === referenceId);
-  const target = index + direction;
-  if (index < 0 || target < 0 || target >= refs.length) { toast('已经到边界'); return; }
-  const [item] = refs.splice(index, 1);
-  refs.splice(target, 0, item);
-  const reindexed = refs.map((ref, i) => ({ ...ref, index: i }));
-  doc = updateNode(doc, node.id, { generation: { references: reindexed } });
+  const refs = reorderReferences(node.generation?.references || [], referenceId, direction);
+  if (!refs) { toast('已经到边界'); return; }
+  doc = updateNode(doc, node.id, { generation: { references: refs } });
   render();
   toast(direction < 0 ? '引用已上移' : '引用已下移');
 }
 
 function setReferenceRole(node, referenceId, role) {
-  const refs = (node.generation?.references || []).map((ref) => ref.id === referenceId ? { ...ref, role } : ref);
+  const refs = applyReferenceRole(node.generation?.references || [], referenceId, role);
   doc = updateNode(doc, node.id, { generation: { references: refs } });
   render();
   toast(`引用角色：${role}`);
 }
 
 function removeNodeReference(node, referenceId) {
-  const edge = doc.edges.find((item) => item.from === referenceId && item.to === node.id);
+  const edge = findReferenceEdge(doc.edges, referenceId, node.id);
   pushHistory();
   doc = removeReference(doc, node.id, referenceId);
   if (edge) doc = disconnect(doc, edge.id);
@@ -2943,44 +2938,15 @@ async function importGenerationConfig(event) {
   }
 }
 
-let voiceCache = null;
-let voicePickerNodeId = null;
+const voicePicker = createVoicePicker({
+  app,
+  getNode: (id) => findNode(doc, id),
+  setNode: (id, patch) => { doc = updateNode(doc, id, patch); },
+  render,
+  toast,
+});
 
-async function openVoicePicker(nodeId) {
-  voicePickerNodeId = nodeId;
-  const modal = app.querySelector('#voiceModal');
-  const list = app.querySelector('#voiceList');
-  modal.classList.add('open');
-  list.innerHTML = '<div class="cv-status">读取音色库…</div>';
-  try {
-    if (!voiceCache) {
-      const response = await fetch('/api/generation/voices');
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '读取失败');
-      voiceCache = Array.isArray(data.voices) ? data.voices : [];
-    }
-    const node = findNode(doc, nodeId);
-    const current = node?.generation?.voiceName || '';
-    list.innerHTML = voiceCache.map((voice, index) => {
-      const tags = [voice.tags?.gender, voice.tags?.age, voice.tags?.accent].filter(Boolean).join(' · ');
-      const active = voice.voiceName === current ? ' active' : '';
-      return `<button class="cv-voice-item${active}" data-index="${index}"><b>${escapeHtml(voice.voiceName || voice.voiceId)}</b><span>${escapeHtml(tags)}</span></button>`;
-    }).join('') || '<div class="cv-status">没有可用音色（请确认即梦 CLI 已登录）</div>';
-    list.querySelectorAll('[data-index]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const voice = voiceCache[Number(button.dataset.index)];
-        const node = findNode(doc, voicePickerNodeId);
-        if (!node) return;
-        doc = updateNode(doc, node.id, { generation: { voiceName: voice.voiceName, voiceId: voice.voiceId } });
-        app.querySelector('#voiceModal').classList.remove('open');
-        render();
-        toast(`已选择音色：${voice.voiceName}`);
-      });
-    });
-  } catch (error) {
-    list.innerHTML = `<div class="cv-status bad">${escapeHtml(error.message || '读取失败')}</div>`;
-  }
-}
+async function openVoicePicker(nodeId) { return voicePicker.open(nodeId); }
 
 function boardIndexKey() { return `${BOARD_PREFIX}:${boardProjectId}:index`; }
 function boardDocKey(id) { return `${BOARD_PREFIX}:${boardProjectId}:doc:${id}`; }

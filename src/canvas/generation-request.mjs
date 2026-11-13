@@ -75,3 +75,10 @@ export async function trimAudioRequest(body, { fetchImpl = fetch } = {}) {
   if (!response.ok) throw new Error(data.error || '裁剪失败');
   return data;
 }
+
+export async function listVoicesRequest({ fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('/api/generation/voices');
+  const data = await readJson(response);
+  if (!response.ok) throw new Error(data.error || '读取音色失败');
+  return Array.isArray(data.voices) ? data.voices : [];
+}
