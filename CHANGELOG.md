@@ -29,6 +29,11 @@
 - 画面设置聚合弹层（比例/分辨率/数量，按后端给不同档）；
 - 提示词优化（中文/英文双版）+ 一键翻译；DeepSeek AI 助手，可把回复写入节点。
 
+### 修复
+- 修复画布初始化 TDZ（`gestures`/`historyState`/`picturePopover` 未初始化就 render）导致工具栏无法新建节点。
+- 恢复提示词模板菜单与 history 状态，删除失效 `updateDock` 调用。
+- 新增启动顺序/符号完整性回归测试。
+
 ### CLI
 - 新增 `zaomeng` CLI：任务提交/等待/取消/重试、图片/视频/RelayVSR、时间线导出、提示词工具；stdout JSON、stderr 进度。
 
@@ -80,6 +85,11 @@
 - 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
 - 片段拖动、两端裁剪、分割、删除、播放预览；
 - 导出 MP4（加入画布 / 文件夹 / 下载）。
+
+### 修复
+- 修复画布初始化 TDZ（`gestures`/`historyState`/`picturePopover` 未初始化就 render）导致工具栏无法新建节点。
+- 恢复提示词模板菜单与 history 状态，删除失效 `updateDock` 调用。
+- 新增启动顺序/符号完整性回归测试。
 
 ### CLI
 - 新增 `zaomeng` CLI：任务提交/等待/取消/重试、图片/视频/RelayVSR、时间线导出、提示词工具；stdout JSON、stderr 进度。
