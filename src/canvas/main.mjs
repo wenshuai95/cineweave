@@ -24,6 +24,7 @@ import { buildDockViewModel } from './dock-view.mjs';
 import { createGenerationFlow } from './generation-flow.mjs';
 import { createImageActions } from './image-actions.mjs';
 import { createPicturePopover } from './picture-popover.mjs';
+import { createClipboardActions } from './clipboard-actions.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -1158,35 +1159,23 @@ function redo() {
   render();
 }
 
-function copySelected() {
-  const id = [...selection][0];
-  const node = id ? findNode(doc, id) : null;
-  if (!node) { toast('先选中一个节点'); return; }
-  clipboard = JSON.parse(JSON.stringify(node));
-  toast('已复制节点');
-}
+const clipboardActions = createClipboardActions({
+  getSelectedNode: () => {
+    const id = [...selection][0];
+    return id ? findNode(doc, id) : null;
+  },
+  getClipboard: () => clipboard,
+  setClipboard: (value) => { clipboard = value; },
+  pushHistory,
+  addNodeToDoc: (node) => { doc = addNode(doc, node); return doc; },
+  render,
+  toast,
+  onPasted: (node) => { if (node) selection = new Set([node.id]); },
+});
 
-function pasteNode() {
-  if (!clipboard) { toast('剪贴板为空'); return; }
-  const copy = JSON.parse(JSON.stringify(clipboard));
-  delete copy.id;
-  copy.layout = { ...copy.layout, x: (copy.layout?.x || 0) + 40, y: (copy.layout?.y || 0) + 40 };
-  copy.resources = copy.resources || [];
-  pushHistory();
-  doc = addNode(doc, copy);
-  selection = new Set([doc.nodes.at(-1).id]);
-  render();
-  clipboard = JSON.parse(JSON.stringify(findNode(doc, doc.nodes.at(-1).id)));
-  toast('已粘贴节点');
-}
-
-function duplicateSelected() {
-  const id = [...selection][0];
-  const node = id ? findNode(doc, id) : null;
-  if (!node) { toast('先选中一个节点'); return; }
-  clipboard = JSON.parse(JSON.stringify(node));
-  pasteNode();
-}
+function copySelected() { return clipboardActions.copy(); }
+function pasteNode() { return clipboardActions.paste(); }
+function duplicateSelected() { return clipboardActions.duplicate(); }
 
 function onPromptInput() {
   const id = [...selection][0];
