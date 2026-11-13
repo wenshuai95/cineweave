@@ -638,23 +638,39 @@ async function handle(req, res, url) {
 
   if (req.method === 'POST' && url.pathname === '/api/generation/timeline/export') {
     const body = await readJson(req);
-    const items = Array.isArray(body.items) ? body.items.filter((item) => item && item.videoUrl).slice(0, 30) : [];
-    if (!items.length) { sendJson(res, 400, { error: '时间线没有可导出的视频片段' }); return; }
+    const items = Array.isArray(body.items) ? body.items.filter((item) => item && (item.videoUrl || item.imageUrl)).slice(0, 30) : [];
+    if (!items.length) { sendJson(res, 400, { error: '时间线没有可导出的片段' }); return; }
+    const preset = body.preset === 'portrait' ? 'portrait' : body.preset === 'draft' ? 'draft' : 'landscape';
+    const [outW, outH] = preset === 'portrait' ? [1080, 1920] : preset === 'draft' ? [1280, 720] : [1920, 1080];
     const work = join(ASSETS_DIR, `.timeline-${randomUUID().slice(0, 8)}`);
     await mkdir(work, { recursive: true, mode: 0o700 });
     try {
       const segments = [];
       for (let index = 0; index < items.length; index += 1) {
         const item = items[index];
-        const assetName = basename(String(item.videoUrl).split('?')[0]);
-        const input = join(ASSETS_DIR, assetName);
         const output = join(work, `seg_${String(index).padStart(3, '0')}.mp4`);
-        const start = Math.max(0, Number(item.sourceStart ?? item.start) || 0);
-        const duration = Math.max(0.2, Number(item.duration) || 1);
-        await execFileAsync(FFMPEG, ['-y', '-ss', String(start), '-t', String(duration), '-i', input,
-          '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30',
-          '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
-          '-c:a', 'aac', '-ar', '48000', '-ac', '2', output], { timeout: 120000 });
+        const duration = Math.max(0.2, Number(item.duration) || (item.imageUrl ? 3 : 1));
+        const fade = item.transition === 'fade'
+          ? `,fade=t=in:st=0:d=0.25,fade=t=out:st=${Math.max(0, duration - 0.25).toFixed(2)}:d=0.25`
+          : item.transition === 'black'
+            ? `,fade=t=in:st=0:d=0.25:color=black,fade=t=out:st=${Math.max(0, duration - 0.25).toFixed(2)}:d=0.25:color=black`
+            : '';
+        const vf = `scale=${outW}:${outH}:force_original_aspect_ratio=decrease,pad=${outW}:${outH}:(ow-iw)/2:(oh-ih)/2,fps=30${fade}`;
+        if (item.imageUrl) {
+          const imageName = basename(String(item.imageUrl).split('?')[0]);
+          const imageInput = join(ASSETS_DIR, imageName);
+          await execFileAsync(FFMPEG, ['-y', '-loop', '1', '-t', String(duration), '-i', imageInput,
+            '-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=r=48000:cl=stereo',
+            '-vf', vf, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac', '-ar', '48000', '-ac', '2', '-shortest', output], { timeout: 120000 });
+        } else {
+          const assetName = basename(String(item.videoUrl).split('?')[0]);
+          const input = join(ASSETS_DIR, assetName);
+          const start = Math.max(0, Number(item.sourceStart ?? item.start) || 0);
+          await execFileAsync(FFMPEG, ['-y', '-ss', String(start), '-t', String(duration), '-i', input,
+            '-vf', vf, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac', '-ar', '48000', '-ac', '2', output], { timeout: 120000 });
+        }
         segments.push(output);
       }
       const list = join(work, 'list.txt');

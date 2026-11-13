@@ -479,7 +479,7 @@ app.querySelector('#timelineCancel').addEventListener('pointerdown', () => { if 
 app.querySelector('#timelineClose').addEventListener('click', closeTimelineView);
 app.querySelector('#timelineClose').addEventListener('pointerdown', () => { if (document.body.classList.contains('timeline-open')) { closeTimelineView(); } });
 app.querySelector('#timelinePlay').addEventListener('click', playTimelineClip);
-app.querySelector('#timelineExport').addEventListener('click', exportTimelineMovie);
+app.querySelector('#timelineExport').addEventListener('click', openTimelineExportMenu);
 app.querySelector('#timelineRescan').addEventListener('click', () => { renderTimelineRows(); });
 app.querySelector('#timelineImport').addEventListener('click', () => app.querySelector('#cvFileInput').click());
 app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((button) => button.addEventListener('click', () => { timelineAssetFilter = button.dataset.kind; app.querySelectorAll('.cv-timeline-filters [data-kind]').forEach((item) => item.classList.toggle('active', item === button)); renderTimelineRows(); }));
@@ -2998,7 +2998,7 @@ let timelineAssetFilter = 'all';
 function scanTimelineItems() {
   let cursor = 0;
   return doc.nodes
-    .filter((node) => node.type === 'video' || node.type === 'audio')
+    .filter((node) => ['video', 'audio', 'image'].includes(node.type))
     .map((node) => {
       const duration = Number(node.generation?.durationSeconds) || 5;
       const item = { id: node.id, label: node.title || node.type, type: node.type, start: cursor, duration, sourceStart: 0 };
@@ -3030,10 +3030,11 @@ function timelineAssetNodes() {
 }
 
 function addAssetToTimeline(node) {
-  if (!node || node.type === 'image') { toast('图片片段暂未支持，先用视频/音频'); return; }
+  if (!node) return;
   if (timelineDraft.some((item) => item.id === node.id)) { timelineSelected = node.id; renderTimelineRows(); return; }
   const end = timelineDraft.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
-  timelineDraft.push({ id: node.id, label: node.title || node.type, type: node.type, start: end, duration: Number(node.generation?.durationSeconds) || 5, sourceStart: 0 });
+  const duration = node.type === 'image' ? 3 : (Number(node.generation?.durationSeconds) || 5);
+  timelineDraft.push({ id: node.id, label: node.title || node.type, type: node.type, start: end, duration, sourceStart: 0, transition: 'none' });
   timelineSelected = node.id;
   renderTimelineRows();
 }
@@ -3052,7 +3053,7 @@ function renderTimelineRows() {
   const lanes = ['video', 'audio'];
   const host = app.querySelector('#timelineLanes');
   host.innerHTML = lanes.map((type) => {
-    const clips = timelineDraft.filter((item) => (type === 'video' ? item.type === 'video' : item.type === 'audio')).map((item) => {
+    const clips = timelineDraft.filter((item) => (type === 'video' ? (item.type === 'video' || item.type === 'image') : item.type === 'audio')).map((item) => {
       const left = ((Number(item.start) || 0) / total) * 100;
       const width = Math.max(1, ((Number(item.duration) || 0) / total) * 100);
       const selected = timelineSelected === item.id ? ' selected' : '';
@@ -3062,7 +3063,7 @@ function renderTimelineRows() {
   }).join('');
   const totalSeconds = timelineDraft.reduce((max, item) => Math.max(max, (Number(item.start) || 0) + (Number(item.duration) || 0)), 0);
   app.querySelector('#timelineTotal').textContent = `${timelineDraft.length} 个片段 · ${totalSeconds.toFixed(1)}s`;
-  host.querySelectorAll('.cv-timeline-add').forEach((button) => button.addEventListener('click', () => { const first = timelineAssetNodes().find((node) => node.type !== 'image'); if (first) addAssetToTimeline(first); }));
+  host.querySelectorAll('.cv-timeline-add').forEach((button) => button.addEventListener('click', () => { const first = timelineAssetNodes()[0]; if (first) addAssetToTimeline(first); }));
   host.querySelectorAll('.cv-tl-clip').forEach((clip) => {
     const item = timelineDraft.find((entry) => entry.id === clip.dataset.item);
     if (!item) return;
@@ -3081,7 +3082,12 @@ function renderTimelineRows() {
     });
     clip.addEventListener('contextmenu', (event) => {
       event.preventDefault();
-      showContextMenu([['移除片段', () => { timelineDraft = timelineDraft.filter((entry) => entry.id !== item.id); timelineSelected = timelineDraft[0]?.id || null; renderTimelineRows(); }]], event.clientX, event.clientY);
+      showContextMenu([
+        [item.transition === 'fade' ? '✓ 淡入淡出' : '淡入淡出', () => { item.transition = item.transition === 'fade' ? 'none' : 'fade'; renderTimelineRows(); }],
+        [item.transition === 'black' ? '✓ 黑场' : '黑场', () => { item.transition = item.transition === 'black' ? 'none' : 'black'; renderTimelineRows(); }],
+        ['无转场', () => { item.transition = 'none'; renderTimelineRows(); }],
+        ['移除片段', () => { timelineDraft = timelineDraft.filter((entry) => entry.id !== item.id); timelineSelected = timelineDraft[0]?.id || null; renderTimelineRows(); }],
+      ], event.clientX, event.clientY);
     });
   });
   if (timelineSelected) {
@@ -3119,10 +3125,15 @@ function updateTimelinePreview(item) {
   const image = app.querySelector('#timelinePreviewImage');
   const empty = app.querySelector('#timelinePreviewEmpty');
   const url = findNode(doc, item.id)?.resources?.[0]?.url;
-  preview.hidden = !url;
-  image.hidden = true;
+  const isImage = item.type === 'image';
+  preview.hidden = !url || isImage;
+  image.hidden = !url || !isImage;
   empty.hidden = Boolean(url);
-  if (url && preview.dataset.clip !== item.id) {
+  if (url && image.dataset.clip !== item.id) {
+    image.dataset.clip = item.id;
+    if (isImage) image.src = url;
+  }
+  if (!isImage && url && preview.dataset.clip !== item.id) {
     preview.dataset.clip = item.id;
     preview.src = url;
     preview.load();
@@ -3184,20 +3195,33 @@ function playTimelineClip() {
   } catch { toast('预览失败'); }
 }
 
-async function exportTimelineMovie() {
-  const items = timelineDraft.filter((item) => item.type === 'video').map((item) => ({
-    videoUrl: findNode(doc, item.id)?.resources?.[0]?.url,
+function openTimelineExportMenu() {
+  const button = app.querySelector('#timelineExport');
+  const rect = button.getBoundingClientRect();
+  showContextMenu([
+    ['横屏 1080p（1920×1080）', () => exportTimelineMovie('landscape')],
+    ['竖屏 1080p（1080×1920）', () => exportTimelineMovie('portrait')],
+    ['草稿 720p（1280×720）', () => exportTimelineMovie('draft')],
+  ], rect.left, rect.bottom + 6);
+}
+
+async function exportTimelineMovie(preset = 'landscape') {
+  const items = timelineDraft.filter((item) => item.type === 'video' || item.type === 'image').map((item) => ({
+    type: item.type,
+    videoUrl: item.type === 'video' ? findNode(doc, item.id)?.resources?.[0]?.url : undefined,
+    imageUrl: item.type === 'image' ? findNode(doc, item.id)?.resources?.[0]?.url : undefined,
     sourceStart: Number(item.sourceStart) || 0,
-    duration: Number(item.duration) || 5,
-  })).filter((item) => item.videoUrl);
-  if (!items.length) { toast('时间线里没有视频片段'); return; }
+    duration: Number(item.duration) || (item.type === 'image' ? 3 : 5),
+    transition: item.transition || 'none',
+  })).filter((item) => item.videoUrl || item.imageUrl);
+  if (!items.length) { toast('时间线里没有可导出的片段'); return; }
   const button = app.querySelector('#timelineExport');
   button.disabled = true;
   button.textContent = '导出中…';
   try {
     const response = await fetch('/api/generation/timeline/export', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, preset }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || '导出失败');
