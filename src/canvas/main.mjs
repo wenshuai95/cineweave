@@ -25,6 +25,7 @@ import { createGenerationFlow } from './generation-flow.mjs';
 import { createImageActions } from './image-actions.mjs';
 import { createPicturePopover } from './picture-popover.mjs';
 import { createClipboardActions } from './clipboard-actions.mjs';
+import { computeSnap, guidesHtml } from './snap-view.mjs';
 import { nodeToolsHtml, multiToolLabels, multiToolsHtml } from './node-tools.mjs';
 import { contextMenuHtml, actionableMenuEntries } from './menu-view.mjs';
 import { nodeBodyHtml, generationOverlayHtml } from './node-view.mjs';
@@ -603,47 +604,16 @@ function clearGuides() {
 }
 
 function snapToGuides(x, y, width, height, exclude) {
-  const threshold = 6 / Math.max(0.25, doc.viewport.zoom);
-  const others = doc.nodes.filter((node) => !exclude.has(node.id));
-  const movingX = [x, x + width / 2, x + width];
-  const movingY = [y, y + height / 2, y + height];
-  const candidatesX = [];
-  const candidatesY = [];
-  for (const node of others) {
-    const r = nodeRect(node);
-    candidatesX.push(r.x, r.x + r.width / 2, r.x + r.width);
-    candidatesY.push(r.y, r.y + r.height / 2, r.y + r.height);
-  }
-  let bestX = null;
-  let bestY = null;
-  for (const mx of movingX) {
-    for (const cx of candidatesX) {
-      const diff = cx - mx;
-      if (Math.abs(diff) <= threshold && (!bestX || Math.abs(diff) < Math.abs(bestX.diff))) bestX = { diff, at: cx };
-    }
-  }
-  for (const my of movingY) {
-    for (const cy of candidatesY) {
-      const diff = cy - my;
-      if (Math.abs(diff) <= threshold && (!bestY || Math.abs(diff) < Math.abs(bestY.diff))) bestY = { diff, at: cy };
-    }
-  }
-  const lines = [];
-  if (bestX) {
-    const minY = Math.min(...others.map((node) => nodeRect(node).y), y);
-    const maxY = Math.max(...others.map((node) => nodeRect(node).y + nodeRect(node).height), y + height);
-    lines.push({ x1: bestX.at, y1: minY - 40, x2: bestX.at, y2: maxY + 40 });
-  }
-  if (bestY) {
-    const minX = Math.min(...others.map((node) => nodeRect(node).x), x);
-    const maxX = Math.max(...others.map((node) => nodeRect(node).x + nodeRect(node).width), x + width);
-    lines.push({ x1: minX - 40, y1: bestY.at, x2: maxX + 40, y2: bestY.at });
-  }
-  return { x: x + (bestX?.diff || 0), y: y + (bestY?.diff || 0), lines };
+  return computeSnap({
+    x, y, width, height,
+    rects: doc.nodes.map((node) => ({ id: node.id, ...nodeRect(node) })),
+    exclude,
+    zoom: doc.viewport.zoom,
+  });
 }
 
 function drawGuides(lines) {
-  guidesSvg.innerHTML = lines.map((line) => `<line x1="${line.x1}" y1="${line.y1}" x2="${line.x2}" y2="${line.y2}"></line>`).join('');
+  guidesSvg.innerHTML = guidesHtml(lines);
 }
 
 function minimapBounds() {
