@@ -1,3 +1,173 @@
+## 1.46.0
+
+发布：v1.46.0（画布版）
+
+### 画布
+- 框选/多选拖动、编组/解组、六向对齐、8px 吸附、智能参考线、小地图；
+- 空白右键新建、节点右键菜单、连线选中/删除、多选堆叠/布局、保存节点到其他画布；
+- 多画布随工程保存（`workstation.canvases`），可新建/复制/重命名/删除/切换。
+
+### 图片节点
+- 智能改图、局部重绘（蒙版）、扩图、抠图（BiRefNet）、智能超清、修脸、智能打光（IC-Light）；
+- ComfyUI 图片模型新增 Z-Image Turbo（1024²，8 步，约 3 秒/张）；
+- 预设（场景俯视/连续分镜/九宫格/三视图）、工具（镜头设计/灵感）；
+- 版本历史/切换、资产库、下载。
+
+### 视频 / 音频
+- 0.45 并行实例：H3 Ultimate（首尾帧/续写）、Qwen Image 2.1（T2I/编辑/去背景/姿态/深度/线稿）；
+- ComfyUI 视频模型：H3、H3 Ref2VA（多图/视频/音频参考）、Wan 2.2（832×480 / 81 帧 / 4 步）、LTX-2.3（640×384 / 65 帧 / 8 步）、FramePack（首帧长镜头）；
+- Wan 自动按 4n+1、LTX 按 8n+1 规范帧数；FramePack 需首帧参考图；
+- H3 Ref2VA 支持最多 9 图 / 3 视频 / 3 音频，结果带 H3 原生音频；提示词需六段结构；
+- 视频：截取帧、分离音频、视频修剪；首帧/尾帧接即梦 API `first_last_frame`；
+- 音频：波形、裁剪、音色库、本地 TTS；
+- 短视频/音频节点均支持版本。
+
+### 参考与生成
+- 相机/配色/风格 chips 弹层；@ 引用节点；参考角色（人物/构图/风格/首尾帧）与排序；
+- 生成后端切换：图片/视频 ComfyUI ↔ 即梦 API；音频仅即梦 API；
+- 即梦 CLI 模型目录动态读取：图片 16 个、视频 12 个、音频 TTS 2 个；按模型限制分辨率/时长/数量，自动选择 t2v / first_last_frame；
+- 画面设置聚合弹层（比例/分辨率/数量，按后端给不同档）；
+- 提示词优化（中文/英文双版）+ 一键翻译；DeepSeek AI 助手，可把回复写入节点。
+
+### 环境
+- 8188 停用时旧模型提交前置拦截（503 + 恢复说明）；状态面板同时显示 8190/8188，模型菜单标注旧模型停用。
+
+### 修复
+- 修复画布初始化 TDZ（`gestures`/`historyState`/`picturePopover` 未初始化就 render）导致工具栏无法新建节点。
+- 恢复提示词模板菜单与 history 状态，删除失效 `updateDock` 调用。
+- 新增启动顺序/符号完整性回归测试。
+
+### CLI
+- 新增 `zaomeng` CLI：任务提交/等待/取消/重试、图片/视频/RelayVSR、时间线导出、提示词工具；stdout JSON、stderr 进度。
+
+### 视频超分
+- 接入 RelayVSR X2（8190）：能力注册、服务端任务、画布「视频超分」；实测 640×352 → 1280×704，保留音轨/帧率。
+- 修复视频输出选择：优先 SaveVideo output，避免误取 LoadVideo 输入。
+
+### 安全
+- 生成服务 CORS 限制为本机/私有网段，不再 `*`；参考素材 URL 域名白名单与 100MB 上限。
+
+### 代码结构
+- 抽出 `src/canvas/generation-catalog.mjs`（提示词模板、估算、参数 key），新增 5 条单测。
+- 抽出 `src/canvas/timeline-model.mjs`（片段归一化/扫描/分割/拖动），新增 5 条单测。
+- 抽出 `src/canvas/job-client.mjs`（任务轮询/列表/取消/重试），新增 5 条单测。
+- 抽出 `src/canvas/timeline-view.mjs`（资产/标尺/轨道 HTML），新增 4 条单测。
+- 抽出 `src/canvas/generation-request.mjs`（提交/报价/上传），新增 5 条单测。
+- 抽出 `src/canvas/timeline-editor.mjs`（拖动/裁剪控制器），新增 3 条单测。
+- 抽出 `src/canvas/generation-options.mjs`（模型菜单/图片预设），新增 4 条单测。
+- 抽出 `src/canvas/ai-context.mjs`（AI 上下文/消息 HTML），新增 3 条单测。
+- 抽出 `src/canvas/job-view.mjs`（任务面板 HTML），新增 3 条单测。
+- 抽出 `src/canvas/canvas-icons.mjs`（图标/类型/状态文案），新增 3 条单测。
+- 抽出 `src/canvas/dock-view.mjs`（生成坞视图模型），新增 4 条单测。
+- 抽出 `src/canvas/node-tools.mjs`（节点工具栏动作/HTML），新增 3 条单测。
+- 抽出 `src/canvas/menu-view.mjs`（右键菜单 HTML），新增 2 条单测。
+- 抽出 `src/canvas/node-view.mjs`（节点内容/进度覆盖层），新增 4 条单测。
+- 抽出 `src/canvas/edge-view.mjs`（连线路径 HTML），新增 2 条单测。
+- 抽出 `src/canvas/ai-panel.mjs`（AI 面板状态/发送/绑定），新增 3 条单测。
+- 抽出 `src/canvas/generation-flow.mjs`（即梦报价/提交流程），新增 3 条单测。
+- 抽出 `src/canvas/image-actions.mjs`（扩图/打光/抠图/超清/修脸），新增 4 条单测。
+- 抽出 `src/canvas/picture-popover.mjs`（画面设置弹层），新增 2 条单测。
+- 抽出 `src/canvas/clipboard-actions.mjs`（复制/粘贴/副本），新增 3 条单测。
+- 抽出 `src/canvas/snap-view.mjs`（拖拽吸附/参考线），新增 3 条单测。
+- 抽出 `src/canvas/assets-view.mjs`（资产库面板），新增 2 条单测。
+- 抽出 `src/canvas/selection-model.mjs`（选择/框选几何），新增 3 条单测。
+- 抽出 `src/canvas/history.mjs`（撤销/重做状态机），新增 3 条单测。
+- 抽出 `src/canvas/board-manager.mjs`（多画布管理），新增 3 条单测。
+- 抽出 layout-actions / node-actions / dreamina-model / minimap，新增 7 条单测；main.mjs 降到 3500 行内。
+- 抽出 `src/canvas/prompt-tools.mjs`（提示词优化/翻译弹窗），新增 2 条单测。
+- 抽出 `src/canvas/style-tools.mjs`（相机/配色/风格/运镜），新增 2 条单测。
+- 抽出 `src/canvas/trim-tools.mjs`（视频/音频修剪），新增 2 条单测。
+- 抽出 voice-picker / reference-actions，新增 4 条单测。
+- 抽出 mask-editor / media-extract，新增 3 条单测；main.mjs 降到 3000 行。
+- 抽出 `src/canvas/versions-view.mjs`（版本历史/下载），新增 2 条单测。
+- 抽出 `src/canvas/timeline-ui.mjs`（全屏时间线编辑器），新增 1 条单测。
+- 抽出 generation-submit / comfy-video，新增 6 条单测。
+- 抽出 canvas-gestures / shortcuts / seed-document，新增 3 条单测；main.mjs 降至 2380 行。
+
+### 时间线
+- 节点内迷你时间线；全屏剪辑视图（资产库/预览/双轨）；
+- 片段拖动、两端裁剪、分割、删除、播放预览；
+- 导出 MP4（加入画布 / 文件夹 / 下载）。
+
+### 环境
+- 8188 停用时旧模型提交前置拦截（503 + 恢复说明）；状态面板同时显示 8190/8188，模型菜单标注旧模型停用。
+
+### 修复
+- 修复画布初始化 TDZ（`gestures`/`historyState`/`picturePopover` 未初始化就 render）导致工具栏无法新建节点。
+- 恢复提示词模板菜单与 history 状态，删除失效 `updateDock` 调用。
+- 新增启动顺序/符号完整性回归测试。
+
+### CLI
+- 新增 `zaomeng` CLI：任务提交/等待/取消/重试、图片/视频/RelayVSR、时间线导出、提示词工具；stdout JSON、stderr 进度。
+
+### 视频超分
+- 接入 RelayVSR X2（8190）：能力注册、服务端任务、画布「视频超分」；实测 640×352 → 1280×704，保留音轨/帧率。
+- 修复视频输出选择：优先 SaveVideo output，避免误取 LoadVideo 输入。
+
+### 安全
+- 生成服务 CORS 限制为本机/私有网段，不再 `*`；参考素材 URL 域名白名单与 100MB 上限。
+
+### 代码结构
+- 抽出 `src/canvas/generation-catalog.mjs`（提示词模板、估算、参数 key），新增 5 条单测。
+- 抽出 `src/canvas/timeline-model.mjs`（片段归一化/扫描/分割/拖动），新增 5 条单测。
+- 抽出 `src/canvas/job-client.mjs`（任务轮询/列表/取消/重试），新增 5 条单测。
+- 抽出 `src/canvas/timeline-view.mjs`（资产/标尺/轨道 HTML），新增 4 条单测。
+- 抽出 `src/canvas/generation-request.mjs`（提交/报价/上传），新增 5 条单测。
+- 抽出 `src/canvas/timeline-editor.mjs`（拖动/裁剪控制器），新增 3 条单测。
+- 抽出 `src/canvas/generation-options.mjs`（模型菜单/图片预设），新增 4 条单测。
+- 抽出 `src/canvas/ai-context.mjs`（AI 上下文/消息 HTML），新增 3 条单测。
+- 抽出 `src/canvas/job-view.mjs`（任务面板 HTML），新增 3 条单测。
+- 抽出 `src/canvas/canvas-icons.mjs`（图标/类型/状态文案），新增 3 条单测。
+- 抽出 `src/canvas/dock-view.mjs`（生成坞视图模型），新增 4 条单测。
+- 抽出 `src/canvas/node-tools.mjs`（节点工具栏动作/HTML），新增 3 条单测。
+- 抽出 `src/canvas/menu-view.mjs`（右键菜单 HTML），新增 2 条单测。
+- 抽出 `src/canvas/node-view.mjs`（节点内容/进度覆盖层），新增 4 条单测。
+- 抽出 `src/canvas/edge-view.mjs`（连线路径 HTML），新增 2 条单测。
+- 抽出 `src/canvas/ai-panel.mjs`（AI 面板状态/发送/绑定），新增 3 条单测。
+- 抽出 `src/canvas/generation-flow.mjs`（即梦报价/提交流程），新增 3 条单测。
+- 抽出 `src/canvas/image-actions.mjs`（扩图/打光/抠图/超清/修脸），新增 4 条单测。
+- 抽出 `src/canvas/picture-popover.mjs`（画面设置弹层），新增 2 条单测。
+- 抽出 `src/canvas/clipboard-actions.mjs`（复制/粘贴/副本），新增 3 条单测。
+- 抽出 `src/canvas/snap-view.mjs`（拖拽吸附/参考线），新增 3 条单测。
+- 抽出 `src/canvas/assets-view.mjs`（资产库面板），新增 2 条单测。
+- 抽出 `src/canvas/selection-model.mjs`（选择/框选几何），新增 3 条单测。
+- 抽出 `src/canvas/history.mjs`（撤销/重做状态机），新增 3 条单测。
+- 抽出 `src/canvas/board-manager.mjs`（多画布管理），新增 3 条单测。
+- 抽出 layout-actions / node-actions / dreamina-model / minimap，新增 7 条单测；main.mjs 降到 3500 行内。
+- 抽出 `src/canvas/prompt-tools.mjs`（提示词优化/翻译弹窗），新增 2 条单测。
+- 抽出 `src/canvas/style-tools.mjs`（相机/配色/风格/运镜），新增 2 条单测。
+- 抽出 `src/canvas/trim-tools.mjs`（视频/音频修剪），新增 2 条单测。
+- 抽出 voice-picker / reference-actions，新增 4 条单测。
+- 抽出 mask-editor / media-extract，新增 3 条单测；main.mjs 降到 3000 行。
+- 抽出 `src/canvas/versions-view.mjs`（版本历史/下载），新增 2 条单测。
+- 抽出 `src/canvas/timeline-ui.mjs`（全屏时间线编辑器），新增 1 条单测。
+- 抽出 generation-submit / comfy-video，新增 6 条单测。
+- 抽出 canvas-gestures / shortcuts / seed-document，新增 3 条单测；main.mjs 降至 2380 行。
+
+### 时间线
+- 图片片段、淡入淡出/黑场转场、横屏/竖屏/720p 导出预设；图片与视频段混合导出。
+
+### 提示词模板
+- 生成坞新增「模板」：H3 六段结构、Qwen 编辑指令、图片电影感、视频运动描述、音频旁白。
+- H3 Ref2VA/Ultimate 缺段提示；Qwen 编辑模式缺参考图提前拦截；去背景允许空提示词。
+- 按模型记忆最近参数（分辨率/比例/时长/数量/像素）；生成前显示预计耗时与显存/内存提示。
+
+### 任务中心
+- 任务 JSON 持久化；列表/取消/重试 API；阶段、ETA；画布顶栏「任务」面板；
+- 按 ComfyUI endpoint 串行队列（8188/8190 可各跑一条）；节点保存 jobId，重启后自动恢复任务。
+
+### 环境
+- 8188 停用时旧模型提交前置拦截（503 + 恢复说明）；状态面板同时显示 8190/8188，模型菜单标注旧模型停用。
+
+### 修复
+- 生成坞假按钮、菜单被全局点击立即关闭、时间线初始化异常、时间线返回/Esc；
+- 小地图/蒙版指针捕获异常、文本节点生成坞状态、画布重命名弹层。
+
+### 已知限制
+- 视频局部重拍/延长/超清、720全景/多角度、营销模板暂不提供；
+- 即梦 API 图片暂不支持本地参考图；音频只有即梦 API；
+- 大模型素材需下载 Release 资产包或使用本机 ComfyUI。
+
 ## 1.29.0
 
 发布：v1.29.0（画布同构 + 剪辑/素材库）

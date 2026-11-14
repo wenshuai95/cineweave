@@ -1,7 +1,8 @@
-const {app,BrowserWindow,Menu,dialog,shell,ipcMain,clipboard,safeStorage}=require('electron');
+const {app,BrowserWindow,Menu,dialog,shell,ipcMain,clipboard}=require('electron');
 const {spawn}=require('node:child_process');
 const {join}=require('node:path');
-const {mkdirSync,readFileSync,writeFileSync,chmodSync,existsSync}=require('node:fs');
+const {mkdirSync}=require('node:fs');
+const {writeFile}=require('node:fs/promises');
 const {randomUUID}=require('node:crypto');
 const isMac=process.platform==='darwin';
 // v1.3.0 独立应用身份：与原「超级无敌导演画布」并存，不共用端口与数据目录。
@@ -12,23 +13,11 @@ app.setPath('userData',process.env.DIRECTOR_CANVAS_TEST_DATA||join(app.getPath('
 app.setAppUserModelId('cn.aivideoworkstation.desktop');
 const single=app.requestSingleInstanceLock();if(!single){app.quit();}
 let win,worker,quitting=false,savePending=false,timeout,nonce=randomUUID();
-const SECRETS_FILE=()=>join(app.getPath('userData'),'provider-secrets.bin');
-function loadProviderSecrets(){
- try{if(!existsSync(SECRETS_FILE()))return {};const raw=readFileSync(SECRETS_FILE());const text=safeStorage.isEncryptionAvailable()?safeStorage.decryptString(raw):raw.toString('utf8');const data=JSON.parse(text);return data&&typeof data==='object'?data:{};}catch{return {};}
-}
-function saveProviderSecrets(data){
- const text=JSON.stringify(data||{});const raw=safeStorage.isEncryptionAvailable()?safeStorage.encryptString(text):Buffer.from(text,'utf8');const file=SECRETS_FILE();mkdirSync(join(app.getPath('userData')),{recursive:true,mode:0o700});writeFileSync(file,raw,{mode:0o600});chmodSync(file,0o600);
-}
-function providerSecretsStatus(){const s=loadProviderSecrets();const k=s.kling||{};return {kling:{configured:!!(k.accessKey&&k.secretKey),enabled:!!k.enabled,accessKeyHint:k.accessKey?String(k.accessKey).slice(-4):''},storage:safeStorage.isEncryptionAvailable()?'safeStorage':'file'};}
-
 const show=()=>{if(win){win.show();if(win.isMinimized())win.restore();win.focus();}};
 app.on('second-instance',show);app.on('activate',show);
 async function startServer(){
  const data=join(app.getPath('userData'),'generated');mkdirSync(data,{recursive:true});
- const secrets=loadProviderSecrets();
- const env={...process.env,ELECTRON_RUN_AS_NODE:'1',PORT:String(PORT),JINGCHANG_DATA_DIR:data,DIRECTOR_CANVAS_INSTANCE:nonce,APP_VERSION:app.getVersion()};
- // safeStorage 中的 Kling 密钥只在启动时注入进程环境，不写入数据目录明文。
- if(secrets.kling?.accessKey&&secrets.kling?.secretKey){env.KLING_ACCESS_KEY=secrets.kling.accessKey;env.KLING_SECRET_KEY=secrets.kling.secretKey;env.KLING_ENABLED=secrets.kling.enabled?'1':'0';}
+ const env={...process.env,ELECTRON_RUN_AS_NODE:'1',PORT:String(PORT),JINGCHANG_DATA_DIR:data,DIRECTOR_CANVAS_INSTANCE:nonce};
  // Windows keeps the user's own PATH/Path untouched (no duplicate case-variant key); the worker
  // resolves binaries via absolute paths. macOS prepends Homebrew for the CLI toolchain.
  if(process.platform!=='win32')env.PATH=`/opt/homebrew/bin:/usr/local/bin:${process.env.PATH||'/usr/bin:/bin'}`;
@@ -45,37 +34,40 @@ async function startServer(){
 function menuCommand(command){show();win?.webContents.send('director-command',command);}
 function requestQuit(){
  if(quitting||savePending)return;if(!win){quitting=true;app.quit();return;}
+ // 新版流水线界面：直接调用页面里的保存钩子，保存结束就退出（不再依赖 IPC 回执）。
+ const currentUrl=String(win.webContents.getURL());
+ if(currentUrl.startsWith(BASE+'/pipeline.html')){
+  savePending=true;show();
+  const done=()=>{savePending=false;quitting=true;app.quit();};
+  const finish=result=>{
+   if(result&&result.ok===false){
+    dialog.showMessageBox(win,{type:'warning',message:'工程保存失败',detail:'未保存的修改可能丢失。仍然退出吗？',buttons:['返回工程','仍然退出'],defaultId:0,cancelId:0}).then(({response})=>{if(response===1)done();else savePending=false;});
+    return;
+   }
+   done();
+  };
+  win.webContents.executeJavaScript('window.__pipelineFlushSave ? window.__pipelineFlushSave() : true',true).then(finish).catch(done);
+  return;
+ }
  savePending=true;show();win.webContents.send('director-save-request');
  timeout=setTimeout(()=>{savePending=false;dialog.showMessageBox(win,{type:'warning',message:'暂未收到保存完成结果',detail:'请回到工程确认保存状态。重要工程可先导出 JSON 备份。',buttons:['返回工程']});},10000);
 }
 function migrateDialog(){dialog.showMessageBox(win,{message:'从网页版迁移',detail:'在原网页版点击「工程 → 导出工程」，然后在此应用点击「项目管理 → 导入项目」选择 JSON。桌面版与浏览器分别保存数据，API Key 需重新填写。',buttons:['知道了']});}
 ipcMain.on('director-saved',(event,result)=>{
- if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/'||!savePending)return;
+ if(!win||event.sender!==win.webContents||!String(event.senderFrame?.url||'').startsWith(BASE+'/')||!savePending)return;
  clearTimeout(timeout);savePending=false;
  if(result?.ok){quitting=true;app.quit();}else dialog.showMessageBox(win,{type:'warning',message:'暂时无法退出',detail:String(result?.message||'工程保存失败，请先导出备份。').slice(0,500),buttons:['返回工程']});
 });
-ipcMain.handle('provider-secrets-status',(event)=>{if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/')throw Error('unauthorized');return providerSecretsStatus();});
-ipcMain.handle('provider-secrets-save',async(event,payload)=>{
- if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/')throw Error('unauthorized');
- const current=loadProviderSecrets(),next={...current};
- for(const provider of ['kling']){
-  const incoming=payload?.[provider];
-  if(!incoming||typeof incoming!=='object')continue;
-  const accessKey=typeof incoming.accessKey==='string'?incoming.accessKey.trim():'';const secretKey=typeof incoming.secretKey==='string'?incoming.secretKey.trim():'';
-  if((accessKey&&(accessKey.length>4096||/[\r\n]/.test(accessKey)))||(secretKey&&(secretKey.length>4096||/[\r\n]/.test(secretKey))))throw Error('invalid provider secret');
-  const old=current[provider]||{};
-  next[provider]={accessKey:accessKey||old.accessKey||'',secretKey:secretKey||old.secretKey||'',enabled:incoming.enabled!==false};
- }
- saveProviderSecrets(next);
- try{
-  const status=await fetch(BASE+'/api/ai/text/status',{signal:AbortSignal.timeout(2000)}).then(r=>r.json());
-  if(status?.token&&next.kling){await fetch(BASE+'/api/video/kling/config',{method:'POST',headers:{'Content-Type':'application/json','X-Jingchang-Token':status.token},body:JSON.stringify({accessKey:next.kling.accessKey,secretKey:next.kling.secretKey,enabled:next.kling.enabled,persist:false}),signal:AbortSignal.timeout(5000)});}
- }catch{}
- return providerSecretsStatus();
-});
 // Only accept the application's own canvas clipboard packet from this trusted window.
+ipcMain.handle('director-save-buffer', async (event, buffer, defaultName) => {
+ if(!win||event.sender!==win.webContents||!String(event.senderFrame?.url||'').startsWith(BASE+'/'))return {ok:false,message:'not allowed'};
+ const safe=String(defaultName||'export.mp4').replace(/[\\/:*?"<>|]/g,'_').slice(0,120);
+ const {canceled,filePath}=await dialog.showSaveDialog(win,{title:'导出到文件夹',buttonLabel:'保存',defaultPath:join(app.getPath('videos'),safe)});
+ if(canceled||!filePath)return {ok:false,canceled:true};
+ try{await writeFile(filePath,Buffer.from(buffer));return {ok:true,path:filePath};}catch(error){return {ok:false,message:error.message};}
+});
 ipcMain.handle('director-copy-nodes',(event,text)=>{
- if(!win||event.sender!==win.webContents||event.senderFrame?.url!==BASE+'/')return {ok:false};
+ if(!win||event.sender!==win.webContents||!String(event.senderFrame?.url||'').startsWith(BASE+'/'))return {ok:false};
  if(typeof text!=='string'||text.length>16*1024*1024+256||!text.startsWith('director-canvas-nodes:')&&!/^director-canvas-memory:[a-zA-Z0-9_-]{1,100}$/.test(text))return {ok:false};
  clipboard.writeText(text);return {ok:true};
 });
@@ -85,10 +77,10 @@ app.on('window-all-closed',()=>{});
 if(single)app.whenReady().then(async()=>{
  try{
   await startServer();
-  win=new BrowserWindow({width:1440,height:940,minWidth:1024,minHeight:720,title:APP_NAME,backgroundColor:'#141619',show:false,webPreferences:{preload:join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
+  win=new BrowserWindow({width:1440,height:940,minWidth:1080,minHeight:720,title:APP_NAME,backgroundColor:'#141619',show:false,webPreferences:{preload:join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false}});
   const openLink=url=>{try{if(new URL(url).protocol==='https:')shell.openExternal(url);}catch{}};
   win.webContents.setWindowOpenHandler(({url})=>{openLink(url);return {action:'deny'};});
-  win.webContents.on('will-navigate',(event,url)=>{if(url!==BASE+'/'){event.preventDefault();openLink(url);}});
+  win.webContents.on('will-navigate',(event,url)=>{let same=false;try{same=new URL(url).origin===BASE;}catch{}if(!same){event.preventDefault();openLink(url);}});
   win.webContents.session.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
   win.webContents.session.on('will-download',(_event,item)=>{item.setSaveDialogOptions({title:'保存导出文件',buttonLabel:'保存'});});
   // macOS keeps the tray-like hide/dwell behavior; on Windows X / Alt+F4 runs the save-then-quit flow.
@@ -109,6 +101,7 @@ if(single)app.whenReady().then(async()=>{
    {label:'帮助',submenu:[{role:'about',label:'关于'+APP_NAME},{label:'使用指南与快捷键',click:()=>menuCommand('help')},{label:'从网页版迁移工程',click:migrateDialog}]}
   ]));
   app.setAboutPanelOptions({applicationName:APP_NAME,applicationVersion:app.getVersion(),copyright:'本地创作 · 剧本 / 资产 / 画布 / 剪辑 / 交付',credits:'Three.js · Electron · 资产许可见安装包说明'});
-  await win.loadURL(BASE+'/');
+  // 交付主界面：造梦工坊「画布版」(index.html)，不是流水线界面。
+  await win.loadURL(BASE+'/index.html');
  }catch(e){dialog.showErrorBox('无法启动'+APP_NAME,e.message);quitting=true;app.quit();}
 });

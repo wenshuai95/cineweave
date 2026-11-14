@@ -1,0 +1,244 @@
+{
+ "1": {
+  "class_type": "MiniMaxH3EasyLoader",
+  "inputs": {
+   "fl2va_model": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "ref2va_model": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "text_encoder": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+   "video_vae": "minimax_h3_video_vae_fp16.safetensors",
+   "audio_vae": "minimax_h3_audio_vae_fp32.safetensors"
+  }
+ },
+ "16": {
+  "class_type": "MiniMaxH3EasyMediaBridge",
+  "inputs": {
+   "image_count": 3,
+   "video_count": 0,
+   "audio_count": 0,
+   "image_1": [
+    "20",
+    0
+   ],
+   "image_2": [
+    "21",
+    0
+   ],
+   "image_3": [
+    "22",
+    0
+   ],
+   "video_1": [
+    "23",
+    0
+   ],
+   "audio_1": [
+    "24",
+    0
+   ]
+  }
+ },
+ "2": {
+  "class_type": "MiniMaxH3Easy",
+  "inputs": {
+   "h3_bundle": [
+    "1",
+    0
+   ],
+   "media": [
+    "16",
+    0
+   ],
+   "mode": "reference",
+   "prompt": "subject_definitions: <Subject 1> 是 <Picture 1> 中的年轻东亚男子，黑色蓬乱短发，眉骨清晰，身穿白色配橙色条纹的宇航服，直立领口。\n<Subject 2> 是 <Picture 2> 中的年轻男子，黑色长发挽成发髻，几缕碎发垂在脸侧，身穿黑红交领长袍，面容清瘦、眼神冷峻。\n<Subject 3> 是 <Picture 3> 中的年轻女子，黑色长发高盘、戴银质发饰，身穿白色刺绣长袍，背负一把黑鞘长刀。\n\nsummary: 完整参考模式。目标视频中同时出现 <Subject 2> 与 <Subject 3> 两位古装人物，两人的面部、发型与服装必须严格来自各自参考图；<Subject 1> 仅作为不参与本视频的第三参考存在，用于验证多参考区分能力。\n\nretention_analysis: <Subject 2> 的面部、发髻、黑红长袍颜色与交领结构保持 <Picture 2> 一致；<Subject 3> 的面部、银发饰、白色刺绣长袍与背后长刀保持 <Picture 3> 一致。两人服装与身份不得互换、不得融合。<Picture 1> 的内容不进入画面。\n\ndetailed_description: [Shot 1] 古宅石阶庭院，黄昏侧光。中景，<Subject 2> 站在画面左侧台阶下方，身体微微前倾，右手压在腰间，抬眼直视镜头右前方，长发被风吹动一缕。<Subject 3> 站在画面右侧三级台阶上，白衣在侧光下泛出细腻的织纹，右手反握背后长刀的刀柄，缓缓侧过头俯视对方。镜头从左向右缓慢平移半米，两人始终保持对望关系，背景石阶与红漆木柱产生柔和景深。[Shot 2] 切到两人过肩近景，<Subject 3> 拇指推开刀镡发出一声轻响，<Subject 2> 嘴角微微上扬。光线在两人之间形成一道窄窄的明暗分界，气氛紧绷但未交手。\n\noverall_soundscape: 环境声：庭院风声、远处鸟鸣、衣料摩擦声；两人呼吸清晰可闻，刀镡金属轻响位于第 3 秒左右。无对白，无夸张音效。\n\nnon_diegetic_music: 无配乐，保留纯净环境声。",
+   "resolution": "custom",
+   "aspect_ratio": "16:9",
+   "width": 640,
+   "height": 352,
+   "seconds": 5.0,
+   "advanced": false,
+   "fps": 24.0,
+   "keyframe_role": "first",
+   "ref_image_size": "1k",
+   "reference_mention_mode": "index",
+   "prompt_optimizer_settings": false,
+   "prompt_optimizer_scene_guide": "none"
+  }
+ },
+ "3": {
+  "class_type": "MiniMaxH3EasyOutput",
+  "inputs": {
+   "h3_context": [
+    "2",
+    1
+   ]
+  }
+ },
+ "4": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "2",
+    0
+   ],
+   "lora_name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+   "strength_model": 1.0
+  }
+ },
+ "5": {
+  "class_type": "ModelAttentionBackend",
+  "inputs": {
+   "model": [
+    "4",
+    0
+   ],
+   "attention": "comfy kitchen attention"
+  }
+ },
+ "6": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "5",
+    0
+   ],
+   "conditioning": [
+    "3",
+    0
+   ]
+  }
+ },
+ "7": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "5",
+    0
+   ],
+   "scheduler": "simple",
+   "steps": 4,
+   "denoise": 1.0
+  }
+ },
+ "8": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "9": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": 20261112
+  }
+ },
+ "10": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "9",
+    0
+   ],
+   "guider": [
+    "6",
+    0
+   ],
+   "sampler": [
+    "8",
+    0
+   ],
+   "sigmas": [
+    "7",
+    0
+   ],
+   "latent_image": [
+    "3",
+    1
+   ]
+  }
+ },
+ "11": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "10",
+    0
+   ],
+   "vae": [
+    "3",
+    2
+   ]
+  }
+ },
+ "12": {
+  "class_type": "VAEDecodeAudio",
+  "inputs": {
+   "samples": [
+    "10",
+    1
+   ],
+   "vae": [
+    "3",
+    3
+   ]
+  }
+ },
+ "13": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "11",
+    0
+   ],
+   "audio": [
+    "12",
+    0
+   ],
+   "fps": [
+    "3",
+    4
+   ]
+  }
+ },
+ "14": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "13",
+    0
+   ],
+   "filename_prefix": "video/h3_ref2v",
+   "format": "auto",
+   "codec": "auto"
+  }
+ },
+ "20": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "C06_宇航员_无墨镜面部特写.png"
+  }
+ },
+ "21": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "xiaoyan_FINAL.png"
+  }
+ },
+ "22": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "nalan_FINAL.png"
+  }
+ },
+ "23": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "h3_ref_video.mp4"
+  }
+ },
+ "24": {
+  "class_type": "LoadAudio",
+  "inputs": {
+   "audio": "h3_ref_audio.wav"
+  }
+ }
+}

@@ -2,12 +2,10 @@
 // 全部位置 / 入出点按整数帧保存（p.workstation.sequence）；秒只在本页预览与导出换算。
 // 交互：拖入媒体、拖动移动、两端裁切、播放杆定位、空格播放、左右逐帧、拆分、
 // 删除 / 闭合空隙、撤销重做（复用工程全局历史）、缩放与适应全部。
-import {SEQUENCE_FPS,clipLength,clipEnd,trackEnd,sequenceDuration,placeClip,moveClip,trimClip,splitClip,removeClip,formatTimecode,isSequenceFps,refpsSequence,snapFrame} from './sequence.mjs';
+import {SEQUENCE_FPS,clipLength,clipEnd,trackEnd,sequenceDuration,placeClip,moveClip,trimClip,splitClip,removeClip,formatTimecode,isSequenceFps,refpsSequence} from './sequence.mjs';
 import {cutLibraryRows} from './cut-library.mjs';
 import {uid} from '../model.mjs';
-import {t} from '../i18n/index.mjs';
-import {parseClipTime,displayClipTime,isNativeActivationTarget,removeMediaWithConsent} from './media-interactions.mjs';
-import {classifyImportFile,probeMediaBlob} from './media-import.mjs';
+import {parseClipTime,displayClipTime,isNativeActivationTarget} from './media-interactions.mjs';
 
 const LABEL_W=118,LANE_TAIL=220,MIN_PPF=.04,MAX_PPF=32;
 
@@ -15,15 +13,14 @@ export function createEditPage(root,ctx){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const ws=()=>ctx.project().workstation;
  const seq=()=>ws().sequence;
- let playhead=0,playAcc=0,playing=false,playbackDirection=1,lastTs=0,rafId=0,pxPerFrame=6;
+ let playhead=0,playAcc=0,playing=false,lastTs=0,rafId=0,pxPerFrame=6;
  let timeUnit='seconds';
  let selected=null; // {track:'video'|'audio', id}
  let drag=null,scrub=null,binDrag=null,cancelGesture=null;
  let activeVideoClipId=null,activeAudioClipId=null;
  const els={};
  let libraryFilter='all',libraryQuery='',libraryBusy=false,libraryRequest=0;
- const allLibraryRows=()=>cutLibraryRows(ctx.project(),{includeImages:true});
- const libraryRows=()=>cutLibraryRows(ctx.project(),{filter:libraryFilter,query:libraryQuery,includeImages:true});
+ const libraryRows=()=>cutLibraryRows(ctx.project(),{filter:libraryFilter,query:libraryQuery});
 
  const assetOf=id=>ws().assets.find(a=>a.id===id);
  const sourceFrames=asset=>asset?.durationSec?Math.max(1,Math.floor(asset.durationSec*seq().fps)):null;
@@ -32,8 +29,6 @@ export function createEditPage(root,ctx){
  const selectedClip=()=>selected?trackOf(selected.track).find(c=>c.id===selected.id)||null:null;
  const totalFrames=()=>Math.max(sequenceDuration(ws()),0);
  const framesOfAsset=asset=>{const f=sourceFrames(asset);return f??Math.max(1,seq().fps*2);};
- const snapCandidates=(trackName,ignoreId,exclude=[])=>[0,playhead,...trackOf(trackName).filter(c=>c.id!==ignoreId).flatMap(c=>[c.start,clipEnd(c)])].filter(frame=>!exclude.includes(frame));
- const snapThreshold=()=>Math.max(1,Math.round(8/pxPerFrame));
 
  function makeClip(assetId,start=0){
   const asset=assetOf(assetId);if(!asset)throw Error('素材不存在');
@@ -45,11 +40,11 @@ export function createEditPage(root,ctx){
   const keepLeft=els.scroll?.scrollLeft??0;
   const focused=root.contains(document.activeElement)?document.activeElement:null;
   const focusId=focused?.id,focusClip=focused?.dataset?.clip;
-  const empty=!totalFrames(),hasLibrary=allLibraryRows().length>0;
+  const empty=!totalFrames(),hasLibrary=cutLibraryRows(ctx.project()).length>0;
   stop();
   root.innerHTML=`
    <header class="ws-page-header ws-edit-header">
-    <div class="ws-edit-heading"><div><h2>${t('edit.title')}</h2><p>${t('edit.subtitle',{timecode:formatTimecode(totalFrames(),seq().fps),seconds:(totalFrames()/seq().fps).toFixed(2),fps:seq().fps})}</p></div><div class="ws-edit-output-actions"><button id="wsEdToCanvas" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="将粗剪结果渲染为 MP4 视频节点">${t('edit.toCanvas')}</button><button id="wsEdExport" class="primary" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="导出当前时间线为 MP4 文件">${t('edit.export')}</button></div></div>
+    <div class="ws-edit-heading"><div><h2>剪辑</h2><p>粗剪与导出 · ${formatTimecode(totalFrames(),seq().fps)} · ${(totalFrames()/seq().fps).toFixed(2)} 秒 · ${seq().fps} fps</p></div><div class="ws-edit-output-actions"><button id="wsEdToCanvas" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="将粗剪结果渲染为 MP4 视频节点">导出到画布 ↗</button><button id="wsEdExport" class="primary" ${empty?'disabled aria-describedby="wsEdEmptyReason"':''} title="导出当前时间线为 MP4 文件">导出成片 ↗</button></div></div>
     <div class="ws-edit-toolbar">
      <button id="wsEdHome" title="回到开头 Home">|◁</button>
      <button id="wsEdStepBack" title="上一帧 ←">◁</button>
@@ -57,42 +52,42 @@ export function createEditPage(root,ctx){
      <button id="wsEdStepFwd" title="下一帧 →">▷</button>
      <span class="timecode" id="wsEdTimecode">00:00.00</span>
      <span class="divider"></span>
-     <label class="ws-inline-label" title="影片帧率：24 / 25 / 30，切换时保持时间不变">${t('edit.fps')}
+     <label class="ws-inline-label" title="影片帧率：24 / 25 / 30，切换时保持时间不变">帧率
       <select id="wsEdFps">${SEQUENCE_FPS.map(f=>`<option value="${f}" ${seq().fps===f?'selected':''}>${f}</option>`).join('')}</select>
      </label>
      <span class="divider"></span>
      <button id="wsEdUndo" title="撤销 ⌘Z">↶</button>
      <button id="wsEdRedo" title="重做 ⌘⇧Z">↷</button>
      <span class="divider"></span>
-     <button id="wsEdSplit" title="在播放杆处拆分所选片段 S">${t('edit.split')}</button>
-     <button id="wsEdDelete" title="删除所选片段 Delete">${t('edit.delete')}</button>
-     <button id="wsEdRipple" title="删除所选片段并闭合空隙">${t('edit.ripple')}</button>
+     <button id="wsEdSplit" title="在播放杆处拆分所选片段 S">✂ 拆分</button>
+     <button id="wsEdDelete" title="删除所选片段 Delete">✕ 删除</button>
+     <button id="wsEdRipple" title="删除所选片段并闭合空隙">⇤ 闭合空隙</button>
      <span class="divider"></span>
      <button id="wsEdZoomOut" title="缩小 −">−</button>
      <button id="wsEdZoomIn" title="放大 ＋">＋</button>
-     <button id="wsEdFit" title="缩放适配全部片段 F">${t('edit.fit')}</button>
+     <button id="wsEdFit" title="缩放适配全部片段 F">⛶ 适应</button>
 
     </div>
    </header>
    <div class="ws-edit-body">
     <aside class="ws-cut-library" aria-label="剪辑素材库" id="wsCutLibrary">
-     <header><div><h3>${t('edit.library')} <small id="wsLibCount"></small></h3><p>${t('edit.libraryHint')}</p></div><button id="wsEdImport" class="primary">${t('edit.import')}</button></header>
-     <input type="file" id="wsEdFile" multiple accept=".mp4,.webm,.mp3,.wav,.ogg,.m4a,.png,.jpg,.jpeg,.webp,.gif,.avif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,image/png,image/jpeg,image/webp,image/gif,image/avif" hidden>
-     <nav ${hasLibrary?'':'hidden'} class="ws-library-filters ${hasLibrary?'':'hidden'}" aria-label="素材分类">${[['all',t('edit.filterAll')],['previz',t('edit.filterPreviz')],['video',t('edit.filterVideo')],['audio',t('edit.filterAudio')],['image','图片']].map(([id,label])=>`<button data-library-filter="${id}" aria-pressed="${libraryFilter===id}">${label}</button>`).join('')}</nav>
-     <input ${hasLibrary?'':'hidden'} id="wsLibSearch" class="${hasLibrary?'':'hidden'}" type="search" aria-label="搜索剪辑素材" placeholder="${t('edit.search')}" value="${esc(libraryQuery)}">
+     <header><div><h3>素材库 <small id="wsLibCount"></small></h3><p>本地素材与画布视频，按需加入剪辑</p></div><button id="wsEdImport" class="primary">＋ 导入</button></header>
+     <input type="file" id="wsEdFile" multiple accept=".mp4,.webm,.mp3,.wav,.ogg,.m4a,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4" hidden>
+     <nav ${hasLibrary?'':'hidden'} class="ws-library-filters ${hasLibrary?'':'hidden'}" aria-label="素材分类">${[['all','全部'],['previz','白模预演'],['video','视频'],['audio','音频']].map(([id,label])=>`<button data-library-filter="${id}" aria-pressed="${libraryFilter===id}">${label}</button>`).join('')}</nav>
+     <input ${hasLibrary?'':'hidden'} id="wsLibSearch" class="${hasLibrary?'':'hidden'}" type="search" aria-label="搜索剪辑素材" placeholder="搜索素材名称" value="${esc(libraryQuery)}">
      <div class="ws-bin-list" id="wsEdBin">${binHtml()}</div>
-     <p class="help-text" id="wsLibStatus" role="status">${t('edit.importHint')}</p>
+     <p class="help-text" id="wsLibStatus" role="status">可拖入文件导入。点预览查看原片，点「＋」或拖到轨道加入剪辑。</p>
     </aside>
     <main class="ws-edit-main">
-     <div class="ws-preview-wrap"><div class="ws-preview-frame"><video id="wsEdVideo" playsinline preload="auto"></video><div class="ws-preview-gap hidden" id="wsEdGap">${empty?`<section class="ws-edit-empty-start"><h3>${t('edit.emptyTitle')}</h3><p>${t('edit.emptyText')}</p><div class="ws-flow-actions"><button id="wsEdEmptyImport" class="primary">${t('edit.importExternal')}</button><button id="wsEdEmptyCanvas">${t('edit.chooseCanvas')}</button></div><p id="wsEdEmptyReason">${t('edit.emptyReason')}</p></section>`:t('edit.blackGap')}</div><span class="ws-preview-tag" id="wsEdTag"></span></div>
-     <div class="ws-preview-row"><span id="wsEdClipInfo" class="muted">—</span><span class="grow"></span><span class="muted">${t('edit.previewTracks')}</span></div></div>
+     <div class="ws-preview-wrap"><div class="ws-preview-frame"><video id="wsEdVideo" playsinline preload="auto"></video><div class="ws-preview-gap hidden" id="wsEdGap">${empty?`<section class="ws-edit-empty-start"><h3>开始你的粗剪</h3><p>导入外部视频或音频，或从左侧选择画布素材加入时间线。</p><div class="ws-flow-actions"><button id="wsEdEmptyImport" class="primary">导入外部素材</button><button id="wsEdEmptyCanvas">选择画布视频</button></div><p id="wsEdEmptyReason">时间线中还没有片段，加入后即可预览和导出。</p></section>`:'黑场 / 空隙'}</div><span class="ws-preview-tag" id="wsEdTag"></span></div>
+     <div class="ws-preview-row"><span id="wsEdClipInfo" class="muted">—</span><span class="grow"></span><span class="muted">V1 视频 · A1 音频</span></div></div>
      <div class="ws-tl-scroll" id="wsTlScroll"><div class="ws-tl-content" id="wsTlContent"></div></div>
     </main>
     <aside class="ws-edit-side">
      <section class="ws-inspector" id="wsEdInspector"></section>
     </aside>
    </div>
-   <dialog class="ws-library-preview" id="wsLibPreview" aria-labelledby="wsLibPreviewTitle"><header><h3 id="wsLibPreviewTitle">${t('edit.preview')}</h3><button id="wsLibPreviewClose" aria-label="关闭素材预览">${t('edit.close')}</button></header><div id="wsLibPreviewMedia"></div></dialog>`;
+   <dialog class="ws-library-preview" id="wsLibPreview" aria-labelledby="wsLibPreviewTitle"><header><h3 id="wsLibPreviewTitle">素材预览</h3><button id="wsLibPreviewClose" aria-label="关闭素材预览">关闭 ×</button></header><div id="wsLibPreviewMedia"></div></dialog>`;
   Object.assign(els,{scroll:root.querySelector('#wsTlScroll'),content:root.querySelector('#wsTlContent'),
    video:root.querySelector('#wsEdVideo'),gap:root.querySelector('#wsEdGap'),tag:root.querySelector('#wsEdTag'),
    timecode:root.querySelector('#wsEdTimecode'),playBtn:root.querySelector('#wsEdPlay'),
@@ -108,86 +103,28 @@ export function createEditPage(root,ctx){
  }
  function binHtml(){
   const items=libraryRows();
-  if(!items.length)return `<p class="ws-empty">${libraryQuery||libraryFilter!=='all'?t('edit.noMatch'):t('edit.dropImport')}</p>`;
-  return items.map(a=>{const drag=a.kind==='video'||a.kind==='audio';return `<div class="ws-bin-row ${a.missing?'missing':''}" data-bin-key="${esc(a.key)}" data-bin-kind="${esc(a.kind)}" title="${drag?t('edit.dragToTrack'):t('edit.preview')}">
-   <span class="ws-bin-thumb ${a.kind}" data-bin-thumb="${esc(a.key)}" aria-hidden="true">${a.kind==='video'?'▷':a.kind==='audio'?'♫':'▧'}</span>
-   <span class="ws-bin-name" title="${esc(a.name)}"><b>${esc(a.name)}</b><small>${a.previz?t('edit.previz'):a.source}${a.durationSec?' · '+a.durationSec.toFixed(1)+' '+t('edit.secondsShort'):''}</small></span>
-   <span class="ws-bin-actions"><button data-preview-material="${esc(a.key)}" aria-label="${t('edit.preview')} ${esc(a.name)}">${t('edit.preview')}</button>${drag?`<button data-add-material="${esc(a.key)}" aria-label="${t('edit.addAria',{name:esc(a.name),kind:a.kind==='video'?t('edit.videoTrack'):t('edit.audioTrack')})}" title="${t('edit.addTitle',{track:a.kind==='video'?'V1':'A1'})}">＋</button>`:''}${a.assetId?`<button class="danger" data-remove-material="${esc(a.key)}" aria-label="删除素材 ${esc(a.name)}" title="删除素材；引用片段会先确认">✕</button>`:''}</span>
-  </div>`}).join('');
+  if(!items.length)return `<p class="ws-empty">${libraryQuery||libraryFilter!=='all'?'没有匹配的素材，可换个关键词或分类。':'从文件夹拖入视频、音频，或点击上方「导入」。导演台导出的白模视频会自动列在这里。'}</p>`;
+  return items.map(a=>`<div class="ws-bin-row" data-bin-key="${esc(a.key)}" title="拖到轨道，或点击右侧按钮加入">
+   <span class="ws-asset-icon ${a.kind}">${a.kind==='video'?'▷':'♫'}</span>
+   <span class="ws-bin-name" title="${esc(a.name)}"><b>${esc(a.name)}</b><small>${a.previz?'白模预演':a.source}${a.durationSec?' · '+a.durationSec.toFixed(1)+' 秒':''}</small></span>
+   <span class="ws-bin-actions"><button data-preview-material="${esc(a.key)}" aria-label="预览 ${esc(a.name)}">预览</button><button data-add-material="${esc(a.key)}" aria-label="将 ${esc(a.name)} 加入${a.kind==='video'?'视频':'音频'}轨道" title="加入${a.kind==='video'?' V1':' A1'}末尾">＋</button></span>
+  </div>`).join('');
  }
  function wireLibraryRows(){
   root.querySelector('#wsLibCount').textContent=String(libraryRows().length);
   root.querySelectorAll('[data-add-material]').forEach(b=>b.onclick=()=>addMaterial(b.dataset.addMaterial));
   root.querySelectorAll('[data-preview-material]').forEach(b=>b.onclick=()=>previewMaterial(b.dataset.previewMaterial));
-  root.querySelectorAll('[data-remove-material]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeMaterial(b.dataset.removeMaterial);});
-  root.querySelectorAll('[data-bin-key]').forEach(row=>{installBinDrag(row);row.ondblclick=e=>{if(e.target.closest('button'))return;const item=allLibraryRows().find(a=>a.key===row.dataset.binKey);if(item&&(item.kind==='video'||item.kind==='audio'))addMaterial(item.key);};});
-  hydrateThumbs();
+  root.querySelectorAll('[data-bin-key]').forEach(row=>installBinDrag(row));
  }
  function refreshLibrary(){
-  const hasLibrary=allLibraryRows().length>0;
+  const hasLibrary=cutLibraryRows(ctx.project()).length>0;
   for(const control of [root.querySelector('.ws-library-filters'),root.querySelector('#wsLibSearch')]){
    if(!control)continue;control.hidden=!hasLibrary;control.classList.toggle('hidden',!hasLibrary);
   }
   root.querySelector('#wsEdBin').innerHTML=binHtml();wireLibraryRows();
  }
-
- let thumbEpoch=0;const thumbCache=new Map(),thumbRequests=new Set();
- function videoThumb(blob){
-  return new Promise(resolve=>{
-   const url=URL.createObjectURL(blob),video=document.createElement('video');let done=false,timer;
-   const finish=value=>{if(done)return;done=true;clearTimeout(timer);try{video.pause();video.removeAttribute('src');video.load();}catch{}URL.revokeObjectURL(url);resolve(value);};
-   video.muted=true;video.playsInline=true;video.preload='auto';
-   video.onerror=()=>finish(null);
-   video.onloadeddata=()=>{try{video.currentTime=Math.min(.2,(video.duration||1)/2);}catch{finish(null);}};
-   video.onseeked=()=>{try{const canvas=document.createElement('canvas');canvas.width=96;canvas.height=54;const ctx2=canvas.getContext('2d');ctx2.drawImage(video,0,0,96,54);finish(canvas.toDataURL('image/jpeg',.68));}catch{finish(null);}};
-   timer=setTimeout(()=>finish(null),3000);video.src=url;
-  });
- }
- async function hydrateThumbs(){
-  const epoch=++thumbEpoch,projectId=ctx.project().id,rows=allLibraryRows();
-  for(const el of root.querySelectorAll('[data-bin-thumb]')){
-   const item=rows.find(r=>r.key===el.dataset.binThumb);if(!item||!el.isConnected)continue;
-   if(item.kind==='image'&&item.nodeId){const node=ctx.project().nodes.find(n=>n.id===item.nodeId);if(node?.src){el.innerHTML=`<img src="${esc(node.src)}" alt="">`;el.classList.add('has-thumb');}continue;}
-   if(!item.assetId)continue;
-   const cacheKey=projectId+':'+item.assetId;
-   if(thumbCache.has(cacheKey)){const cached=thumbCache.get(cacheKey);if(cached)el.innerHTML=cached.startsWith('url:')?`<img src="${esc(cached.slice(4))}" alt="">`:`<img src="${esc(cached)}" alt="">`;el.classList.add('has-thumb');continue;}
-   if(thumbRequests.has(cacheKey))continue;
-   thumbRequests.add(cacheKey);
-   try{
-    const blob=await ctx.mediaStore.blob(item.assetId);
-    if(epoch!==thumbEpoch||ctx.project().id!==projectId||!el.isConnected)continue;
-    if(!blob){el.closest('.ws-bin-row')?.classList.add('missing');el.textContent='⚠';el.title='素材内容缺失，可预览后重新导入';continue;}
-    let value=null;
-    if(item.kind==='image'){const url=await ctx.mediaStore.url(item.assetId);value=url?'url:'+url:null;}
-    else if(item.kind==='video')value=await videoThumb(blob);
-    if(value){thumbCache.set(cacheKey,value);if(!el.isConnected)continue;el.innerHTML=value.startsWith('url:')?`<img src="${esc(value.slice(4))}" alt="">`:`<img src="${esc(value)}" alt="">`;el.classList.add('has-thumb');}
-   }catch{/* thumbnail is optional; row stays usable */}finally{thumbRequests.delete(cacheKey);}
-  }
- }
- function removeMaterial(key){
-  const item=allLibraryRows().find(row=>row.key===key);if(!item?.assetId)return ctx.toast('画布素材请在画布中移除');
-  const asset=assetOf(item.assetId);if(!asset)return;
-  const removed=removeMediaWithConsent(ws(),asset.id,{confirm:message=>window.confirm(message),checkpoint:ctx.checkpoint,commit:ctx.commit,persist:ctx.persist});
-  if(!removed)return;
-  if(selected&&!selectedClip())selected=null;
-  render();ctx.toast('已删除素材，可通过撤销恢复');
- }
- async function recoverMaterial(item,file,preview){
-  const asset=assetOf(item.assetId);if(!asset)return ctx.toast('素材条目已变化，请重新打开');
-  const verdict=classifyImportFile(file);
-  if(!verdict.ok)return ctx.toast(verdict.error);
-  if(verdict.kind!==asset.kind)return ctx.toast('恢复文件类型必须与原素材一致');
-  const projectId=ctx.project().id;
-  try{
-   const probe=await probeMediaBlob(file,asset.kind);
-   await ctx.mediaStore.put({id:asset.id,kind:asset.kind,name:asset.name,mime:verdict.mime,durationSec:probe.durationSec,width:probe.width,height:probe.height,blob:new Blob([file],{type:verdict.mime})});
-   if(ctx.project().id!==projectId)return;
-   const current=assetOf(asset.id);if(current){ctx.checkpoint();current.size=file.size;if(probe.durationSec!=null)current.durationSec=probe.durationSec;if(probe.width)current.width=probe.width;if(probe.height)current.height=probe.height;ctx.commit();ctx.persist();}
-   preview?.close();thumbCache.clear();render();ctx.toast('素材已恢复，可重新加入时间线');
-  }catch(e){ctx.toast('恢复失败：'+e.message);}
- }
  async function materialAsset(key){
-  const item=allLibraryRows().find(r=>r.key===key);
+  const item=cutLibraryRows(ctx.project()).find(r=>r.key===key);
   if(!item)throw Error('素材已变化，请重新选择');
   return item.assetId?assetOf(item.assetId):ctx.importCanvasNodeToLibrary(item.nodeId);
  }
@@ -198,25 +135,16 @@ export function createEditPage(root,ctx){
   catch(e){ctx.toast('加入剪辑失败：'+e.message);}finally{libraryBusy=false;}
  }
  async function previewMaterial(key){
-  const item=allLibraryRows().find(r=>r.key===key);if(!item)return;
+  const item=cutLibraryRows(ctx.project()).find(r=>r.key===key);if(!item)return;
   stop();const request=++libraryRequest,projectId=ctx.project().id;
-  const dialog=root.querySelector('#wsLibPreview'),body=root.querySelector('#wsLibPreviewMedia');
-  const open=()=>{root.querySelector('#wsLibPreviewTitle').textContent=item.name;if(!dialog.open)dialog.showModal();root.querySelector('#wsLibPreviewClose').focus({preventScroll:true});};
   try{
    const src=item.assetId?await ctx.mediaStore.url(item.assetId):ctx.project().nodes.find(n=>n.id===item.nodeId)?.src;
    if(request!==libraryRequest||ctx.project().id!==projectId)return;
-   if(!src){
-    if(!item.assetId){body.innerHTML='<p class="help-text">画布素材内容缺失；请回到画布检查该节点或重新导入。此条目不能在此恢复。</p>';open();return;}
-    const accept=item.kind==='image'?'image/png,image/jpeg,image/webp,image/gif,image/avif':item.kind==='video'?'video/mp4,video/webm':'audio/mpeg,audio/wav,audio/ogg,audio/mp4';
-    body.innerHTML=`<div class="ws-recover-media"><p class="ws-warn">素材内容缺失（本地媒体库没有对应字节）。选择原素材文件即可恢复到原条目，时间线引用保持不变。</p><input type="file" id="wsLibRecoverFile" accept="${accept}" hidden><button type="button" id="wsLibRecoverPick" class="primary">选择文件恢复…</button></div>`;
-    const input=body.querySelector('#wsLibRecoverFile');body.querySelector('#wsLibRecoverPick').onclick=()=>input.click();
-    input.onchange=()=>{const file=input.files?.[0];if(file)recoverMaterial(item,file,dialog);};
-    open();return;
-   }
+   if(!src)throw Error('素材内容缺失，请重新导入');
+   const dialog=root.querySelector('#wsLibPreview'),body=root.querySelector('#wsLibPreviewMedia');
    root.querySelector('#wsLibPreviewTitle').textContent=item.name;
-   if(item.kind==='image'){const img=document.createElement('img');img.src=src;img.alt=item.name;body.replaceChildren(img);}
-   else{const media=document.createElement(item.kind);media.src=src;media.controls=true;media.preload='metadata';body.replaceChildren(media);}
-   open();
+   const media=document.createElement(item.kind);media.src=src;media.controls=true;media.preload='metadata';body.replaceChildren(media);
+   dialog.showModal();root.querySelector('#wsLibPreviewClose').focus();
   }catch(e){ctx.toast('预览失败：'+e.message);}
  }
  function buildTimeline(){
@@ -232,8 +160,8 @@ export function createEditPage(root,ctx){
   els.content.style.width=width+'px';
   els.content.innerHTML=`
    <div class="ws-tl-ruler" id="wsTlRuler" style="width:${width}px">${ticks}</div>
-   <div class="ws-tl-track"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>V1</b> ${t('edit.videoTrack')}<span>${t('edit.singleTrackHint')}</span></div><div class="ws-tl-lane" data-lane="video" style="width:${laneW}px"></div></div>
-   <div class="ws-tl-track audio"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>A1</b> ${t('edit.audioTrack')}<span>${t('edit.trackVolume')} <input type="number" id="wsEdA1Gain" min="0" max="2" step="0.05" value="${seq().audioGain??1}"> <label class="ws-check"><input type="checkbox" id="wsEdA1Mute" ${seq().audioMuted?'checked':''}>${t('edit.mute')}</label></span></div><div class="ws-tl-lane" data-lane="audio" style="width:${laneW}px"></div></div>
+   <div class="ws-tl-track"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>V1</b> 视频<span>单轨 · 顺序排列</span></div><div class="ws-tl-lane" data-lane="video" style="width:${laneW}px"></div></div>
+   <div class="ws-tl-track audio"><div class="ws-tl-label" style="width:${LABEL_W}px"><b>A1</b> 音频<span>轨音量 <input type="number" id="wsEdA1Gain" min="0" max="2" step="0.05" value="${seq().audioGain??1}"> <label class="ws-check"><input type="checkbox" id="wsEdA1Mute" ${seq().audioMuted?'checked':''}>静音</label></span></div><div class="ws-tl-lane" data-lane="audio" style="width:${laneW}px"></div></div>
    <i class="ws-tl-playhead" id="wsTlPlayhead" style="left:${LABEL_W}px"></i>`;
   els.ruler=els.content.querySelector('#wsTlRuler');
   els.playheadEl=els.content.querySelector('#wsTlPlayhead');
@@ -272,29 +200,27 @@ export function createEditPage(root,ctx){
  }
  function renderInspector(){
   const c=selectedClip();
-  if(!c){els.inspector.innerHTML=`<h3>${t('edit.clip')}</h3><p class="help-text">${t('edit.clickClip')}<br>${t('edit.addClip')}</p>`;return;}
+  if(!c){els.inspector.innerHTML=`<h3>片段</h3><p class="help-text">点击时间线片段查看属性。<br>从左侧素材库点「＋」或拖入轨道。</p>`;return;}
   const asset=assetOf(c.assetId),src=sourceFrames(asset);
-  els.inspector.innerHTML=`<h3>${t('edit.clipNamed',{name:esc(asset?.name||t('edit.missingAsset'))})}</h3>
-   ${!asset?'<p class="ws-warn">'+t('edit.missingClip')+'</p>':''}
-   <label class="field">${t('edit.timeDisplay')}<select id="wsPrUnit" aria-label="${t('edit.timeDisplay')}"><option value="seconds" ${timeUnit==='seconds'?'selected':''}>${t('edit.seconds')}</option><option value="timecode" ${timeUnit==='timecode'?'selected':''}>${t('edit.timecode')}</option><option value="frames" ${timeUnit==='frames'?'selected':''}>${t('edit.frames')}</option></select></label>
-   <label class="field">${t('edit.position')} / ${timeUnit==='seconds'?t('edit.seconds') : timeUnit==='frames'?t('edit.frames'):t('edit.timecode')}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrStart" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.start,timeUnit,seq().fps)}"></label>
+  els.inspector.innerHTML=`<h3>片段 · ${esc(asset?.name||'素材缺失')}</h3>
+   ${!asset?'<p class="ws-warn">⚠ 素材已缺失（被删除或来自旧备份）。可删除此片段。</p>':''}
+   <label class="field">时间显示<select id="wsPrUnit" aria-label="片段时间单位"><option value="seconds" ${timeUnit==='seconds'?'selected':''}>秒</option><option value="timecode" ${timeUnit==='timecode'?'selected':''}>时间码（时:分:秒:帧）</option><option value="frames" ${timeUnit==='frames'?'selected':''}>帧</option></select></label>
+   <label class="field">位置 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrStart" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.start,timeUnit,seq().fps)}"></label>
    <div class="ws-field-row">
-    <label class="field">${t('edit.inPoint')} / ${timeUnit==='seconds'?t('edit.seconds') : timeUnit==='frames'?t('edit.frames'):t('edit.timecode')}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrIn" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.in,timeUnit,seq().fps)}"></label>
-    <label class="field">${t('edit.outPoint')} / ${timeUnit==='seconds'?t('edit.seconds') : timeUnit==='frames'?t('edit.frames'):t('edit.timecode')}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrOut" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.out,timeUnit,seq().fps)}"></label>
+    <label class="field">入点 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrIn" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.in,timeUnit,seq().fps)}"></label>
+    <label class="field">出点 / ${timeUnit==='seconds'?'秒':timeUnit==='frames'?'帧':'时间码'}<input type="${timeUnit==='timecode'?'text':'number'}" id="wsPrOut" min="0" step="${timeUnit==='seconds'?'any':'1'}" value="${displayClipTime(c.out,timeUnit,seq().fps)}"></label>
    </div>
-   <p class="help-text">${t('edit.duration')} ${clipLength(c)} ${t('edit.frames')} · ${(clipLength(c)/seq().fps).toFixed(2)} ${t('edit.seconds')}${src?` · ${t('edit.sourceFrames',{count:src})}`:''}</p>
+   <p class="help-text">时长 ${clipLength(c)} 帧 · ${(clipLength(c)/seq().fps).toFixed(2)} 秒${src?` · 素材共 ${src} 帧`:''}</p>
    <div class="ws-field-row">
-    <label class="field">${t('edit.volume')}<input type="number" id="wsPrVolume" min="0" max="2" step="0.05" value="${c.volume}"></label>
-    <label class="field ws-check-field"><input type="checkbox" id="wsPrMute" ${c.muted?'checked':''}>${t('edit.clipMute')}</label>
+    <label class="field">音量<input type="number" id="wsPrVolume" min="0" max="2" step="0.05" value="${c.volume}"></label>
+    <label class="field ws-check-field"><input type="checkbox" id="wsPrMute" ${c.muted?'checked':''}>片段静音</label>
    </div>
    <div class="ws-field-row">
-    <button id="wsPrSplit" class="grow">${t('edit.split')}</button>
-    <button id="wsPrMarkIn" title="在当前播放杆设置入点 I">I 入点</button>
-    <button id="wsPrMarkOut" title="在当前播放杆设置出点 O">O 出点</button>
-    <button id="wsPrDelete" class="danger grow">${t('edit.delete')}</button>
-    <button id="wsPrRipple" class="grow" title="Delete and shift following clips">${t('edit.closeGap')}</button>
+    <button id="wsPrSplit" class="grow">✂ 拆分</button>
+    <button id="wsPrDelete" class="danger grow">删除</button>
+    <button id="wsPrRipple" class="grow" title="删除并左移后续片段">闭合空隙</button>
    </div>
-   <p class="help-text">${t('edit.inspectorHelp')}</p>`;
+   <p class="help-text">双击数值输入框可全选直接键入。首版不支持变速与转场；片段音量只作用于本片段原声。</p>`;
   els.inspector.querySelector('#wsPrUnit').onchange=e=>{timeUnit=e.target.value;renderInspector();root.querySelector('#wsPrUnit').focus();};
   const readTime=input=>{try{input.setCustomValidity('');return parseClipTime(input.value,timeUnit,seq().fps);}catch(error){input.setCustomValidity(error.message);input.reportValidity();return null;}};
   els.inspector.querySelector('#wsPrStart').onchange=e=>{const start=readTime(e.target);if(start===null)return;ctx.checkpoint();setTrack(selected.track,moveClip(trackOf(selected.track),c.id,start));ctx.commit();ctx.persist();render();};
@@ -303,7 +229,6 @@ export function createEditPage(root,ctx){
   els.inspector.querySelector('#wsPrVolume').onchange=e=>{const value=Number(e.target.value);const v=Math.min(2,Math.max(0,Number.isFinite(value)?value:1));ctx.checkpoint();const t=trackOf(selected.track);setTrack(selected.track,t.map(x=>x.id===c.id?{...x,volume:Math.round(v*100)/100}:x));ctx.commit();ctx.persist();render();};
   els.inspector.querySelector('#wsPrMute').onchange=e=>{ctx.checkpoint();const t=trackOf(selected.track);setTrack(selected.track,t.map(x=>x.id===c.id?{...x,muted:e.target.checked}:x));ctx.commit();ctx.persist();render();};
   els.inspector.querySelector('#wsPrSplit').onclick=()=>splitAtPlayhead();
-  els.inspector.querySelector('#wsPrMarkIn').onclick=markInPoint;els.inspector.querySelector('#wsPrMarkOut').onclick=markOutPoint;
   els.inspector.querySelector('#wsPrDelete').onclick=()=>deleteSelected(false);
   els.inspector.querySelector('#wsPrRipple').onclick=()=>deleteSelected(true);
  }
@@ -362,12 +287,10 @@ export function createEditPage(root,ctx){
     const dFrames=Math.round((ev.clientX-sx)/pxPerFrame);
     if(!moved){if(Math.abs(ev.clientX-sx)<3)return;moved=true;document.body.classList.add('ws-dragging');}
     const base=initial;
-    if(edge==='move'){const target=snapFrame(clip.start+dFrames,snapCandidates(trackName,clip.id,[clip.start,clipEnd(clip)]),snapThreshold());applied=moveClip(base,clip.id,target);}
+    if(edge==='move')applied=moveClip(base,clip.id,clip.start+dFrames);
     else{
      const src=sourceFrames(assetOf(clip.assetId));
-     const currentEdge=edge==='in'?clip.start:clipEnd(clip);
-     const snapped=snapFrame(currentEdge+dFrames,snapCandidates(trackName,clip.id,[clip.start,clipEnd(clip)]),snapThreshold());
-     applied=trimClip(base,clip.id,edge,snapped-currentEdge,{maxOut:src??Infinity});
+     applied=trimClip(base,clip.id,edge,dFrames,{maxOut:src??Infinity});
     }
     setTrack(trackName,applied);
     renderTimelineOnly();
@@ -413,7 +336,7 @@ export function createEditPage(root,ctx){
   root.querySelector('#wsEdEmptyImport')?.addEventListener('click',()=>root.querySelector('#wsEdFile').click());
   root.querySelector('#wsEdEmptyCanvas')?.addEventListener('click',()=>{
    libraryFilter='all';libraryQuery='';refreshLibrary();
-   const rows=allLibraryRows(),canvas=rows.find(row=>row.nodeId&&row.kind==='video');
+   const rows=cutLibraryRows(ctx.project()),canvas=rows.find(row=>row.nodeId&&row.kind==='video');
    if(canvas){const button=[...root.querySelectorAll('[data-add-material]')].find(el=>el.dataset.addMaterial===canvas.key);button?.focus();button?.scrollIntoView({block:'nearest'});}
    else{ctx.toast('画布还没有可用的视频；可先在导演台导出白模，或在画布拖入视频');ctx.goToPage('canvas');}
   });
@@ -435,8 +358,7 @@ export function createEditPage(root,ctx){
  function installBinDrag(row){
   row.addEventListener('pointerdown',e=>{
    if(e.button!==0||e.target.closest('button')||drag||binDrag||scrub)return;
-   const key=row.dataset.binKey,item=allLibraryRows().find(a=>a.key===key),projectId=ctx.project().id;if(!item)return;
-   if(item.kind==='image')return ctx.toast('图片素材可用于预览；剪辑轨道只支持视频 / 音频');
+   const key=row.dataset.binKey,item=cutLibraryRows(ctx.project()).find(a=>a.key===key),projectId=ctx.project().id;if(!item)return;
    e.preventDefault();
    const sx=e.clientX,sy=e.clientY;let started=false,closed=false;
    const ghost=document.createElement('div');ghost.className='ws-bin-ghost';ghost.textContent=item.name;ghost.hidden=true;document.body.append(ghost);
@@ -549,36 +471,22 @@ export function createEditPage(root,ctx){
   if(audioContext){let gain=gainNodes.get(el);if(!gain){gain=audioContext.createGain();audioContext.createMediaElementSource(el).connect(gain);gain.connect(audioContext.destination);gainNodes.set(el,gain);}el.volume=1;gain.gain.value=value;}
   else el.volume=Math.min(1,value);
  }
- function startPlay(direction=1){
-  stop();
+ function togglePlay(){
+  if(playing){stop();return;}
   if(!totalFrames())return ctx.toast('时间线为空，先导入或拖入素材');
-  if(direction>0&&playhead>=totalFrames())playhead=0;
-  if(direction<0&&playhead<=0)playhead=totalFrames();
+  if(playhead>=totalFrames())playhead=0;
   audioContext??=new (window.AudioContext||window.webkitAudioContext)();audioContext.resume().catch(()=>{});updateMediaVolume();
-  playing=true;playbackDirection=direction;playAcc=playhead;lastTs=performance.now();
-  els.playBtn.textContent=direction<0?'◀':'Ⅱ';
+  playing=true;playAcc=playhead;lastTs=performance.now();
+  els.playBtn.textContent='Ⅱ';
   const tick=ts=>{
    if(!playing)return;
-   playAcc+=(ts-lastTs)/1000*seq().fps*playbackDirection;lastTs=ts;
-   if((playbackDirection>0&&playAcc>=totalFrames())||(playbackDirection<0&&playAcc<=0)){playhead=playbackDirection>0?totalFrames():0;stop();updatePlayheadView();return;}
-   playhead=Math.max(0,Math.round(playAcc));
+   playAcc+=(ts-lastTs)/1000*seq().fps;lastTs=ts;
+   if(playAcc>=totalFrames()){playhead=totalFrames();stop();updatePlayheadView();return;}
+   playhead=Math.round(playAcc);
    updatePlayheadView();
    rafId=requestAnimationFrame(tick);
   };
   rafId=requestAnimationFrame(tick);
- }
- function togglePlay(){if(playing)stop();else startPlay(1);}
- function markInPoint(){
-  const c=selectedClip();if(!c)return ctx.toast('请先选中片段，再用 I 标记入点');
-  if(playhead<c.start||playhead>=clipEnd(c))return ctx.toast('播放杆不在所选片段内');
-  const nextIn=c.in+(playhead-c.start);if(nextIn>=c.out)return ctx.toast('入点必须早于出点');
-  ctx.checkpoint();setTrack(selected.track,trackOf(selected.track).map(x=>x.id===c.id?{...x,start:playhead,in:nextIn}:x));ctx.commit();ctx.persist();render();ctx.toast('已用 I 标记新入点');
- }
- function markOutPoint(){
-  const c=selectedClip();if(!c)return ctx.toast('请先选中片段，再用 O 标记出点');
-  if(playhead<=c.start||playhead>clipEnd(c))return ctx.toast('播放杆不在所选片段内');
-  const nextOut=c.in+(playhead-c.start);if(nextOut<=c.in)return ctx.toast('出点必须晚于入点');
-  ctx.checkpoint();setTrack(selected.track,trackOf(selected.track).map(x=>x.id===c.id?{...x,out:nextOut}:x));ctx.commit();ctx.persist();render();ctx.toast('已用 O 标记新出点');
  }
  function stop(){
   if(playing){playing=false;cancelAnimationFrame(rafId);}
@@ -646,7 +554,6 @@ export function createEditPage(root,ctx){
   const inField=e.target instanceof Element&&(e.target.matches('input,textarea,select,[contenteditable="true"]')||e.target.closest('input,textarea,select,[contenteditable="true"]'));
   if(inField||document.querySelector('.modal,dialog[open]'))return;
   if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();ctx.undo(e.shiftKey);return;}
-  if((e.metaKey||e.ctrlKey)&&e.code==='KeyK'){e.preventDefault();splitAtPlayhead();return;}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   // Space / Enter activate the focused native control; timeline shortcuts must not intercept them.
   if((e.code==='Space'||e.code==='Enter'||e.code==='NumpadEnter')&&isNativeActivationTarget(e.target))return;
@@ -657,11 +564,6 @@ export function createEditPage(root,ctx){
    case 'Home':e.preventDefault();stop();setPlayhead(0);return;
    case 'End':e.preventDefault();stop();setPlayhead(totalFrames());return;
    case 'KeyS':e.preventDefault();if(!e.repeat)splitAtPlayhead();return;
-   case 'KeyJ':e.preventDefault();if(!e.repeat)startPlay(-1);return;
-   case 'KeyK':e.preventDefault();if(!e.repeat)stop();return;
-   case 'KeyL':e.preventDefault();if(!e.repeat)startPlay(1);return;
-   case 'KeyI':e.preventDefault();if(!e.repeat)markInPoint();return;
-   case 'KeyO':e.preventDefault();if(!e.repeat)markOutPoint();return;
    case 'KeyF':e.preventDefault();if(!e.repeat)fitAll();return;
    case 'Delete':case 'Backspace':e.preventDefault();if(!e.repeat)deleteSelected(false);return;
    case 'Equal':case 'NumpadAdd':e.preventDefault();if(!e.repeat)zoomBy(1.3);return;

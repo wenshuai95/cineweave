@@ -27,7 +27,7 @@ const imageNodeFor=(project,asset)=>{
  const nodes=project.nodes.filter(node=>!node.storyRef&&node.storyImageRef?.assetId===asset.id);
  return nodes.find(node=>node.storyImageRef.versionId===asset.selectedImageId)||nodes[0];
 };
-const validImageSource=src=>typeof src==='string'&&src.length<=28*1024*1024&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/\r\n]+={0,2}$/.test(src);
+const validImageSource=src=>typeof src==='string'&&(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/\r\n]+={0,2}$/.test(src)||/^\/api\/assets\/[0-9a-f]{64}\.(png|jpe?g|webp)$/i.test(src));
 export function isAssetImageCurrent(project,asset){
  const version=asset.imageVersions?.find(v=>v.id===asset.selectedImageId);if(!version)return true;
  const node=imageNodeFor(project,asset);

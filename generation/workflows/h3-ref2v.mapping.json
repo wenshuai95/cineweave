@@ -1,0 +1,80 @@
+{
+  "workflow": "h3-ref2v",
+  "workflowFile": "h3-ref2v.json",
+  "workflowVersion": "1.0",
+  "generatedAt": "2026-11-12",
+  "model": "MiniMax H3 Ref2VA (reference / multimodal)",
+  "comfy": "http://192.168.3.27:8188",
+
+  "defaults": {
+    "width": 640,
+    "height": 352,
+    "duration": 5,
+    "fps": 24,
+    "seed": 20261112,
+    "refImageCount": 3,
+    "refVideoCount": 0,
+    "refAudioCount": 0,
+    "outputPrefix": "video/h3_ref2v"
+  },
+
+  "notes": {
+    "negativePrompt": "不支持。此链路用 BasicGuider（无 CFG），图里没有负向提示词输入，传 negativePrompt 会被忽略。",
+    "mode": "固定 reference，不要改。文生视频/首帧图生视频继续用 h3-t2v.json / h3-i2v.json。",
+    "mediaOrder": "MiniMaxH3EasyMediaBridge 按 图片 → 视频 → 音频 的顺序编号，所以提示词里 <Picture 1..N> 对应 image_1..N，<Video 1> 对应 video_1，<Audio 1> 对应 audio_1。",
+    "counts": "三个 count 必须与实际提供的素材数量一致，否则多余的槽位会被忽略、缺少的槽位会报错。默认 3/0/0 只用图片。",
+    "limits": "图片最多 9、视频最多 3、音频最多 3，合计不超过 15 条。"
+  },
+
+  "mapping": [
+    { "nodeId": "2", "input": "prompt",   "from": "prompt",              "type": "string" },
+    { "nodeId": "2", "input": "width",    "from": "width",               "type": "number" },
+    { "nodeId": "2", "input": "height",   "from": "height",              "type": "number" },
+    { "nodeId": "2", "input": "seconds",  "from": "duration",            "type": "number" },
+    { "nodeId": "2", "input": "fps",      "from": "fps",                 "type": "number" },
+    { "nodeId": "2", "input": "mode",     "value": "reference",          "type": "enum", "readonly": true },
+    { "nodeId": "2", "input": "reference_mention_mode", "value": "index", "type": "enum", "readonly": true },
+    { "nodeId": "2", "input": "ref_image_size", "value": "1k",           "type": "enum", "readonly": true },
+
+    { "nodeId": "9", "input": "noise_seed", "from": "seed",              "type": "number" },
+
+    { "nodeId": "16", "input": "image_count", "from": "refImageCount",   "type": "number" },
+    { "nodeId": "16", "input": "video_count", "from": "refVideoCount",   "type": "number" },
+    { "nodeId": "16", "input": "audio_count", "from": "refAudioCount",   "type": "number" },
+
+    { "nodeId": "20", "input": "image", "from": "refImage1", "type": "image", "uploadsTo": "input" },
+    { "nodeId": "21", "input": "image", "from": "refImage2", "type": "image", "uploadsTo": "input" },
+    { "nodeId": "22", "input": "image", "from": "refImage3", "type": "image", "uploadsTo": "input" },
+    { "nodeId": "23", "input": "file",  "from": "refVideo1", "type": "video", "uploadsTo": "input" },
+    { "nodeId": "24", "input": "audio", "from": "refAudio1", "type": "audio", "uploadsTo": "input" },
+
+    { "nodeId": "14", "input": "filename_prefix", "from": "outputPrefix", "type": "string" }
+  ],
+
+  "uploads": {
+    "endpoint": "POST /upload/image",
+    "form": {
+      "image": "<binary>",
+      "type": "input",
+      "overwrite": "true"
+    },
+    "contentType": "multipart/form-data",
+    "accepts": "任意文件类型（图片 / mp4 / wav）。服务端原样写字节，不校验图片解码。",
+    "response": "{ name, subfolder, type }",
+    "warning": "重名且内容不同时服务端会改名为 `xxx (1).ext`，必须使用响应里的 name 回填映射，不要假定文件名不变。"
+  },
+
+  "outputs": {
+    "historyPoll": "GET /history/{prompt_id}",
+    "video": "outputs['14'].gifs[0] 或 outputs['14'].videos[0]（SaveVideo 节点）",
+    "audioTrack": "已封装在 mp4 内（AAC 32kHz 立体声），不要用会丢音轨的转码参数"
+  },
+
+  "variants": {
+    "h3-ref2v.json":           "默认 3 图，video/audio 槽位已接线但 count=0",
+    "h3-ref2v-single.json":    "单图参考，验收样例",
+    "h3-ref2v-multi.json":     "双图参考（两个不同角色），验收样例",
+    "h3-ref2v-imgaudio.json":  "1 图 + 1 音频，验收样例",
+    "h3-ref2v-video.json":     "1 图 + 1 视频，验收样例"
+  }
+}

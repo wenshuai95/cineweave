@@ -1,3 +1,4 @@
+import {createDirectorPanel} from './director-panel.mjs';
 import {fitToolDock} from './dock-layout.mjs';
 import {videoVersionGroup,versionClips,replaceVersionClips,adoptVideoVersion} from '../video-versions.mjs';
 import './workstation.css';
@@ -5,34 +6,40 @@ import './workflow-ui.css';
 import './canvas-tools.css';
 import {createMediaStore} from './media-store.mjs';
 import {importMediaFiles as readMediaFiles,probeMediaBlob,appendClip} from './media-import.mjs';
+import {createScriptPage} from './script-page.mjs';
+import {createCreativePage} from './creative-page.mjs';
+import {normalizeCreativeTasks} from './creative-agent.mjs';
 import {createAssetsPage} from './assets-page.mjs';
 import {createEditPage} from './edit-page.mjs';
 import {createDeliverPage} from './deliver-page.mjs';
 import {uid} from '../model.mjs';
-import {t} from '../i18n/index.mjs';
 import {workflowState,recordWorkflowStep} from './workflow.mjs';
 
-const PAGES=[['canvas',t('nav.canvas'),'▦'],['edit',t('nav.edit'),'▤']];
-const TOOL_NAMES={assets:t('workspace.assets')};
+const PAGES=[['canvas','画布','▦'],['edit','剪辑','▤']];
+const TOOL_NAMES={assistant:'创作助手',script:'文稿与分镜',assets:'项目素材'};
 
 export function installWorkstation(ctx){
  const app=document.querySelector('.app');
  if(!app)throw Error('未找到应用根节点，无法安装工作台');
  const mediaStore=createMediaStore();
 
- // 画布为主工作区；页面切换统一由顶部「工作区 / 阶段」下拉进入。
- const nav=null;
+ // 画布为主工作区；剧本与资产保留为按需打开的画布工具。
+ const nav=document.createElement('nav');
+ nav.className='ws-bottomnav';nav.setAttribute('aria-label','工作台页面');
+ nav.innerHTML=PAGES.map(([id,name,icon])=>`<button type="button" data-ws-nav="${id}" aria-current="${id==='canvas'}" title="${name}页面"><i>${icon}</i><span>${name}</span></button>`).join('');
+ nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.onclick=()=>setPage(b.dataset.wsNav));
  const footer=app.querySelector('footer.statusbar');
+ app.insertBefore(nav,footer);
 
- const toolbar=document.createElement('div');toolbar.className='ws-canvas-tools';toolbar.setAttribute('aria-label',t('workspace.toolAria'));
- toolbar.innerHTML='<button type="button" data-ws-tool="assets">'+t('workspace.assets')+'</button><button type="button" id="wsArrangeStory" title="Arrange script, shots and assets to canvas; does not call models">'+t('workspace.arrangeStory')+'</button>';
+ const toolbar=document.createElement('div');toolbar.className='ws-canvas-tools';toolbar.setAttribute('aria-label','创作画布工具');
+ toolbar.innerHTML='<button type="button" data-ws-tool="script">文稿与分镜</button><button type="button" data-ws-tool="assets">项目素材</button><button type="button" id="wsArrangeStory" title="把剧本、分镜和资产关联到画布，不会自动调用模型">整理到画布</button>';
  app.querySelector('.sidebar').prepend(toolbar);
- const dock=document.createElement('aside');dock.className='ws-canvas-dock';dock.hidden=true;dock.setAttribute('aria-label',t('workspace.dockAria'));
- dock.innerHTML=`<div class="ws-dock-grip" role="separator" tabindex="0" aria-label="调整创作工具宽度" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="1200" aria-valuenow="580"></div><header class="ws-dock-header"><strong id="wsDockTitle"></strong><span>${t('workspace.dockSubtitle')}</span><button type="button" id="wsDockExpand" aria-label="扩大创作工具" aria-pressed="false">${t('workspace.expand')}</button><button type="button" id="wsDockClose" aria-label="关闭创作工具，返回画布">${t('workspace.close')}</button></header>`;
+ const dock=document.createElement('aside');dock.className='ws-canvas-dock';dock.hidden=true;dock.setAttribute('aria-label','画布创作工具');
+ dock.innerHTML='<div class="ws-dock-grip" role="separator" tabindex="0" aria-label="调整创作工具宽度" aria-orientation="vertical" aria-valuemin="420" aria-valuemax="1200" aria-valuenow="580"></div><header class="ws-dock-header"><strong id="wsDockTitle"></strong><span>画布中的创作工具</span><button type="button" id="wsDockExpand" aria-label="扩大创作工具" aria-pressed="false">扩大</button><button type="button" id="wsDockClose" aria-label="关闭创作工具，返回画布">关闭 ✕</button></header>';
  app.insertBefore(dock,footer);
  // 工具容器常驻在画布旁边；切换只隐藏，不销毁已有编辑状态。
  const sections={};
- for(const id of ['assets','edit']){
+ for(const id of ['assistant','script','assets','edit']){
   const section=document.createElement('section');
   section.className='ws-page';section.hidden=true;
   section.id='wsPage'+id[0].toUpperCase()+id.slice(1);
@@ -44,13 +51,13 @@ export function installWorkstation(ctx){
  // Export is an on-demand dialog owned by the rough-cut workspace.
  const exportDialog=document.createElement('dialog');
  exportDialog.className='ws-export-dialog';exportDialog.id='wsExportDialog';exportDialog.setAttribute('aria-labelledby','wsExportTitle');
- exportDialog.innerHTML=`<header class="ws-export-heading"><div><h2 id="wsExportTitle">${t('workspace.exportTitle')}</h2><p>MP4 · H.264 / AAC</p></div><button type="button" id="wsExportClose" aria-label="关闭导出，返回剪辑">${t('workspace.exportClose')}</button></header><div id="wsExportContent"></div>`;
+ exportDialog.innerHTML='<header class="ws-export-heading"><div><h2 id="wsExportTitle">导出视频</h2><p>MP4 · H.264 / AAC</p></div><button type="button" id="wsExportClose" aria-label="关闭导出，返回剪辑">关闭</button></header><div id="wsExportContent"></div>';
  app.append(exportDialog);
  const exportContent=exportDialog.querySelector('#wsExportContent');
  exportDialog.querySelector('#wsExportClose').onclick=()=>closeExport();
  exportDialog.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();closeExport();}});
  exportDialog.addEventListener('cancel',e=>{e.preventDefault();closeExport();});
- exportDialog.addEventListener('close',()=>{pages.deliver.onHide?.();const button=current==='edit'?document.querySelector('#wsEdExport'):document.querySelector('#workspaceSwitch');button?.focus({preventScroll:true});});
+ exportDialog.addEventListener('close',()=>{pages.deliver.onHide?.();const button=current==='edit'?document.querySelector('#wsEdExport'):nav.querySelector('[aria-current="true"]');button?.focus({preventScroll:true});});
  function closeExport(){if(exportDialog.open)exportDialog.close();}
  function openExport(destination='file'){
   if(current!=='edit')setPage('edit');
@@ -85,7 +92,7 @@ export function installWorkstation(ctx){
   const project=ctx.project();if(!project?.workstation)return;
   const state=workflowState(project);
   const counts={script:state.shots?`${state.shots} 镜`:(state.scriptChars?'有文稿':''),assets:state.assets?`${state.assets} 项`:'',canvas:state.synced?`${state.synced}/${state.total}`:'',edit:state.clips?`${state.clips} 段`:'',deliver:state.deliveries?`${state.deliveries} 次`:''};
-  for(const b of (nav?.querySelectorAll('[data-ws-nav]')||[])){
+  for(const b of nav.querySelectorAll('[data-ws-nav]')){
    const id=b.dataset.wsNav;let count=b.querySelector('small');
    if(!count){count=document.createElement('small');b.append(count);}
    const value=counts[id];if(count.textContent!==value)count.textContent=value;
@@ -94,7 +101,7 @@ export function installWorkstation(ctx){
    b.title=PAGES.find(p=>p[0]===id)[1]+(value?' · '+(id==='canvas'?'分镜资产已关联 ':'')+value:'')+(id==='canvas'&&state.pendingSync?' · '+state.pendingSync+' 项待同步':warning?' · 上游已变化，请检查':'');
   }
   for(const b of toolbar.querySelectorAll('[data-ws-tool]')){const kind=b.dataset.wsTool;const warning=kind==='assistant'?(state.shotsStale||state.assetsStale):kind==='script'?state.shotsStale:state.assetsStale;b.classList.toggle('ws-needs-review',warning);b.title=TOOL_NAMES[kind]+(warning?' · 上游已变化，请检查':'');}
-  for(const id of ['assets']){
+  for(const id of ['script','assets']){
    const root=sections[id];let notice=root.querySelector(':scope > .ws-workflow-notice');
    const step=id==='script'?'shots':'assets',visible=id===currentTool&&(id==='script'?state.shotsStale:state.assetsStale);
    if(!visible){notice?.remove();continue;}
@@ -106,15 +113,19 @@ export function installWorkstation(ctx){
   }
  }
  const pageCtx={
-  ...ctx,mediaStore,importMediaFiles,linkLegacyCanvasMedia,importCanvasNodeToLibrary,sendCanvasNodeToEdit,openExport,
+  ...ctx,createDirectorPanel:()=>createDirectorPanel(pageCtx),mediaStore,importMediaFiles,linkLegacyCanvasMedia,importCanvasNodeToLibrary,sendCanvasNodeToEdit,openExport,
   commit(...args){const result=ctx.commit(...args);scheduleWorkflow();return result;},
   persist(...args){const result=ctx.persist(...args);scheduleWorkflow();return result;},
   goToPage:(id,options)=>setPage(id,options),
   openTool:(kind,options)=>openTool(kind,options),
   closeTool:()=>closeTool(),
+  openLegacyWriting:options=>openTool('script',options),
+  onCreativeTasksChanged:()=>{scheduleWorkflow();document.dispatchEvent(new CustomEvent('creative-tasks-changed'));},
   appendMediaClip:assetId=>appendClip(ctx.project(),assetId),
  };
  const pages={
+  assistant:createCreativePage(sections.assistant,pageCtx),
+  script:createScriptPage(sections.script,pageCtx),
   assets:createAssetsPage(sections.assets,pageCtx),
   edit:createEditPage(sections.edit,pageCtx),
   deliver:createDeliverPage(exportContent,{...pageCtx,embedded:true}),
@@ -134,7 +145,6 @@ export function installWorkstation(ctx){
   if(restoreFocus&&returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
  }
  function openTool(kind,options={}){
-  if(kind==='script'||kind==='assistant'){ctx.toast?.('创作助手/剧本生成已移除；请使用剧本参考和镜头工作表');return;}
   if(!TOOL_NAMES[kind])return;
   ctx.prepareCanvasTool?.(options);if(kind==='script')ctx.ensureScriptNode?.();
   if(current!== 'canvas')setPage('canvas');
@@ -156,8 +166,8 @@ export function installWorkstation(ctx){
   if(!PAGES.some(([key])=>key===id))return;
   if(id===current){if(id==='canvas')closeTool({restoreFocus:false});return;}
   closeExport();closeTool({restoreFocus:false});pages[current]?.onHide?.();current=id;
-  document.body.dataset.wsPage=id;if(id!=='canvas')ctx.onCanvasHidden?.();ctx.onPageChanged?.(id);
-  nav?.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav===id)));
+  document.body.dataset.wsPage=id;if(id!=='canvas')ctx.onCanvasHidden?.();
+  nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav===id)));
   for(const [key,section] of Object.entries(sections))section.hidden=key!==id;
   toolbar.hidden=id!=='canvas';
   if(id!=='canvas')pages[id].onShow();else ctx.onCanvasShown?.();
@@ -285,8 +295,8 @@ export function installWorkstation(ctx){
   closeExport();
   closeTool({restoreFocus:false});pages[current]?.onHide?.();
   current='canvas';
-  document.body.dataset.wsPage='canvas';ctx.onPageChanged?.('canvas');
-  nav?.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav==='canvas')));
+  document.body.dataset.wsPage='canvas';
+  nav.querySelectorAll('[data-ws-nav]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.wsNav==='canvas')));
   for(const section of Object.values(sections))section.hidden=true;toolbar.hidden=false;
  }
 
@@ -296,9 +306,11 @@ export function installWorkstation(ctx){
   onCanvas:()=>current==='canvas'&&(!currentTool||dock.classList.contains('node-assistant-floating')),
   tool:()=>currentTool,
   setPage,openTool,closeTool,
-  refresh(){const p=pages[currentTool||current];if(p){if(p.refresh)p.refresh();else p.onShow();}if(exportDialog.open)pages.deliver.refresh();scheduleWorkflow();},
+  refresh(){if(currentTool!=='assistant')pages.assistant.refresh();const p=pages[currentTool||current];if(p){if(p.refresh)p.refresh();else p.onShow();}if(exportDialog.open)pages.deliver.refresh();scheduleWorkflow();},
   onProjectOpened(){
    const ws=ctx.project().workstation;
+   ws.creativeTasks=normalizeCreativeTasks(ws.creativeTasks,{interrupt:true});
+   pages.assistant.onProjectChanged();
    pages.edit.reset();
    applyCanvas();
    // Older projects start tracking from this opening; nothing is regenerated.
@@ -307,9 +319,10 @@ export function installWorkstation(ctx){
    if(ws.story.assets.length&&!ws.workflow.sourceForAssets)recordWorkflowStep(ws,'assets');
    ctx.persist();scheduleWorkflow();
   },
-  onProjectsView(){closeExport();closeTool({restoreFocus:false});pages[current]?.onHide?.();},
+  onProjectsView(){closeExport();pages.assistant.cancelAll('interrupted');closeTool({restoreFocus:false});pages[current]?.onHide?.();},
+  cancelCreativeTasks:reason=>pages.assistant.cancelAll(reason||'interrupted'),
+  openCreativeTask(id){openTool('assistant',{taskId:id});},
   sendCanvasNodeToEdit,replaceCanvasVersionInEdit,sendVideoVersionsToEdit,
   importMediaFiles,
-  saveCanvasNodeToLibrary:importCanvasNodeToLibrary,
  };
 }

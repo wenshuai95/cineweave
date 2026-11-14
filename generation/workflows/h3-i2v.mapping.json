@@ -1,0 +1,46 @@
+{
+  "workflow": "h3-i2v",
+  "defaults": {
+    "width": 640,
+    "height": 352,
+    "duration": 5,
+    "fps": 24,
+    "negativePrompt": ""
+  },
+  "mapping": [
+    {
+      "nodeId": "2",
+      "input": "prompt",
+      "from": "prompt"
+    },
+    {
+      "nodeId": "2",
+      "input": "width",
+      "from": "width",
+      "type": "number"
+    },
+    {
+      "nodeId": "2",
+      "input": "height",
+      "from": "height",
+      "type": "number"
+    },
+    {
+      "nodeId": "2",
+      "input": "seconds",
+      "from": "duration",
+      "type": "number"
+    },
+    {
+      "nodeId": "9",
+      "input": "noise_seed",
+      "from": "seed",
+      "type": "number"
+    },
+    {
+      "nodeId": "15",
+      "input": "image",
+      "from": "image"
+    }
+  ]
+}

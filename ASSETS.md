@@ -1,6 +1,6 @@
 # 离线资产说明
 
-本仓库的 `public/assets/` 只包含清单（manifest）与许可证文本；模型和缩略图因体积原因不随仓库提供。
+本分支（v1.46.0 画布版）的 `public/assets/` 包含清单、许可证文本、模型与缩略图；模型约 56MB、缩略图约 9MB。克隆体积较大，如只需要界面开发可从 Release 资产包获取。
 
 ## 目录约定
 
@@ -9,8 +9,8 @@ public/assets/
   manifest.json        # 资产清单（名称、分类、动画、来源、许可证）
   README.txt           # 原资产库说明
   licenses/            # 每个来源的许可证全文（CC0）
-  models/              # 需从 Release 资产包解压
-  thumbnails/          # 需从 Release 资产包解压
+  models/              # 本分支已包含；也可从 Release 资产包获取
+  thumbnails/          # 本分支已包含；也可从 Release 资产包获取
 ```
 
 ## 来源与许可
@@ -28,4 +28,4 @@ public/assets/
 - models：约 56MB
 - thumbnails：约 9MB
 
-如果只是二次开发界面或剪辑功能，可以不下载资产包。
+如果只是二次开发界面或剪辑功能，可以不使用模型目录。

@@ -1,8 +1,25 @@
-# CineWeave · 造梦工坊（v1.29.0）
+# CineWeave · 造梦工坊（v1.46.0 画布版）
 
 一个本地优先的 AI 视频创作工作台：为**已有剧本/分镜**的创作者提供画布、镜头表、资产管理、3D 白模预演、图片/视频生成与粗剪，全部在同一个工程里完成。
 
-产品边界：不生成剧本、大纲或对白，不做创作助手对话，不做 AI 自动分镜/资产设计；只服务已写好剧本的预演与生成。
+产品边界：不替代编剧生成剧本/大纲/对白；提供内置 AI 助手辅助提示词与镜头讨论；只服务已写好剧本的预演与生成。
+
+## v1.46.0 画布版（当前）
+
+本版把「即梦画布」的核心体验并入造梦工坊，默认打开画布：
+
+- 框选/多选拖动、编组、对齐、8px 吸附、智能参考线、小地图；
+- 图片节点：智能改图、局部重绘（蒙版）、扩图、抠图、智能超清、修脸、智能打光、版本；
+- 视频节点：截取帧、分离音频、视频修剪；首帧/尾帧接即梦 API；
+- 音频节点：波形、裁剪、音色库；
+- 参考 chips：相机/配色/风格；@ 引用节点；参考角色与排序；
+- 生成后端：图片/视频 ComfyUI ↔ 即梦 API 可选；音频仅即梦 API；
+- ComfyUI 视频：H3 / H3 Ref2VA（多图/视频/音频参考）/ Wan 2.2 / LTX-2.3 / FramePack；
+- 提示词优化（中文/英文双版）+ 翻译；内置 DeepSeek AI 助手，可把回复写入节点；
+- 多画布（随工程保存）、资产库、版本历史、导出时间线 MP4（加入画布/文件夹）；
+- 快捷键帮助、单层浮动画布控件。
+
+依赖：Node.js、ComfyUI（可选，本地图片/视频工具）、dreamina-canvas CLI（可选，即梦 API）、ffmpeg。
 
 ## 功能
 
@@ -133,3 +150,15 @@ server.mjs         本地静态服务与 API 入口
 - v1.27.0：生成历史、失败恢复、键盘与紧凑 UI 收尾，验收见 [RELEASE-ACCEPTANCE-1.27.0.md](docs/RELEASE-ACCEPTANCE-1.27.0.md)
 - 更新日志：[CHANGELOG.md](CHANGELOG.md)
 - v1.25.4 历史验收：[RELEASE-ACCEPTANCE-1.25.4.md](docs/RELEASE-ACCEPTANCE-1.25.4.md)
+
+## CLI（供其他智能体调用）
+
+启动桌面应用后：
+
+```bash
+node bin/zaomeng.mjs health
+node bin/zaomeng.mjs capabilities --pretty
+node bin/zaomeng.mjs relayvsr --video /api/generation/assets/xxx.mp4 --wait
+```
+
+完整命令见 `docs/cli.md`。

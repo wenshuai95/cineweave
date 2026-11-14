@@ -15,8 +15,10 @@ await mkdir(stage,{recursive:true});await mkdir(mount,{recursive:true});
 execFileSync('/bin/cp',['-R',source,join(stage,app)],{stdio:'inherit'});
 await symlink('/Applications',join(stage,'Applications'));
 await cp(join(root,'desktop/安装与使用说明.txt'),join(stage,'安装与使用说明.txt'));
-const dmg=join(output,`造梦工坊-v${version}-AppleSilicon.dmg`);
-execFileSync('hdiutil',['create','-srcfolder',stage,'-volname',`造梦工坊 ${version}`,'-format','UDZO','-ov',dmg],{stdio:'inherit'});
+const dmg=join(output,`CineWeave-v${version}-arm64.dmg`),raw=join(output,`CineWeave-v${version}-raw.dmg`);
+execFileSync('hdiutil',['create','-srcfolder',stage,'-volname',`造梦工坊 ${version}`,'-format','UDZO','-ov',raw],{stdio:'inherit'});
+await cp(raw,dmg);
+await rm(raw,{force:true});
 execFileSync('hdiutil',['verify',dmg],{stdio:'inherit'});
 let mounted=false;
 try{

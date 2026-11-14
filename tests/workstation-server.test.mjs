@@ -1,4 +1,6 @@
-import test from 'node:test';import assert from 'node:assert/strict';
+import test from 'node:test';
+import {readFileSync} from 'node:fs';
+const appVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;import assert from 'node:assert/strict';
 import {spawnSync,execFile} from 'node:child_process';
 import {mkdtemp,rm,readFile,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -25,7 +27,7 @@ test('workstation health reports tool availability and limits',options,async()=>
  assert.equal(r.status,200);
  const data=await r.json();
  assert.equal(data.app,'ai-video-workstation');
- assert.equal(data.version,'1.21.0');
+ assert.equal(data.version, appVersion);
  assert.deepEqual(data.limits.fps,[24,25,30]);
  assert.deepEqual(data.limits.heights,[720,1080]);
 });

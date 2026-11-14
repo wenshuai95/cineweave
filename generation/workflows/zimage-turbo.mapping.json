@@ -1,0 +1,11 @@
+{
+  "workflow": "zimage-turbo",
+  "defaults": { "width": 1024, "height": 1024, "negativePrompt": "blurry, low quality, text, watermark" },
+  "mapping": [
+    { "nodeId": "4", "input": "text", "from": "prompt" },
+    { "nodeId": "5", "input": "text", "from": "negativePrompt" },
+    { "nodeId": "6", "input": "width", "from": "width", "type": "number" },
+    { "nodeId": "6", "input": "height", "from": "height", "type": "number" },
+    { "nodeId": "8", "input": "seed", "from": "seed", "type": "number" }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "ai-video-workstation",
-  "version": "1.29.0",
+  "version": "1.46.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,8 @@
     "test:win32": "node tests/run-win32-branch-test.mjs",
     "package:mac": "npm run build && node desktop/package-mac.mjs",
     "package:dmg": "npm run package:mac && node desktop/make-dmg.mjs",
-    "package:win": "npm run build && node desktop/prepare-windows.mjs && electron-builder --config electron-builder.windows.json --win nsis --x64"
+    "package:win": "npm run build && node desktop/prepare-windows.mjs && electron-builder --config electron-builder.windows.json --win nsis --x64",
+    "cli": "node bin/zaomeng.mjs"
   },
   "dependencies": {
     "three": "0.180.0"
@@ -24,15 +25,7 @@
     "fake-indexeddb": "^6.2.5",
     "vite": "6.4.4"
   },
-  "description": "CineWeave · 造梦工坊：本地优先的 AI 视频创作工作台（经典版 v1.21.0）",
-  "license": "AGPL-3.0-only",
-  "author": "wenshuai",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/wenshuai95/cineweave.git"
-  },
-  "homepage": "https://github.com/wenshuai95/cineweave#readme",
-  "bugs": {
-    "url": "https://github.com/wenshuai95/cineweave/issues"
+  "bin": {
+    "zaomeng": "bin/zaomeng.mjs"
   }
 }

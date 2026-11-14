@@ -1,0 +1,353 @@
+{
+  "workflow": "qwen-image-2.1-ultimate",
+  "workflowVersion": "The_frizzy1 v2.1.0",
+  "generatedAt": "2026-11-13",
+  "model": "Qwen Image 2.1 Turbo int8 convrot + qwen3vl_8b",
+  "comfy": "http://192.168.3.27:8190",
+  "comfyVersion": "0.45.0",
+  "license": "Qwen 研究许可，非商用",
+  "defaults": {
+    "megapixels": 1,
+    "aspect": "1:1 (Square)",
+    "turbo": true,
+    "steps": 8,
+    "seed": 20261112,
+    "cn_mp": 1,
+    "outputPrefix": "qwen21/Qwen21_ultimate"
+  },
+  "notes": {
+    "subgraph": "原版是 UI 格式带 frontend subgraph，本目录下 .json 已展平为 API 格式。",
+    "mode": "mode 由 CustomCombo.choice 驱动，改模式必须换对应 workflow 文件。",
+    "bypassInputs": "不需要的 LoadImage 以 bypass 方式展平（不注册），所以每个模式的节点 ID 不同，务必用对应模式的 mapping。",
+    "removeBackground": "rmbg 模式忽略 prompt，固定输出透明 PNG；只使用 Image 1。",
+    "controlNet": "pose 需要 SDPose + RT-DETR，depth 需要 Lotus + ft-mse VAE，edges 用核心 Canny。",
+    "turboOff": "turbo=false 会改用 qwen_image_2.1_int8_convrot.safetensors（base），步数需 25-40，速度慢 4 倍以上。"
+  },
+  "variants": {
+    "qwen21-t2i.json": "Text to image",
+    "qwen21-edit.json": "Edit (your images)",
+    "qwen21-rmbg.json": "Edit: remove background (PNG)",
+    "qwen21-pose.json": "ControlNet: pose",
+    "qwen21-depth.json": "ControlNet: depth",
+    "qwen21-edges.json": "ControlNet: edges (canny)"
+  },
+  "mapping": {
+    "t2i": {
+      "file": "qwen21-t2i.json",
+      "nodes": 69,
+      "modeValue": "Text to image",
+      "params": [
+        {
+          "nodeId": "48",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "13",
+          "input": "choice",
+          "value": "Text to image",
+          "type": "enum",
+          "readonly": true
+        },
+        {
+          "nodeId": "64",
+          "input": "megapixels",
+          "from": "megapixels",
+          "type": "number"
+        },
+        {
+          "nodeId": "64",
+          "input": "aspect_ratio",
+          "from": "aspect",
+          "type": "enum"
+        },
+        {
+          "nodeId": "66",
+          "input": "value",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "1",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        }
+      ],
+      "uploads": []
+    },
+    "edit": {
+      "file": "qwen21-edit.json",
+      "nodes": 70,
+      "modeValue": "Edit (your images)",
+      "params": [
+        {
+          "nodeId": "49",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "14",
+          "input": "choice",
+          "value": "Edit (your images)",
+          "type": "enum",
+          "readonly": true
+        },
+        {
+          "nodeId": "65",
+          "input": "megapixels",
+          "from": "megapixels",
+          "type": "number"
+        },
+        {
+          "nodeId": "65",
+          "input": "aspect_ratio",
+          "from": "aspect",
+          "type": "enum"
+        },
+        {
+          "nodeId": "67",
+          "input": "value",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "image1",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "edit_image_1.png"
+        }
+      ]
+    },
+    "rmbg": {
+      "file": "qwen21-rmbg.json",
+      "nodes": 70,
+      "modeValue": "Edit: remove background (PNG)",
+      "params": [
+        {
+          "nodeId": "49",
+          "input": "value",
+          "from": "prompt",
+          "type": "string",
+          "ignored": true,
+          "note": "去背景模式忽略 prompt，固定使用内置提示词"
+        },
+        {
+          "nodeId": "14",
+          "input": "choice",
+          "value": "Edit: remove background (PNG)",
+          "type": "enum",
+          "readonly": true
+        },
+        {
+          "nodeId": "65",
+          "input": "megapixels",
+          "from": "megapixels",
+          "type": "number"
+        },
+        {
+          "nodeId": "65",
+          "input": "aspect_ratio",
+          "from": "aspect",
+          "type": "enum"
+        },
+        {
+          "nodeId": "67",
+          "input": "value",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "image1",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "edit_image_1.png"
+        }
+      ]
+    },
+    "pose": {
+      "file": "qwen21-pose.json",
+      "nodes": 70,
+      "modeValue": "ControlNet: pose",
+      "params": [
+        {
+          "nodeId": "49",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "14",
+          "input": "choice",
+          "value": "ControlNet: pose",
+          "type": "enum",
+          "readonly": true
+        },
+        {
+          "nodeId": "65",
+          "input": "megapixels",
+          "from": "megapixels",
+          "type": "number"
+        },
+        {
+          "nodeId": "65",
+          "input": "aspect_ratio",
+          "from": "aspect",
+          "type": "enum"
+        },
+        {
+          "nodeId": "67",
+          "input": "value",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "controlImage",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "control_image.png"
+        }
+      ]
+    },
+    "depth": {
+      "file": "qwen21-depth.json",
+      "nodes": 70,
+      "modeValue": "ControlNet: depth",
+      "params": [
+        {
+          "nodeId": "49",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "14",
+          "input": "choice",
+          "value": "ControlNet: depth",
+          "type": "enum",
+          "readonly": true
+        },
+        {
+          "nodeId": "65",
+          "input": "megapixels",
+          "from": "megapixels",
+          "type": "number"
+        },
+        {
+          "nodeId": "65",
+          "input": "aspect_ratio",
+          "from": "aspect",
+          "type": "enum"
+        },
+        {
+          "nodeId": "67",
+          "input": "value",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "controlImage",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "control_image.png"
+        }
+      ]
+    },
+    "edges": {
+      "file": "qwen21-edges.json",
+      "nodes": 70,
+      "modeValue": "ControlNet: edges (canny)",
+      "params": [
+        {
+          "nodeId": "49",
+          "input": "value",
+          "from": "prompt",
+          "type": "string"
+        },
+        {
+          "nodeId": "14",
+          "input": "choice",
+          "value": "ControlNet: edges (canny)",
+          "type": "enum",
+          "readonly": true
+        },
+        {
+          "nodeId": "65",
+          "input": "megapixels",
+          "from": "megapixels",
+          "type": "number"
+        },
+        {
+          "nodeId": "65",
+          "input": "aspect_ratio",
+          "from": "aspect",
+          "type": "enum"
+        },
+        {
+          "nodeId": "67",
+          "input": "value",
+          "from": "seed",
+          "type": "number"
+        },
+        {
+          "nodeId": "2",
+          "input": "filename_prefix",
+          "from": "outputPrefix",
+          "type": "string"
+        }
+      ],
+      "uploads": [
+        {
+          "nodeId": "1",
+          "input": "image",
+          "from": "controlImage",
+          "type": "image",
+          "uploadsTo": "input",
+          "placeholder": "control_image.png"
+        }
+      ]
+    }
+  }
+}

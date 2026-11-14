@@ -22,3 +22,11 @@ body.project-home .app{display:none}#projectManager[hidden]{display:none}#projec
 #projectManager .pm-new .pm-cover>span{background:transparent;color:#c6b4e5}
 #projectManager .pm-search:focus-within{border-color:#c1afff}
 #projectManager :is(button,input,select):focus-visible{outline:2px solid #c1afff;outline-offset:3px}
+
+/* 项目面板设置按钮 + 框选多选 */
+#pmSettings{font-size:16px;padding:6px 10px;color:#c9bfe0}
+#pmSettings:hover{color:#fff;background:#2c2735}
+.pm-projects{position:relative;user-select:none}
+.pm-marquee{position:fixed;z-index:9999;border:1px solid #c1afff;background:rgba(193,175,255,.14);border-radius:2px;pointer-events:none}
+.pm-card{cursor:default}
+.pm-card.selected .pm-card-info b{color:#e1d5fa}

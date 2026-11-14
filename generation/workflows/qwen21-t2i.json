@@ -1,0 +1,828 @@
+{
+ "9": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "qwen_image_2.1_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "10": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "qwen_image_2.1_turbo_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "11": {
+  "class_type": "PrimitiveBoolean",
+  "inputs": {
+   "value": true
+  }
+ },
+ "8": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "9",
+    0
+   ],
+   "on_true": [
+    "10",
+    0
+   ],
+   "switch": [
+    "11",
+    0
+   ]
+  }
+ },
+ "7": {
+  "class_type": "QwenImage21Cache",
+  "inputs": {
+   "model": [
+    "8",
+    0
+   ],
+   "device": "auto",
+   "dtype": "default"
+  }
+ },
+ "6": {
+  "class_type": "ModelAttentionBackend",
+  "inputs": {
+   "model": [
+    "7",
+    0
+   ],
+   "attention": "comfy kitchen attention"
+  }
+ },
+ "5": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "6",
+    0
+   ],
+   "on_true": [
+    "7",
+    0
+   ],
+   "switch": [
+    "11",
+    0
+   ]
+  }
+ },
+ "13": {
+  "class_type": "CustomCombo",
+  "inputs": {
+   "choice": "Text to image"
+  }
+ },
+ "12": {
+  "class_type": "StringCompare",
+  "inputs": {
+   "string_a": [
+    "13",
+    0
+   ],
+   "string_b": "ControlNet",
+   "mode": "Starts With",
+   "case_sensitive": true
+  }
+ },
+ "14": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1
+  }
+ },
+ "15": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "rt_detr_v4-x-hgnet_fp16.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "16": {
+  "class_type": "CheckpointLoaderSimple",
+  "inputs": {
+   "ckpt_name": "sdpose_wholebody_fp16.safetensors"
+  }
+ },
+ "17": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "vae-ft-mse-840000-ema-pruned.safetensors"
+  }
+ },
+ "18": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "lotus-depth-d-v1-1.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "19": {
+  "class_type": "StringCompare",
+  "inputs": {
+   "string_a": [
+    "13",
+    0
+   ],
+   "string_b": "ControlNet: depth",
+   "mode": "Equal",
+   "case_sensitive": true
+  }
+ },
+ "20": {
+  "class_type": "StringCompare",
+  "inputs": {
+   "string_a": [
+    "13",
+    0
+   ],
+   "string_b": "ControlNet: pose",
+   "mode": "Equal",
+   "case_sensitive": true
+  }
+ },
+ "21": {
+  "class_type": "ModelPatchLoader",
+  "inputs": {
+   "name": "qwen_image_2.1_fun_controlnet_union_int8_convrot.safetensors"
+  }
+ },
+ "22": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+  }
+ },
+ "23": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1
+  }
+ },
+ "27": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": [
+    "12",
+    0
+   ]
+  }
+ },
+ "26": {
+  "class_type": "RepeatImageBatch",
+  "inputs": {
+   "image": [
+    "27",
+    0
+   ],
+   "amount": 1
+  }
+ },
+ "25": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "26",
+    0
+   ],
+   "megapixels": [
+    "14",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 16
+  }
+ },
+ "24": {
+  "class_type": "GetImageSize",
+  "inputs": {
+   "image": [
+    "25",
+    0
+   ]
+  }
+ },
+ "31": {
+  "class_type": "Canny",
+  "inputs": {
+   "image": [
+    "25",
+    0
+   ],
+   "low_threshold": 0.1,
+   "high_threshold": 0.32
+  }
+ },
+ "35": {
+  "class_type": "DisableNoise",
+  "inputs": {}
+ },
+ "37": {
+  "class_type": "LotusConditioning",
+  "inputs": {}
+ },
+ "36": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "18",
+    0
+   ],
+   "conditioning": [
+    "37",
+    0
+   ]
+  }
+ },
+ "38": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "40": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "18",
+    0
+   ],
+   "scheduler": "normal",
+   "steps": 1,
+   "denoise": 1
+  }
+ },
+ "39": {
+  "class_type": "SetFirstSigma",
+  "inputs": {
+   "sigmas": [
+    "40",
+    0
+   ],
+   "sigma": 999
+  }
+ },
+ "41": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "25",
+    0
+   ],
+   "vae": [
+    "17",
+    0
+   ]
+  }
+ },
+ "34": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "35",
+    0
+   ],
+   "guider": [
+    "36",
+    0
+   ],
+   "sampler": [
+    "38",
+    0
+   ],
+   "sigmas": [
+    "39",
+    0
+   ],
+   "latent_image": [
+    "41",
+    0
+   ]
+  }
+ },
+ "33": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "34",
+    0
+   ],
+   "vae": [
+    "17",
+    0
+   ]
+  }
+ },
+ "32": {
+  "class_type": "ImageInvert",
+  "inputs": {
+   "image": [
+    "33",
+    0
+   ]
+  }
+ },
+ "30": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "31",
+    0
+   ],
+   "on_true": [
+    "32",
+    0
+   ],
+   "switch": [
+    "19",
+    0
+   ]
+  }
+ },
+ "44": {
+  "class_type": "RTDETR_detect",
+  "inputs": {
+   "model": [
+    "15",
+    0
+   ],
+   "image": [
+    "25",
+    0
+   ],
+   "threshold": 0.5,
+   "class_name": "person",
+   "max_detections": 2
+  }
+ },
+ "43": {
+  "class_type": "SDPoseKeypointExtractor",
+  "inputs": {
+   "model": [
+    "16",
+    0
+   ],
+   "vae": [
+    "16",
+    2
+   ],
+   "image": [
+    "25",
+    0
+   ],
+   "bboxes": [
+    "44",
+    0
+   ],
+   "batch_size": 16
+  }
+ },
+ "42": {
+  "class_type": "SDPoseDrawKeypoints",
+  "inputs": {
+   "keypoints": [
+    "43",
+    0
+   ],
+   "draw_body": true,
+   "draw_hands": true,
+   "draw_face": true,
+   "draw_feet": true,
+   "stick_width": 4,
+   "face_point_size": 2,
+   "score_threshold": 0.51,
+   "draw_head": true
+  }
+ },
+ "29": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "30",
+    0
+   ],
+   "on_true": [
+    "42",
+    0
+   ],
+   "switch": [
+    "20",
+    0
+   ]
+  }
+ },
+ "28": {
+  "class_type": "ZImageFunControlnet",
+  "inputs": {
+   "model": [
+    "5",
+    0
+   ],
+   "model_patch": [
+    "21",
+    0
+   ],
+   "vae": [
+    "22",
+    0
+   ],
+   "image": [
+    "29",
+    0
+   ],
+   "strength": [
+    "23",
+    0
+   ],
+   "start_percent": 0,
+   "end_percent": 1
+  }
+ },
+ "4": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "5",
+    0
+   ],
+   "on_true": [
+    "28",
+    0
+   ],
+   "switch": [
+    "12",
+    0
+   ]
+  }
+ },
+ "47": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  }
+ },
+ "48": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "A cinematic shot."
+  }
+ },
+ "46": {
+  "class_type": "TextEncodeQwenImage21",
+  "inputs": {
+   "clip": [
+    "47",
+    0
+   ],
+   "prompt": [
+    "48",
+    0
+   ],
+   "negative_prompt": "",
+   "resolution": 1024
+  }
+ },
+ "49": {
+  "class_type": "StringCompare",
+  "inputs": {
+   "string_a": [
+    "13",
+    0
+   ],
+   "string_b": "Edit",
+   "mode": "Starts With",
+   "case_sensitive": true
+  }
+ },
+ "50": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 1024
+  }
+ },
+ "51": {
+  "class_type": "StringCompare",
+  "inputs": {
+   "string_a": [
+    "13",
+    0
+   ],
+   "string_b": "Edit: remove background (PNG)",
+   "mode": "Equal",
+   "case_sensitive": true
+  }
+ },
+ "54": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": [
+    "49",
+    0
+   ]
+  }
+ },
+ "53": {
+  "class_type": "RepeatImageBatch",
+  "inputs": {
+   "image": [
+    "54",
+    0
+   ],
+   "amount": 1
+  }
+ },
+ "56": {
+  "class_type": "StringCompare",
+  "inputs": {
+   "string_a": [
+    "13",
+    0
+   ],
+   "string_b": "Edit (your images)",
+   "mode": "Equal",
+   "case_sensitive": true
+  }
+ },
+ "55": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": [
+    "56",
+    0
+   ]
+  }
+ },
+ "57": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": [
+    "56",
+    0
+   ]
+  }
+ },
+ "59": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "Remove the background, and output a PNG image"
+  }
+ },
+ "58": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "48",
+    0
+   ],
+   "on_true": [
+    "59",
+    0
+   ],
+   "switch": [
+    "51",
+    0
+   ]
+  }
+ },
+ "52": {
+  "class_type": "TextEncodeQwenImage21",
+  "inputs": {
+   "clip": [
+    "47",
+    0
+   ],
+   "images.image_1": [
+    "53",
+    0
+   ],
+   "images.image_2": [
+    "55",
+    0
+   ],
+   "images.image_3": [
+    "57",
+    0
+   ],
+   "vae": [
+    "22",
+    0
+   ],
+   "prompt": [
+    "58",
+    0
+   ],
+   "resolution": [
+    "50",
+    0
+   ],
+   "negative_prompt": ""
+  }
+ },
+ "45": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "46",
+    0
+   ],
+   "on_true": [
+    "52",
+    0
+   ],
+   "switch": [
+    "49",
+    0
+   ]
+  }
+ },
+ "60": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "46",
+    1
+   ],
+   "on_true": [
+    "52",
+    1
+   ],
+   "switch": [
+    "49",
+    0
+   ]
+  }
+ },
+ "64": {
+  "class_type": "ResolutionSelector",
+  "inputs": {
+   "aspect_ratio": "1:1 (Square)",
+   "megapixels": 1,
+   "multiple": 16
+  }
+ },
+ "63": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "64",
+    0
+   ],
+   "on_true": [
+    "24",
+    0
+   ],
+   "switch": [
+    "12",
+    0
+   ]
+  }
+ },
+ "65": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "64",
+    1
+   ],
+   "on_true": [
+    "24",
+    1
+   ],
+   "switch": [
+    "12",
+    0
+   ]
+  }
+ },
+ "62": {
+  "class_type": "EmptyLatentImage",
+  "inputs": {
+   "width": [
+    "63",
+    0
+   ],
+   "height": [
+    "65",
+    0
+   ],
+   "batch_size": 1
+  }
+ },
+ "61": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "62",
+    0
+   ],
+   "on_true": [
+    "52",
+    2
+   ],
+   "switch": [
+    "49",
+    0
+   ]
+  }
+ },
+ "66": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 20261112
+  }
+ },
+ "68": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  }
+ },
+ "69": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  }
+ },
+ "67": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "68",
+    0
+   ],
+   "on_true": [
+    "69",
+    0
+   ],
+   "switch": [
+    "11",
+    0
+   ]
+  }
+ },
+ "3": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "4",
+    0
+   ],
+   "positive": [
+    "45",
+    0
+   ],
+   "negative": [
+    "60",
+    0
+   ],
+   "latent_image": [
+    "61",
+    0
+   ],
+   "seed": [
+    "66",
+    0
+   ],
+   "steps": [
+    "67",
+    0
+   ],
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1
+  }
+ },
+ "2": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "3",
+    0
+   ],
+   "vae": [
+    "22",
+    0
+   ]
+  }
+ },
+ "1": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "2",
+    0
+   ],
+   "filename_prefix": "qwen21/Qwen21_ultimate"
+  }
+ }
+}
