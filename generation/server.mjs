@@ -227,6 +227,19 @@ function jobEndpoint(kind, body = {}) {
   return 'comfyui-main';
 }
 
+let mainHealthCache = { at: 0, ok: false, error: '' };
+async function checkMainEndpoint(config) {
+  if (Date.now() - mainHealthCache.at < 10000) return mainHealthCache;
+  try {
+    const provider = createComfyUIProvider({ baseUrl: config.comfyui.baseUrl, timeoutMs: 2500 });
+    const info = await provider.testConnection();
+    mainHealthCache = { at: Date.now(), ok: true, error: '', version: info.version };
+  } catch (error) {
+    mainHealthCache = { at: Date.now(), ok: false, error: error.message };
+  }
+  return mainHealthCache;
+}
+
 function queueFor(endpoint) {
   if (!endpointQueues.has(endpoint)) endpointQueues.set(endpoint, []);
   return endpointQueues.get(endpoint);
@@ -370,7 +383,18 @@ async function handle(req, res, url) {
     } catch (error) {
       comfyui.error = error.message;
     }
-    sendJson(res, 200, { comfyui, dreamina: { command: config.dreamina.command } });
+    let comfyui045 = { baseUrl: '', ok: false };
+    try {
+      const capabilities = await loadCapabilities();
+      const endpoint = resolveEndpoint(capabilities, 'parallel045', config);
+      comfyui045.baseUrl = endpoint.url;
+      const provider = createComfyUIProvider({ baseUrl: endpoint.url, timeoutMs: 3000 });
+      const info = await provider.testConnection();
+      Object.assign(comfyui045, { ok: true, version: info.version, devices: info.devices });
+    } catch (error) {
+      comfyui045.error = error.message;
+    }
+    sendJson(res, 200, { comfyui, comfyui045, dreamina: { command: config.dreamina.command } });
     return;
   }
 
@@ -530,6 +554,14 @@ async function handle(req, res, url) {
       pending = pendingQuotes.get(body.quoteId);
       if (!pending) { sendJson(res, 409, { error: '报价已过期，请重新生成报价' }); return; }
       pendingQuotes.delete(body.quoteId);
+    }
+    if (String(kind).startsWith('comfyui-') && jobEndpoint(kind, body) === 'comfyui-main') {
+      const config = await loadConfig();
+      const health = await checkMainEndpoint(config);
+      if (!health.ok) {
+        sendJson(res, 503, { error: `ComfyUI 主环境（8188）不可达：${health.error || '连接失败'}。旧 H3/Wan/LTX/FramePack/SDXL 工作流需先按《Windows-8188停用与回退说明》恢复 8188；当前可改用 8190 的 H3 Ultimate / Qwen Image 2.1 / RelayVSR X2。` });
+        return;
+      }
     }
     const job = launchJob(kind, body, pending);
     sendJson(res, 202, { id: job.id, status: job.status });

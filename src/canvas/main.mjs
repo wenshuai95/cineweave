@@ -843,12 +843,19 @@ function fitCanvas() {
   persist(false);
 }
 
+let providerHealth = {};
+
 async function probeProviders() {
   const pill = app.querySelector('#dockBackend');
   try {
     const response = await fetch('/api/generation/providers');
     const data = await response.json();
-    if (data.comfyui?.ok) {
+    providerHealth = data;
+    if (data.comfyui045?.ok) {
+      pill.textContent = `后端：ComfyUI 0.45（8190）${data.comfyui045.version ? ' · v' + data.comfyui045.version : ''}`;
+      pill.classList.add('accent');
+      pill.disabled = false;
+    } else if (data.comfyui?.ok) {
       pill.textContent = `后端：ComfyUI ${data.comfyui.version ? 'v' + data.comfyui.version : ''}`.trim();
       pill.classList.add('accent');
       pill.disabled = false;
@@ -1180,7 +1187,11 @@ function modelOptions(node) {
     return list.length ? list.map((spec) => [spec.displayName, () => setGeneration({ model: spec.model })]) : [['SeedAudio 1.0', () => setGeneration({ model: 'legacy_tts' })]];
   }
   if (provider !== 'dreamina') {
-    return buildModelOptions({ type: node.type, provider }).map((option) => [option.label, () => setGeneration(withSavedParams(option.key, option.patch))]);
+    const mainDown = providerHealth.comfyui && !providerHealth.comfyui.ok;
+    return buildModelOptions({ type: node.type, provider }).map((option) => {
+      const legacy = !/qwen21|h3-ultimate/.test(option.key);
+      return [`${option.label}${mainDown && legacy ? '（8188 停用）' : ''}`, () => setGeneration(withSavedParams(option.key, option.patch))];
+    });
   }
   if (node.type === 'image') {
     return dreaminaCatalog.image.length
@@ -2070,8 +2081,12 @@ async function openSettings() {
     app.querySelector('#workflowOptions').innerHTML = (workflows.workflows || [])
       .map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}${item.hasMapping ? '' : '（缺映射）'}</option>`)
       .join('');
-    if (providers.comfyui?.ok) {
-      status.textContent = `ComfyUI 已连接（${providers.comfyui.version || 'unknown'}）`;
+    if (providers.comfyui045?.ok || providers.comfyui?.ok) {
+      const parts = [];
+      if (providers.comfyui045?.ok) parts.push(`8190 v${providers.comfyui045.version || '?'} 在线`);
+      if (providers.comfyui?.ok) parts.push(`8188 v${providers.comfyui.version || '?'} 在线`);
+      else parts.push('8188 未连接（旧模型停用）');
+      status.textContent = `ComfyUI：${parts.join(' · ')}`;
       status.classList.add('ok');
     } else {
       status.textContent = `ComfyUI 未连接：${providers.comfyui?.error || '请检查地址'}`;
